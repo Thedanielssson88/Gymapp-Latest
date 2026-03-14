@@ -220,11 +220,18 @@ export default function App() {
       console.log('🔍 refreshData - Profil:', p);
       console.log('🔍 refreshData - Zoner:', z.length);
 
-    // Visa onboarding endast om BÅDE zones saknas OCH profilen är default OCH användaren aldrig sett onboarding
-    // Detta förhindrar onboarding vid tillfälliga laddningsproblem och efter refresh/re-login
-    const hasSeenOnboarding = localStorage.getItem('morphfit_onboarding_completed') === 'true';
-    const isNewUser = z.length === 0 && p.name === "Atlet" && h.length === 0 && !hasSeenOnboarding;
-    setShowOnboarding(isNewUser);
+    // Visa onboarding ENDAST för helt nya användare som ALDRIG slutfört onboarding
+    // Kolla både localStorage OCH profil-data för säkerhet
+    const hasCompletedOnboardingLocally = localStorage.getItem('morphfit_onboarding_completed') === 'true';
+    const hasCompletedOnboardingInProfile = (p as any).onboarding_completed === true;
+    const hasData = z.length > 0 || h.length > 0; // Har zones eller historik = har använt appen
+
+    // Visa onboarding BARA om:
+    // 1. Inte slutfört onboarding (varken lokalt eller i profil)
+    // 2. Ingen data finns (zones/historik)
+    // 3. Standardprofil
+    const shouldShowOnboarding = !hasCompletedOnboardingLocally && !hasCompletedOnboardingInProfile && !hasData && p.name === "Atlet";
+    setShowOnboarding(shouldShowOnboarding);
 
     setUser(p);
     setZones(z);
@@ -622,9 +629,15 @@ export default function App() {
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#0f0d15] selection:bg-accent-pink selection:text-white relative overflow-x-hidden">
       <style>{globalStyles}</style>
-      {showOnboarding && isReady && ( <OnboardingWizard onComplete={() => {
+      {showOnboarding && isReady && ( <OnboardingWizard onComplete={async () => {
         setShowOnboarding(false);
         localStorage.setItem('morphfit_onboarding_completed', 'true');
+
+        // Spara i Supabase att onboarding är slutfört
+        if (user) {
+          await storage.setUserProfile({ ...user, onboarding_completed: true } as any);
+        }
+
         refreshData();
       }} /> )}
       {renderContent()}
