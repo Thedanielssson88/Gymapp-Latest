@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generera PWA-ikoner</title>
+</head>
+<body>
+    <h1>Genererar ikoner...</h1>
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Bakgrund
+        ctx.fillStyle = '#0f0d15';
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Hantel
+        // Stång
+        ctx.fillStyle = '#ff2d55';
+        ctx.fillRect(136, 236, 240, 40);
+
+        // Vänster vikt
+        ctx.fillStyle = '#3b82f6';
+        ctx.fillRect(90, 196, 50, 120);
+
+        // Höger vikt
+        ctx.fillStyle = '#3b82f6';
+        ctx.fillRect(372, 196, 50, 120);
+
+        // Detaljer
+        ctx.fillStyle = '#2ed573';
+        ctx.beginPath();
+        ctx.arc(115, 186, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(115, 326, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(397, 186, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(397, 326, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Download 512x512
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'icon-512.png';
+            a.click();
+
+            // Generate 192x192
+            setTimeout(() => {
+                const canvas192 = document.createElement('canvas');
+                canvas192.width = 192;
+                canvas192.height = 192;
+                const ctx192 = canvas192.getContext('2d');
+                ctx192.drawImage(canvas, 0, 0, 192, 192);
+                canvas192.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'icon-192.png';
+                    a.click();
+
+                    // Generate 180x180 (Apple)
+                    setTimeout(() => {
+                        const canvas180 = document.createElement('canvas');
+                        canvas180.width = 180;
+                        canvas180.height = 180;
+                        const ctx180 = canvas180.getContext('2d');
+                        ctx180.drawImage(canvas, 0, 0, 180, 180);
+                        canvas180.toBlob(blob => {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'icon-apple-touch.png';
+                            a.click();
+                            document.body.innerHTML += '<h2>Klart! Alla 3 ikoner nedladdade. Lägg dem i /public/ mappen.</h2>';
+                        });
+                    }, 500);
+                });
+            }, 500);
+        });
+    </script>
+</body>
+</html>
