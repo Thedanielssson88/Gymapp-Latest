@@ -252,37 +252,7 @@ export default function App() {
         setLoadingStatus('Ansluter till databas...');
         console.log('📦 storage.init()...');
         await storage.init();
-        setLoadingStatus('Kollar molnsynkronisering...');
-        console.log('👤 Hämtar användarprofil...');
-        const initialProfile = await storage.getUserProfile();
-        if (initialProfile.settings?.googleDriveLinked && initialProfile.settings?.restoreOnStartup) {
-           console.log('☁️ Google Drive länkat - kollar backup (max 5s)...');
-           try {
-             const drivePromise = (async () => {
-               const files = await listBackups();
-               if (files && files.length > 0) {
-                 const backupFile = await downloadBackup(files[0].id);
-                 if (backupFile?.data) {
-                    const localExportedAt = initialProfile.settings.lastCloudSync || "0";
-                    if (new Date(backupFile.timestamp) > new Date(localExportedAt)) {
-                       await importDatabase(backupFile.data);
-                       alert("Nyare data hittades i molnet och har återställts. Appen startas om.");
-                       window.location.reload();
-                       return true;
-                    }
-                 }
-               }
-               return false;
-             })();
-             const timeoutPromise = new Promise((_, reject) =>
-               setTimeout(() => reject(new Error('Google Drive timeout')), 5000)
-             );
-             const shouldReload = await Promise.race([drivePromise, timeoutPromise]);
-             if (shouldReload) return;
-           } catch (e) {
-             console.warn("Startup cloud restore failed:", e);
-           }
-        }
+        console.log('✅ Storage initialiserad - hoppar över Google Drive (använder Supabase nu)');
         setLoadingStatus('Synkroniserar övningsbibliotek...');
         console.log('🔄 db.syncExercises() (max 10s)...');
         try {
