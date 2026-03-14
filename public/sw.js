@@ -1,11 +1,9 @@
 // Service Worker för Gymapp PWA
-const CACHE_NAME = 'gymapp-v2';
-const RUNTIME_CACHE = 'gymapp-runtime-v2';
+const CACHE_NAME = 'gymapp-v3';
+const RUNTIME_CACHE = 'gymapp-runtime-v3';
 
-// Resurser att cache:a direkt vid installation
+// Resurser att cache:a direkt vid installation (endast filer som garanterat finns)
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
   '/manifest.json'
 ];
 
@@ -16,7 +14,9 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Service Worker: Precaching app shell');
-        return cache.addAll(PRECACHE_URLS);
+        return cache.addAll(PRECACHE_URLS).catch(err => {
+          console.warn('Service Worker: Precache misslyckades (fortsätter ändå)', err);
+        });
       })
       .then(() => self.skipWaiting())
   );
