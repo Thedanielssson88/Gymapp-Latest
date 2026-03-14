@@ -283,7 +283,7 @@ export default function App() {
         try {
           const refreshPromise = refreshData();
           const refreshTimeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('refreshData timeout (onAuthStateChange) efter 15s')), 15000)
+            setTimeout(() => reject(new Error('refreshData timeout (onAuthStateChange) efter 30s')), 30000)
           );
           await Promise.race([refreshPromise, refreshTimeout]);
         } catch (refreshError) {
@@ -329,7 +329,7 @@ export default function App() {
         try {
           const refreshPromise = refreshData();
           const refreshTimeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('refreshData timeout efter 15s')), 15000)
+            setTimeout(() => reject(new Error('refreshData timeout efter 30s')), 30000)
           );
           await Promise.race([refreshPromise, refreshTimeout]);
           console.log('✅ refreshData klar!');
