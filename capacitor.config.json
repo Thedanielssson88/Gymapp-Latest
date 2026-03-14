@@ -1,0 +1,8 @@
+{
+  "appId": "com.thedanielssson88.morphfit",
+  "appName": "MorphFit",
+  "webDir": "dist",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto"
+  }
+}

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>MorphFit - Hybrid Athlete Performance</title>
+  
+  <!-- Android & PWA Meta -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f0d15">
+  <link rel="manifest" href="manifest.json">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #0f0d15;
+      --card-bg: #1a1721;
+      --accent-pink: #ff2d55;
+      --accent-blue: #3b82f6;
+      --accent-green: #2ed573;
+      --text-dim: #8e8c95;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-deep);
+      color: #ffffff;
+      overflow-x: hidden;
+      /* Förhindra "pull-to-refresh" i webbview */
+      overscroll-behavior-y: contain;
+      /* Förhindra textmarkering vid touch-interaktion */
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .morph-glass {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .accent-gradient {
+      background: linear-gradient(135deg, var(--accent-pink) 0%, #ff5e7e 100%);
+    }
+    .hexagon {
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    
+    /* Justering för mobil-safe-area (hack för notch) */
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .shadow-glow {
+      box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.4), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+  </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "dexie": "https://esm.sh/dexie@^4.0.7",
+    "dexie/": "https://esm.sh/dexie@^4.0.7/",
+    "@capacitor/status-bar": "https://esm.sh/@capacitor/status-bar@^6.0.0",
+    "@capacitor/core": "https://esm.sh/@capacitor/core@^6.0.0",
+    "@capacitor/app": "https://esm.sh/@capacitor/app@^6.0.0",
+    "@capacitor/haptics": "https://esm.sh/@capacitor/haptics@^6.0.0",
+    "@capacitor/filesystem": "https://esm.sh/@capacitor/filesystem@^6.0.0",
+    "@capacitor/share": "https://esm.sh/@capacitor/share@^6.0.0",
+    "@capacitor/cli": "https://esm.sh/@capacitor/cli@^6.0.0",
+    "date-fns": "https://esm.sh/date-fns@^3.6.0",
+    "date-fns/": "https://esm.sh/date-fns@^3.6.0/",
+    "@capgo/capacitor-social-login": "https://esm.sh/@capgo/capacitor-social-login@^8.3.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

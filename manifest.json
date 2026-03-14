@@ -1,0 +1,22 @@
+{
+  "short_name": "MorphFit",
+  "name": "MorphFit - Hybrid Performance",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/identicon/svg?seed=morphfit&backgroundColor=ff2d55",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/identicon/svg?seed=morphfit&backgroundColor=ff2d55",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0f0d15",
+  "background_color": "#0f0d15",
+  "orientation": "portrait"
+}

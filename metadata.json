@@ -1,0 +1,7 @@
+{
+  "name": "MorphFit",
+  "description": "An AI-powered hybrid fitness app that intelligently swaps exercises based on your current environment (Gym, Home, Travel) while maintaining biomechanical goals.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
