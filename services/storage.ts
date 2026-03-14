@@ -16,8 +16,11 @@ export const setCachedSession = (session: any) => {
 
 // Hjälpfunktion för att hämta användare SNABBT (använder memory-cache ELLER localStorage)
 const getCurrentUser = () => {
+  console.log('🔍 getCurrentUser: cachedSession =', cachedSession);
+
   // 1. Försök memory-cache först
   if (cachedSession?.user) {
+    console.log('✅ getCurrentUser: Hittat i memory-cache');
     return cachedSession.user;
   }
 
@@ -25,18 +28,23 @@ const getCurrentUser = () => {
   try {
     // Rätt nyckel baserat på Supabase URL: maviagpzwdjywatckgii
     const item = localStorage.getItem('sb-maviagpzwdjywatckgii-auth-token');
+    console.log('🔍 getCurrentUser: localStorage item =', item ? 'FINNS' : 'NULL');
     if (item) {
-      const { currentSession } = JSON.parse(item);
+      const parsed = JSON.parse(item);
+      console.log('🔍 getCurrentUser: parsed =', parsed);
+      const { currentSession } = parsed;
       if (currentSession?.user) {
+        console.log('✅ getCurrentUser: Hittat i localStorage');
         // Uppdatera memory-cache för framtida anrop
         cachedSession = currentSession;
         return currentSession.user;
       }
     }
   } catch (e) {
-    console.warn('Kunde inte läsa session från localStorage:', e);
+    console.warn('❌ getCurrentUser: Kunde inte läsa session från localStorage:', e);
   }
 
+  console.warn('⚠️ getCurrentUser: Returnerar NULL!');
   return null;
 };
 
