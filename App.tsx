@@ -279,8 +279,12 @@ export default function App() {
       setSession(session);
       setCachedSession(session); // Uppdatera memory-cache för snabb access!
 
-      // VIKTIGT: Kör INTE refreshData här! Det körs redan i initApp()
-      // Detta förhindrar dubbel-laddning vid refresh
+      // Om användaren precis loggat in (SIGNED_IN), ladda om data
+      // Detta är viktigt för Incognito mode där appen startar INNAN inloggning
+      if (_event === 'SIGNED_IN' && session?.user) {
+        console.log('✅ SIGNED_IN event - laddar om data efter inloggning');
+        await refreshData();
+      }
     });
 
     return () => subscription.unsubscribe();
