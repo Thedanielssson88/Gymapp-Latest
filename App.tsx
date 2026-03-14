@@ -258,8 +258,10 @@ export default function App() {
   useEffect(() => {
     // 1. Kolla om vi redan har en session när appen startar
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('🔐 getSession() returnerade:', session ? `SESSION FINNS (user: ${session.user?.id})` : 'SESSION NULL');
       setSession(session);
       setCachedSession(session); // Sätt memory-cache direkt!
+      console.log('✅ setCachedSession() anropad');
 
       // 2. Om användaren är inloggad, kolla om migrering behövs INNAN vi laddar data
       if (session?.user) {
@@ -267,6 +269,7 @@ export default function App() {
         await autoMigrateOnStartup();
       }
 
+      console.log('✅ setIsInitializingAuth(false) - Auth klar, initApp kan köra nu!');
       setIsInitializingAuth(false);
     });
 
