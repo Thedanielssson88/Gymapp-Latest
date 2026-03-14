@@ -73,6 +73,14 @@ export default function App() {
       min-height: 100vh;
       box-sizing: border-box;
       background-color: #0f0d15;
+      /* Inaktivera pull-to-refresh på mobila enheter */
+      overscroll-behavior-y: contain;
+    }
+
+    /* Inaktivera pull-to-refresh specifikt för vissa webkit-browsers (Safari, Chrome iOS) */
+    html, body {
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
 
     .fixed-bottom-nav {
