@@ -282,7 +282,15 @@ export default function App() {
           await Promise.race([refreshPromise, refreshTimeout]);
           console.log('✅ refreshData klar!');
         } catch (refreshError) {
-          console.error('⚠️ refreshData misslyckades, fortsätter ändå:', refreshError);
+          console.error('⚠️ refreshData misslyckades, sätter default-user:', refreshError);
+          // Sätt en minimal user så att appen kan starta
+          setUser({
+            id: session?.user?.id || 'temp',
+            name: session?.user?.email?.split('@')[0] || 'Användare',
+            email: session?.user?.email || '',
+            settings: {},
+            createdAt: new Date().toISOString()
+          } as any);
         }
         const activeSess = await storage.getActiveSession();
         if (activeSess) setActiveTab('workout');
