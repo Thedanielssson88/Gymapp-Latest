@@ -178,11 +178,10 @@ export default function App() {
       storage.getUserMissions() 
     ]);
 
-    if (z.length === 0 || p.name === "Atlet") {
-       setShowOnboarding(true);
-    } else {
-       setShowOnboarding(false);
-    }
+    // Visa onboarding endast om BÅDE zones saknas OCH profilen är default
+    // Detta förhindrar onboarding vid tillfälliga laddningsproblem
+    const isNewUser = z.length === 0 && p.name === "Atlet" && h.length === 0;
+    setShowOnboarding(isNewUser);
 
     setUser(p);
     setZones(z);
@@ -214,23 +213,28 @@ export default function App() {
     // 1. Kolla om vi redan har en session när appen startar
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      setIsInitializingAuth(false);
 
-      // 2. Om användaren är inloggad, kolla om migrering behövs
+      // 2. Om användaren är inloggad, kolla om migrering behövs INNAN vi laddar data
       if (session?.user) {
+        setLoadingStatus('Kontrollerar datamigrering...');
         const { autoMigrateOnStartup } = await import('./services/migrateToSupabase');
         await autoMigrateOnStartup();
       }
+
+      setIsInitializingAuth(false);
     });
 
     // 3. Lyssna på inloggningar/utloggningar i realtid
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
 
-      // Om användaren precis loggat in, kolla migrering
+      // Om användaren precis loggat in, kolla migrering och ladda om data
       if (_event === 'SIGNED_IN' && session?.user) {
+        setLoadingStatus('Kontrollerar datamigrering...');
         const { autoMigrateOnStartup } = await import('./services/migrateToSupabase');
         await autoMigrateOnStartup();
+        // Ladda om data efter migrering
+        await refreshData();
       }
     });
 
