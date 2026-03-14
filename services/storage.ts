@@ -5,9 +5,16 @@ import { DEFAULT_PROFILE } from '../constants';
 const ACTIVE_SESSION_KEY = 'morphfit_active_session';
 const LOCAL_API_KEY_STORAGE = 'morphfit_gemini_api_key';
 
+// VIKTIGT: Hjälpfunktion för att hämta användare SNABBT (cached)
+// Använd ALLTID detta istället för supabase.auth.getUser() som tar 15+ sekunder!
+const getCurrentUser = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user || null;
+};
+
 // Hjälpfunktioner för objekt till databas-rader
 const snakeToCamel = (obj: any) => {
-  // Beroende på din exakta setup med Supabase kan du behöva mappa 
+  // Beroende på din exakta setup med Supabase kan du behöva mappa
   // snake_case från SQL tillbaka till camelCase om du inte använder camelCase i databasen.
   // Med strukturen ovan stämmer namnen väl överens, men håll ett öga på camelCase-namn.
   return obj;
@@ -28,9 +35,9 @@ export const storage = {
 
   // --- PROFIL ---
   getUserProfile: async (): Promise<UserProfile> => {
-    // 1. Hämta den aktuella inloggade användaren från Supabase Auth
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    // 1. Hämta den aktuella inloggade användaren (SNABB cached version)
+    const user = await getCurrentUser();
+
     // Om ingen är inloggad, returnera default
     if (!user) {
       return { id: 'current', ...DEFAULT_PROFILE };
@@ -54,8 +61,8 @@ export const storage = {
   },
 
   setUserProfile: async (profile: UserProfile) => {
-    // 1. Hämta den inloggade användaren
-    const { data: { user } } = await supabase.auth.getUser();
+    // 1. Hämta den inloggade användaren (SNABB cached version)
+    const user = await getCurrentUser();
     if (!user) {
       console.error("Ingen användare är inloggad!");
       return;
@@ -104,7 +111,7 @@ export const storage = {
     return data || [];
   },
   saveZone: async (zone: Zone) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return;
 
     const { error } = await supabase.from('zones').upsert({ ...zone, user_id: user.id });
@@ -122,7 +129,7 @@ export const storage = {
     return data || [];
   },
   saveToHistory: async (session: WorkoutSession) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
       console.error("Ingen användare är inloggad!");
       return;
@@ -158,7 +165,7 @@ export const storage = {
   // --- EXERCISES ---
   getAllExercises: async (): Promise<Exercise[]> => {
     // Hämta både publika bas-övningar och användarens egna övningar
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       // Om ingen är inloggad, hämta bara publika övningar
@@ -178,7 +185,7 @@ export const storage = {
     return exercises || [];
   },
   saveExercise: async (exercise: Exercise) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return;
 
     // Admin can save public exercises without user_id, others save with user_id
@@ -291,7 +298,7 @@ export const storage = {
 
   // Missions
   getUserMissions: async (): Promise<UserMission[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
       console.log("No user logged in, returning empty missions");
       return [];
@@ -327,7 +334,7 @@ export const storage = {
     return missions;
   },
   addUserMission: async (mission: UserMission) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
       console.error("Ingen användare är inloggad!");
       return;
