@@ -72,11 +72,20 @@ export const storage = {
   // --- PROFIL ---
   getUserProfile: async (): Promise<UserProfile> => {
     // 1. Hämta den aktuella inloggade användaren (SNABB cached version)
-    const user = getCurrentUser();
+    let user = getCurrentUser();
 
-    // Om ingen är inloggad, returnera default
+    // Om ingen är inloggad, försök hämta från Supabase direkt (fallback)
     if (!user) {
-      return { id: 'current', ...DEFAULT_PROFILE };
+      console.warn('⚠️ getCurrentUser() returnerade null, hämtar session från Supabase direkt...');
+      const { data: { session } } = await supabase.auth.getSession();
+      user = session?.user || null;
+
+      if (!user) {
+        console.warn('⚠️ Ingen session från Supabase heller, returnerar DEFAULT_PROFILE');
+        return { id: 'current', ...DEFAULT_PROFILE };
+      }
+
+      console.log('✅ Hittade user från Supabase getSession():', user.id);
     }
 
     // 2. Försök hämta från localStorage-cache FÖRST (instant!)
