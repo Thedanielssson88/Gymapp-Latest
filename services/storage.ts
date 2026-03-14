@@ -63,7 +63,7 @@ export const storage = {
   // --- PROFIL ---
   getUserProfile: async (): Promise<UserProfile> => {
     // 1. Hämta den aktuella inloggade användaren (SNABB cached version)
-    const user = await getCurrentUser();
+    const user = getCurrentUser();
 
     // Om ingen är inloggad, returnera default
     if (!user) {
@@ -71,7 +71,10 @@ export const storage = {
     }
 
     // 2. Leta efter profilen med användarens unika ID istället för 'current'
+    console.log(`⏱️ getUserProfile: Hämtar profil för user ${user.id}`);
+    const startTime = performance.now();
     const { data, error } = await supabase.from('user_profiles').select('*').eq('id', user.id).single();
+    console.log(`⏱️ getUserProfile: Supabase query tog ${Math.round(performance.now() - startTime)}ms`);
     
     let profile = data as UserProfile | null;
     if (!profile || error) {
