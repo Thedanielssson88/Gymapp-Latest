@@ -243,8 +243,24 @@ export default function App() {
       if (_event === 'SIGNED_IN' && session?.user) {
         setLoadingStatus('Kontrollerar datamigrering...');
         await autoMigrateOnStartup();
-        // Ladda om data efter migrering
-        await refreshData();
+        // Ladda om data efter migrering (MED TIMEOUT!)
+        try {
+          const refreshPromise = refreshData();
+          const refreshTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('refreshData timeout (onAuthStateChange) efter 15s')), 15000)
+          );
+          await Promise.race([refreshPromise, refreshTimeout]);
+        } catch (refreshError) {
+          console.error('⚠️ refreshData misslyckades i onAuthStateChange, sätter default-user:', refreshError);
+          // Sätt en minimal user så att appen kan starta
+          setUser({
+            id: session?.user?.id || 'temp',
+            name: session?.user?.email?.split('@')[0] || 'Användare',
+            email: session?.user?.email || '',
+            settings: {},
+            createdAt: new Date().toISOString()
+          } as any);
+        }
       }
     });
 
