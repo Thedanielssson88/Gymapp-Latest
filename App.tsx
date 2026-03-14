@@ -168,21 +168,55 @@ export default function App() {
 
   const refreshData = async () => {
     console.log('📥 refreshData - Hämtar alla data från Supabase...');
+    const startTime = performance.now();
     try {
-      const [p, z, h, logs, sess, ex, gt, r, scheduled, recurring, missions] = await Promise.all([
-        storage.getUserProfile(),
-        storage.getZones(),
-        storage.getHistory(),
-        storage.getBiometricLogs(),
-        storage.getActiveSession(),
-        storage.getAllExercises(),
-        storage.getGoalTargets(),
-        storage.getRoutines(),
-        storage.getScheduledActivities(),
-        storage.getRecurringPlans(),
-        storage.getUserMissions()
-      ]);
+      // Kör queries sekventiellt med timing för att identifiera långsamma
+      const t1 = performance.now();
+      const p = await storage.getUserProfile();
+      console.log(`⏱️ getUserProfile: ${Math.round(performance.now() - t1)}ms`);
 
+      const t2 = performance.now();
+      const z = await storage.getZones();
+      console.log(`⏱️ getZones: ${Math.round(performance.now() - t2)}ms`);
+
+      const t3 = performance.now();
+      const h = await storage.getHistory();
+      console.log(`⏱️ getHistory: ${Math.round(performance.now() - t3)}ms`);
+
+      const t4 = performance.now();
+      const logs = await storage.getBiometricLogs();
+      console.log(`⏱️ getBiometricLogs: ${Math.round(performance.now() - t4)}ms`);
+
+      const t5 = performance.now();
+      const sess = await storage.getActiveSession();
+      console.log(`⏱️ getActiveSession: ${Math.round(performance.now() - t5)}ms`);
+
+      const t6 = performance.now();
+      const ex = await storage.getAllExercises();
+      console.log(`⏱️ getAllExercises: ${Math.round(performance.now() - t6)}ms`);
+
+      const t7 = performance.now();
+      const gt = await storage.getGoalTargets();
+      console.log(`⏱️ getGoalTargets: ${Math.round(performance.now() - t7)}ms`);
+
+      const t8 = performance.now();
+      const r = await storage.getRoutines();
+      console.log(`⏱️ getRoutines: ${Math.round(performance.now() - t8)}ms`);
+
+      const t9 = performance.now();
+      const scheduled = await storage.getScheduledActivities();
+      console.log(`⏱️ getScheduledActivities: ${Math.round(performance.now() - t9)}ms`);
+
+      const t10 = performance.now();
+      const recurring = await storage.getRecurringPlans();
+      console.log(`⏱️ getRecurringPlans: ${Math.round(performance.now() - t10)}ms`);
+
+      const t11 = performance.now();
+      const missions = await storage.getUserMissions();
+      console.log(`⏱️ getUserMissions: ${Math.round(performance.now() - t11)}ms`);
+
+      const totalTime = performance.now() - startTime;
+      console.log(`⏱️ refreshData TOTALT: ${Math.round(totalTime)}ms`);
       console.log('🔍 refreshData - Profil:', p);
       console.log('🔍 refreshData - Zoner:', z.length);
 
