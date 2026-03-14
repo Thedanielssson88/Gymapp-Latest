@@ -78,7 +78,7 @@ export const storage = {
         const cachedProfile = JSON.parse(cached);
         // Verifiera att det är rätt användare
         if (cachedProfile.id === user.id) {
-          console.log(`⚡ getUserProfile: Använder cached profil (instant!)`);
+          console.log(`⚡ getUserProfile: Använder cached profil (instant!)`, cachedProfile);
           // Tryck in API-nyckeln från LocalStorage
           const localApiKey = storage.getLocalApiKey();
           if (localApiKey) {
@@ -88,6 +88,7 @@ export const storage = {
           // Hämta från Supabase i bakgrunden (för att uppdatera cache)
           supabase.from('user_profiles').select('*').eq('id', user.id).single().then(({ data }) => {
             if (data) {
+              console.log('✅ Uppdaterade cached profil från Supabase:', data);
               localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(data));
             }
           });
