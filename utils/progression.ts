@@ -132,10 +132,13 @@ export const calculatePPLStats = (history: WorkoutSession[], allExercises: Exerc
       if (!def) return;
 
       let category: 'push' | 'pull' | 'legs' | null = null;
-      
-      if (def.primaryMuscles.some(m => MUSCLE_CATS.legs.includes(m))) category = 'legs';
-      else if (def.primaryMuscles.some(m => MUSCLE_CATS.pull.includes(m))) category = 'pull';
-      else if (def.primaryMuscles.some(m => MUSCLE_CATS.push.includes(m))) category = 'push';
+
+      // Safety check: ensure primaryMuscles is an array
+      const primaryMuscles = Array.isArray(def.primaryMuscles) ? def.primaryMuscles : [];
+
+      if (primaryMuscles.some(m => MUSCLE_CATS.legs.includes(m))) category = 'legs';
+      else if (primaryMuscles.some(m => MUSCLE_CATS.pull.includes(m))) category = 'pull';
+      else if (primaryMuscles.some(m => MUSCLE_CATS.push.includes(m))) category = 'push';
 
       if (category) {
         sessionEx.sets.forEach(set => {
@@ -210,9 +213,9 @@ interface ProgressionResult {
 export const getHistoryForGoal = (config: SmartGoalConfig, historyLogs: WorkoutSession[], bioLogs: BiometricLog[]) => {
   if (config.targetType === 'exercise' && config.exerciseId) {
     return historyLogs
-      .filter(h => h.exercises && h.exercises.some((e: PlannedExercise) => e.exerciseId === config.exerciseId))
+      .filter(h => Array.isArray(h.exercises) && h.exercises.some((e: PlannedExercise) => e.exerciseId === config.exerciseId))
       .map(h => {
-        const ex = h.exercises.find((e: PlannedExercise) => e.exerciseId === config.exerciseId);
+        const ex = Array.isArray(h.exercises) ? h.exercises.find((e: PlannedExercise) => e.exerciseId === config.exerciseId) : null;
         const maxWeight = ex && ex.sets ? Math.max(...ex.sets.map((s: any) => s.weight || 0)) : 0;
         return { date: h.date, value: maxWeight };
       })

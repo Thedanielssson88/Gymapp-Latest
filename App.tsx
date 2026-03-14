@@ -330,7 +330,8 @@ export default function App() {
       await storage.saveToHistory(historySession);
 
       if (session.sourceActivityId) {
-        await db.scheduledActivities.update(session.sourceActivityId, {
+        // Update scheduled activity in Supabase (not local db)
+        await storage.updateScheduledActivity(session.sourceActivityId, {
           isCompleted: true,
           linkedSessionId: historySession.id
         });
@@ -470,15 +471,28 @@ export default function App() {
 
   const handleMovePlan = async (id: string, newDate: string) => {
     try {
-      const plan = await db.scheduledActivities.get(id);
-      if (plan) {
-        await db.scheduledActivities.update(id, { date: newDate });
-        await refreshData();
-      }
-    } catch (error) { console.error("Could not move plan:", error); }
+      console.log("Moving plan to new date:", id, newDate);
+      await storage.updateScheduledActivity(id, { date: newDate });
+      await refreshData();
+      console.log("Plan moved successfully!");
+    } catch (error) {
+      console.error("Could not move plan:", error);
+      alert("Kunde inte flytta passet: " + (error as Error).message);
+    }
   };
 
-  const handleAddMission = async (mission: UserMission) => { await storage.addUserMission(mission); await refreshData(); };
+  const handleAddMission = async (mission: UserMission) => {
+    console.log("handleAddMission called with:", mission);
+    try {
+      await storage.addUserMission(mission);
+      console.log("Mission added successfully, refreshing data...");
+      await refreshData();
+      console.log("Data refreshed!");
+    } catch (error) {
+      console.error("Failed to add mission:", error);
+      alert("Kunde inte spara uppdraget: " + (error as Error).message);
+    }
+  };
   const handleDeleteMission = async (id: string) => { if (confirm("Are you sure you want to delete this mission?")) { await storage.deleteUserMission(id); await refreshData(); } };
   const handleGoToExercise = (exerciseId: string) => { setTargetExerciseId(exerciseId); navigateToTab('library'); };
 
@@ -554,15 +568,36 @@ export default function App() {
           <ZonePickerModal onClose={() => setShowZonePicker(false)} zones={zones} plannedExercises={pendingActivity.exercises || []} allExercises={allExercises} onSelect={handleFinalizeSessionStart} />
       )}
       {!isWorkoutActive && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 px-6 pt-4 bg-gradient-to-t from-[#0f0d15] via-[#0f0d15] to-transparent fixed-bottom-nav">
-          <div className="max-w-md mx-auto flex gap-1 items-center bg-[#1a1721]/80 backdrop-blur-xl border border-white/10 p-2 rounded-[32px] shadow-2xl overflow-x-auto scrollbar-hide">
-            <button onClick={() => navigateToTab('workout', { fromNav: true })} className={`flex-shrink-0 px-5 flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${activeTab === 'workout' ? 'bg-white text-black' : 'text-text-dim'}`}><Dumbbell size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Träning</span></button>
-            <button onClick={() => navigateToTab('gyms', { fromNav: true })} className={`flex-shrink-0 px-5 flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${activeTab === 'gyms' ? 'bg-white text-black' : 'text-text-dim'}`}><MapPin size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Platser</span></button>
-            <button onClick={() => navigateToTab('body', { fromNav: true })} className={`flex-shrink-0 px-5 flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${activeTab === 'body' ? 'bg-white text-black' : 'text-text-dim'}`}><User2 size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Kropp</span></button>
-            <button onClick={() => navigateToTab('ai', { fromNav: true })} className={`flex-shrink-0 px-5 flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${activeTab === 'ai' ? 'bg-white text-black' : 'text-text-dim'}`}><Sparkles size={20} /><span className="text-[10px] font-black uppercase tracking-widest">AI PT</span></button>
-            <button onClick={() => navigateToTab('targets', { fromNav: true })} className={`flex-shrink-0 px-5 flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${activeTab === 'targets' ? 'bg-white text-black' : 'text-text-dim'}`}><Trophy size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Mål</span></button>
-            <button onClick={() => navigateToTab('library', { fromNav: true })} className={`flex-shrink-0 px-5 flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${activeTab === 'library' ? 'bg-white text-black' : 'text-text-dim'}`}><BookOpen size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Övningar</span></button>
-            <button onClick={() => navigateToTab('log', { fromNav: true })} className={`flex-shrink-0 px-5 flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${activeTab === 'log' ? 'bg-white text-black' : 'text-text-dim'}`}><Calendar size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Logg</span></button>
+        <nav className="fixed bottom-0 left-0 right-0 z-50 px-2 sm:px-6 pt-4 bg-gradient-to-t from-[#0f0d15] via-[#0f0d15] to-transparent fixed-bottom-nav">
+          <div className="max-w-md mx-auto flex w-full justify-between items-center bg-[#1a1721]/80 backdrop-blur-xl border border-white/10 p-2 rounded-[32px] shadow-2xl">
+            <button onClick={() => navigateToTab('workout', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'workout' ? 'bg-white text-black' : 'text-text-dim'}`}>
+              <Dumbbell size={18} />
+              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">Träning</span>
+            </button>
+            <button onClick={() => navigateToTab('gyms', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'gyms' ? 'bg-white text-black' : 'text-text-dim'}`}>
+              <MapPin size={18} />
+              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">Platser</span>
+            </button>
+            <button onClick={() => navigateToTab('body', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'body' ? 'bg-white text-black' : 'text-text-dim'}`}>
+              <User2 size={18} />
+              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">Kropp</span>
+            </button>
+            <button onClick={() => navigateToTab('ai', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'ai' ? 'bg-white text-black' : 'text-text-dim'}`}>
+              <Sparkles size={18} />
+              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">AI PT</span>
+            </button>
+            <button onClick={() => navigateToTab('targets', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'targets' ? 'bg-white text-black' : 'text-text-dim'}`}>
+              <Trophy size={18} />
+              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">Mål</span>
+            </button>
+            <button onClick={() => navigateToTab('library', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'library' ? 'bg-white text-black' : 'text-text-dim'}`}>
+              <BookOpen size={18} />
+              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">Övningar</span>
+            </button>
+            <button onClick={() => navigateToTab('log', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'log' ? 'bg-white text-black' : 'text-text-dim'}`}>
+              <Calendar size={18} />
+              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">Logg</span>
+            </button>
           </div>
         </nav>
       )}

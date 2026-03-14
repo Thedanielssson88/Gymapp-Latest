@@ -4,7 +4,9 @@ import { UserProfile, Goal, UserSettings, MagazineTone } from '../types';
 import { storage, exportExerciseLibrary, importExerciseLibrary } from '../services/storage';
 import { db, exportDatabase, importDatabase } from '../services/db';
 import { uploadBackup, listBackups, downloadBackup } from '../services/googleDrive';
-import { Save, Download, Upload, Smartphone, LayoutList, Map, Thermometer, Dumbbell, Scale, Cloud, RefreshCw, CloudOff, AlertCircle, CheckCircle2, Loader2, Timer, Key, Edit, Users, BarChart, BrainCircuit } from 'lucide-react';
+import { importBaseExercisesToSupabase } from '../services/importBaseExercises';
+import { Save, Download, Upload, Smartphone, LayoutList, Map, Thermometer, Dumbbell, Scale, Cloud, RefreshCw, CloudOff, AlertCircle, CheckCircle2, Loader2, Timer, Key, Edit, Users, BarChart, BrainCircuit, Database } from 'lucide-react';
+import { useToast } from './Toast';
 
 interface SettingsViewProps {
   userProfile: UserProfile;
@@ -17,7 +19,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [syncMessage, setSyncMessage] = useState('');
   const [connectionError, setConnectionError] = useState(false);
+  const [isImportingBase, setIsImportingBase] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast, ToastComponent } = useToast();
 
   const handleSettingChange = (key: keyof UserSettings, value: any) => {
     setLocalProfile(prev => ({
@@ -49,7 +53,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
   const handleSave = async () => {
     await storage.setUserProfile(localProfile);
     onUpdate();
-    alert("Inställningar sparade!");
+    showToast("Inställningar sparade!", "success");
   };
   
   const handleCloudBackup = async () => {
@@ -126,11 +130,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
       // Use the new robust export function in storage service
       const success = await storage.exportFullBackup();
       if (!success) {
-        alert("Kunde inte exportera data.");
+        showToast("Kunde inte exportera data", "error");
+      } else {
+        showToast("Data exporterad!", "success");
       }
     } catch(err) {
       console.error("Export failed:", err);
-      alert("Kunde inte exportera data.");
+      showToast("Kunde inte exportera data", "error");
     }
   };
 
@@ -152,10 +158,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
               throw new Error("Filen verkar inte vara en giltig backup.");
             }
             await importDatabase(data.data);
-            alert("Återställning klar! Appen startas om.");
-            window.location.reload();
+            showToast("Återställning klar! Appen startas om...", "success");
+            setTimeout(() => window.location.reload(), 1500);
         } catch (error) {
-            alert("Kunde inte läsa backup-filen: " + (error as Error).message);
+            showToast("Kunde inte läsa backup-filen: " + (error as Error).message, "error");
             console.error("Import failed:", error);
         } finally {
             if(e.target) e.target.value = '';
@@ -177,18 +183,40 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
 
     try {
       const count = await importExerciseLibrary(file);
-      alert(`Import lyckades! ${count} övningar har lagts till eller uppdaterats.`);
+      showToast(`Import lyckades! ${count} övningar har lagts till eller uppdaterats`, "success");
       onUpdate();
     } catch (err: any) {
-      alert("Ett fel uppstod vid importen: " + err.message);
+      showToast("Ett fel uppstod vid importen: " + err.message, "error");
     }
   };
-  
+
+  const handleImportBaseExercises = async () => {
+    if (!confirm('Detta importerar alla bas-övningar till Supabase. Detta kan ta en stund. Fortsätta?')) {
+      return;
+    }
+
+    setIsImportingBase(true);
+    try {
+      const result = await importBaseExercisesToSupabase();
+      if (result.success) {
+        showToast(`Bas-övningar importerade! ${result.count} övningar har lagts till i databasen`, "success");
+        onUpdate();
+      } else {
+        showToast(`Import misslyckades: ${result.error}`, "error");
+      }
+    } catch (err: any) {
+      showToast(`Ett fel uppstod: ${err.message}`, "error");
+    } finally {
+      setIsImportingBase(false);
+    }
+  };
+
   const currentTone = localProfile.settings?.magazineTone || 'friend';
 
   return (
     <div className="space-y-8 pb-32 px-2 animate-in fade-in">
-      
+      {ToastComponent}
+
       <section className="bg-[#1a1721] p-6 rounded-[32px] border border-white/5 space-y-4">
          <h3 className="text-xl font-black italic uppercase text-white flex items-center gap-2">
             Profil
@@ -229,6 +257,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
       </section>
 
       {/* CLOUD SYNC SECTION */}
+      {userProfile.is_admin && (
       <section className="bg-gradient-to-br from-[#1a1721] to-[#1c1a26] p-6 rounded-[32px] border border-white/10 space-y-6">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
@@ -313,6 +342,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
           )}
         </div>
       </section>
+      )}
 
       {/* AI INSTÄLLNINGAR SEKTION */}
       <section className="bg-[#1a1721] p-6 rounded-[32px] border border-white/5 space-y-6">
@@ -428,6 +458,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
         </div>
       </section>
 
+      {userProfile.is_admin && (
       <section className="bg-[#1a1721] p-6 rounded-[32px] border border-white/5 space-y-4">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 bg-accent-blue/20 rounded-xl flex items-center justify-center text-accent-blue">
@@ -440,31 +471,52 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <button 
+          <button
             onClick={handleExportLibrary}
             className="flex items-center justify-center gap-2 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors"
           >
             <Download size={16} /> Exportera
           </button>
-          
+
           <label className="flex items-center justify-center gap-2 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors cursor-pointer">
             <Upload size={16} /> Importera
             <input type="file" className="hidden" accept=".json" onChange={handleImportLibrary} />
           </label>
         </div>
-      </section>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={handleExport} className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-2">
-          <Download size={20} className="text-accent-blue" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Lokal Backup</span>
+        <button
+          onClick={handleImportBaseExercises}
+          disabled={isImportingBase}
+          className="w-full flex items-center justify-center gap-2 py-4 bg-amber-500/20 border border-amber-500/30 rounded-2xl text-[10px] font-black uppercase tracking-widest text-amber-400 hover:bg-amber-500/30 transition-colors disabled:opacity-50"
+        >
+          {isImportingBase ? (
+            <>
+              <Loader2 size={16} className="animate-spin" /> Importerar...
+            </>
+          ) : (
+            <>
+              <Database size={16} /> Importera Bas-övningar (Admin)
+            </>
+          )}
         </button>
-        <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-2">
-          <Upload size={20} className="text-accent-green" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Lokal Återställning</span>
-        </button>
-      </div>
-      <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
+      </section>
+      )}
+
+      {userProfile.is_admin && (
+      <>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={handleExport} className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-2">
+            <Download size={20} className="text-accent-blue" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Lokal Backup</span>
+          </button>
+          <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-2">
+            <Upload size={20} className="text-accent-green" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Lokal Återställning</span>
+          </button>
+        </div>
+        <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
+      </>
+      )}
 
       <button 
         onClick={handleSave} 

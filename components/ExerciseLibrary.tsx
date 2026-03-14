@@ -10,7 +10,7 @@ import { generateExerciseDetailsFromGemini } from '../services/geminiService';
 import { calculate1RM } from '../utils/fitness';
 import { EquipmentBuilder } from './EquipmentBuilder';
 import { registerBackHandler } from '../utils/backHandler';
-import { Plus, Search, Edit3, Trash2, X, Dumbbell, Save, Activity, Layers, Scale, Link as LinkIcon, Check, ArrowRightLeft, Filter, ChevronDown, Zap, Loader2, TrendingUp, Trophy, Clock, SortAsc, ChevronRight, ThumbsUp, ThumbsDown, Heart, Sparkles } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, X, Dumbbell, Save, Activity, Layers, Scale, Link as LinkIcon, Check, ArrowRightLeft, Filter, ChevronDown, Zap, Loader2, TrendingUp, Trophy, Clock, SortAsc, ChevronRight, ThumbsUp, ThumbsDown, Heart, Sparkles, Shield } from 'lucide-react';
 
 interface ExerciseLibraryProps {
   allExercises: Exercise[];
@@ -51,6 +51,9 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
   const [selectedFilterValue, setSelectedFilterValue] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   useEffect(() => {
     if (initialExerciseId) {
@@ -182,7 +185,78 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
             setExercises(originalExercises);
         }
     }
-  }
+  };
+
+  const handleBulkAIUpdate = async () => {
+    if (selectedExercises.size === 0) return;
+
+    if (!confirm(`Är du säker på att du vill uppdatera ${selectedExercises.size} övningar med AI?\n\nDetta tar ca ${selectedExercises.size * 3} sekunder (2 sek delay mellan varje för att undvika rate limits).`)) {
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    const exercisesToUpdate = exercises.filter(ex => selectedExercises.has(ex.id));
+    let successCount = 0;
+    let failCount = 0;
+    const failedExercises: string[] = [];
+
+    for (let i = 0; i < exercisesToUpdate.length; i++) {
+      const exercise = exercisesToUpdate[i];
+      try {
+        console.log(`[${i + 1}/${exercisesToUpdate.length}] Uppdaterar ${exercise.name} med AI...`);
+        const aiData = await generateExerciseDetailsFromGemini(exercise.name, exercises);
+
+        if (aiData) {
+          const updatedExercise = {
+            ...exercise,
+            ...aiData,
+            userModified: true,
+            lastUpdated: new Date().toISOString()
+          };
+
+          await storage.saveExercise(updatedExercise);
+          setExercises(prev => prev.map(ex => ex.id === exercise.id ? updatedExercise : ex));
+          successCount++;
+          console.log(`✅ ${exercise.name} uppdaterad!`);
+        } else {
+          failCount++;
+          failedExercises.push(exercise.name);
+        }
+
+        // Delay between requests to avoid rate limiting (wait 2 seconds between each)
+        if (i < exercisesToUpdate.length - 1) {
+          console.log('Väntar 2 sekunder innan nästa...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`❌ Fel vid uppdatering av ${exercise.name}:`, error);
+        failCount++;
+        failedExercises.push(exercise.name);
+      }
+    }
+
+    setIsBulkUpdating(false);
+    setIsMultiSelectMode(false);
+    setSelectedExercises(new Set());
+    onUpdate();
+
+    const message = `Bulk AI-uppdatering klar!\n\n✅ ${successCount} övningar uppdaterade\n❌ ${failCount} misslyckades${
+      failedExercises.length > 0 ? `\n\nMisslyckade:\n${failedExercises.join('\n')}` : ''
+    }`;
+    alert(message);
+  };
+
+  const toggleExerciseSelection = (id: string) => {
+    setSelectedExercises(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   const FilterPills = ({ items }: { items: string[] }) => (
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -201,14 +275,58 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
         </div>
         {(isSelectorMode || editingExercise) ? (<button onClick={() => { if (editingExercise) setEditingExercise(null); if (onClose) onClose(); }} className="p-4 bg-white/5 border border-white/5 text-white rounded-2xl"><X size={24} /></button>) : (
           <div className="flex gap-2">
-            <button 
-              onClick={() => setShowAIScout(true)}
-              className="p-4 bg-accent-blue/20 border border-accent-blue/30 text-accent-blue rounded-2xl flex items-center gap-2"
-            >
-              <Sparkles size={24} />
-              <span className="text-[10px] font-black uppercase">Scout</span>
-            </button>
-            <button onClick={() => setEditingExercise({ id: `custom-${Date.now()}`, name: '', pattern: MovementPattern.ISOLATION, tier: 'tier_3', muscleGroups: [], primaryMuscles: [], secondaryMuscles: [], equipment: [], difficultyMultiplier: 1.0, bodyweightCoefficient: 0, trackingType: 'reps_weight', userModified: true, alternativeExIds: [], equipmentRequirements: [] })} className="p-4 bg-accent-pink text-white rounded-2xl"><Plus size={24} strokeWidth={3} /></button>
+            {userProfile?.is_admin && !isMultiSelectMode && (
+              <button
+                onClick={() => {
+                  setIsMultiSelectMode(true);
+                  setSelectedExercises(new Set());
+                }}
+                className="p-4 bg-amber-500/20 border border-amber-500/30 rounded-2xl flex items-center gap-2"
+                title="Multi-select mode"
+              >
+                <Shield size={20} className="text-amber-400" />
+                <span className="text-[10px] font-black uppercase text-amber-400">Bulk</span>
+              </button>
+            )}
+            {isMultiSelectMode && (
+              <>
+                <button
+                  onClick={() => {
+                    setIsMultiSelectMode(false);
+                    setSelectedExercises(new Set());
+                  }}
+                  className="p-4 bg-white/10 border border-white/20 text-white rounded-2xl"
+                >
+                  <X size={20} />
+                </button>
+                <button
+                  onClick={handleBulkAIUpdate}
+                  disabled={selectedExercises.size === 0 || isBulkUpdating}
+                  className={`p-4 rounded-2xl flex items-center gap-2 transition-all ${
+                    selectedExercises.size > 0 && !isBulkUpdating
+                      ? 'bg-accent-blue/20 border border-accent-blue/30 text-accent-blue'
+                      : 'bg-white/5 border border-white/10 text-text-dim opacity-50'
+                  }`}
+                >
+                  {isBulkUpdating ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
+                  <span className="text-[10px] font-black uppercase">
+                    {isBulkUpdating ? 'Uppdaterar...' : `AI (${selectedExercises.size})`}
+                  </span>
+                </button>
+              </>
+            )}
+            {!isMultiSelectMode && (
+              <>
+                <button
+                  onClick={() => setShowAIScout(true)}
+                  className="p-4 bg-accent-blue/20 border border-accent-blue/30 text-accent-blue rounded-2xl flex items-center gap-2"
+                >
+                  <Sparkles size={24} />
+                  <span className="text-[10px] font-black uppercase">Scout</span>
+                </button>
+                <button onClick={() => setEditingExercise({ id: `custom-${Date.now()}`, name: '', pattern: MovementPattern.ISOLATION, tier: 'tier_3', muscleGroups: [], primaryMuscles: [], secondaryMuscles: [], equipment: [], difficultyMultiplier: 1.0, bodyweightCoefficient: 0, trackingType: 'reps_weight', userModified: true, alternativeExIds: [], equipmentRequirements: [] })} className="p-4 bg-accent-pink text-white rounded-2xl"><Plus size={24} strokeWidth={3} /></button>
+              </>
+            )}
           </div>
         )}
       </header>
@@ -229,7 +347,90 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
       </div>
 
       <div ref={listRef} className="grid grid-cols-1 gap-3 flex-1 overflow-y-auto scrollbar-hide pt-2 pb-20">
-        {visibleExercises.map(ex => (<div key={ex.id} onClick={() => { if (isSelectorMode && onSelect) onSelect(ex); else setEditingExercise(ex); }} className={`bg-[#1a1721] p-4 rounded-[28px] border flex items-center justify-between group animate-in fade-in slide-in-from-bottom-2 transition-colors cursor-pointer ${getLastUsed(ex.id) > 0 && sortBy === 'recent' ? 'border-accent-pink/20' : 'border-white/5 hover:border-white/10'}`}><div className="flex items-center gap-4 overflow-hidden flex-1"><ExerciseImage exercise={ex} /><div className="min-w-0"><h3 className="text-base font-black italic uppercase truncate text-white">{ex.name}</h3><p className="text-[10px] text-text-dim uppercase tracking-widest truncate mt-1">{ex.primaryMuscles?.join(', ') || ex.pattern}</p></div></div>{isSelectorMode && onSelect ? (<div className="p-3 bg-accent-pink rounded-xl text-white active:scale-90 transition-transform"><Plus size={18} /></div>) : (<div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}><button onClick={() => handleRate(ex, 'up')} className={`p-3 rounded-xl transition-all ${ex.userRating === 'up' ? 'bg-green-500/20 text-green-500' : 'bg-white/10 text-text-dim'}`}><ThumbsUp size={16} fill={ex.userRating === 'up' ? "currentColor" : "none"}/></button><button onClick={() => handleRate(ex, 'down')} className={`p-3 rounded-xl transition-all ${ex.userRating === 'down' ? 'bg-red-500/20 text-red-500' : 'bg-white/10 text-text-dim'}`}><ThumbsDown size={16} fill={ex.userRating === 'down' ? "currentColor" : "none"}/></button></div>)}</div>))}
+        {visibleExercises.map(ex => {
+          const isUpdatedToday = ex.lastUpdated && new Date(ex.lastUpdated).toDateString() === new Date().toDateString();
+          const formattedDate = ex.lastUpdated
+            ? new Date(ex.lastUpdated).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' })
+            : 'Aldrig uppdaterad';
+
+          return (
+          <div
+            key={ex.id}
+            onClick={() => {
+              if (isMultiSelectMode) {
+                toggleExerciseSelection(ex.id);
+              } else if (isSelectorMode && onSelect) {
+                onSelect(ex);
+              } else {
+                setEditingExercise(ex);
+              }
+            }}
+            className={`p-4 rounded-[28px] border flex items-center justify-between group animate-in fade-in slide-in-from-bottom-2 transition-colors cursor-pointer ${
+              isMultiSelectMode && isUpdatedToday
+                ? 'bg-green-500/20 border-green-500/50'
+                : isMultiSelectMode && selectedExercises.has(ex.id)
+                ? 'border-accent-blue bg-accent-blue/10'
+                : isMultiSelectMode
+                ? 'bg-[#1a1721] border-white/5 hover:border-white/10'
+                : getLastUsed(ex.id) > 0 && sortBy === 'recent'
+                ? 'bg-[#1a1721] border-accent-pink/20'
+                : 'bg-[#1a1721] border-white/5 hover:border-white/10'
+            }`}
+          >
+            <div className="flex items-center gap-4 overflow-hidden flex-1">
+              {isMultiSelectMode && (
+                <div
+                  className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                    selectedExercises.has(ex.id)
+                      ? 'bg-accent-blue border-accent-blue'
+                      : 'border-white/30'
+                  }`}
+                >
+                  {selectedExercises.has(ex.id) && <Check size={16} className="text-white" strokeWidth={3} />}
+                </div>
+              )}
+              <ExerciseImage exercise={ex} />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-black italic uppercase truncate text-white">{ex.name}</h3>
+                <p className="text-[10px] text-text-dim uppercase tracking-widest truncate mt-1">
+                  {ex.primaryMuscles?.join(', ') || ex.pattern}
+                </p>
+                {isMultiSelectMode && (
+                  <p className={`text-[9px] font-bold uppercase tracking-wide mt-1 ${isUpdatedToday ? 'text-green-400' : 'text-text-dim'}`}>
+                    {isUpdatedToday && '✅ '}Upd: {formattedDate}
+                  </p>
+                )}
+              </div>
+            </div>
+            {!isMultiSelectMode && (
+              isSelectorMode && onSelect ? (
+                <div className="p-3 bg-accent-pink rounded-xl text-white active:scale-90 transition-transform">
+                  <Plus size={18} />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => handleRate(ex, 'up')}
+                    className={`p-3 rounded-xl transition-all ${
+                      ex.userRating === 'up' ? 'bg-green-500/20 text-green-500' : 'bg-white/10 text-text-dim'
+                    }`}
+                  >
+                    <ThumbsUp size={16} fill={ex.userRating === 'up' ? "currentColor" : "none"}/>
+                  </button>
+                  <button
+                    onClick={() => handleRate(ex, 'down')}
+                    className={`p-3 rounded-xl transition-all ${
+                      ex.userRating === 'down' ? 'bg-red-500/20 text-red-500' : 'bg-white/10 text-text-dim'
+                    }`}
+                  >
+                    <ThumbsDown size={16} fill={ex.userRating === 'down' ? "currentColor" : "none"}/>
+                  </button>
+                </div>
+              )
+            )}
+          </div>
+        );
+        })}
         {filteredExercises.length > displayCount && (<button onClick={() => setDisplayCount(prev => prev + ITEMS_PER_PAGE)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"><ChevronDown size={16} /> Visa fler övningar</button>)}
       </div>
 
@@ -304,7 +505,12 @@ const InfoTab = ({ formData, setFormData, userProfile, allExercises }: { formDat
 
       <div className="space-y-2">
         <label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Bild</label>
-        <ImageUpload currentImage={formData.image} onImageSaved={(base64) => setFormData({ ...formData, image: base64 })} />
+        <ImageUpload
+          currentImage={formData.image}
+          onImageSaved={(base64OrUrl) => setFormData({ ...formData, image: base64OrUrl })}
+          exerciseId={formData.id}
+          userProfile={userProfile}
+        />
       </div>
     </div>
   );

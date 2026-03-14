@@ -3,6 +3,8 @@ import { MuscleGroup, Zone, Exercise, UserProfile, WorkoutSession, PlannedExerci
 import { ALL_MUSCLE_GROUPS } from '../utils/recovery';
 import { generateWorkoutSession } from '../utils/fitness';
 import { X, Zap, Dumbbell, Layers, ArrowRight, Sparkles } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from './Toast';
 
 interface WorkoutGeneratorProps {
   activeZone: Zone;
@@ -46,12 +48,14 @@ const SPLITS: { name: string; label: string; muscles: MuscleGroup[] }[] = [
   }
 ];
 
-export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({ 
-  activeZone, allExercises, userProfile, history, onGenerate, onClose 
+export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
+  activeZone, allExercises, userProfile, history, onGenerate, onClose
 }) => {
   const [selectedMuscles, setSelectedMuscles] = useState<MuscleGroup[]>([]);
   const [exerciseCount, setExerciseCount] = useState(6);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showNoExercisesModal, setShowNoExercisesModal] = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
   const toggleMuscle = (m: MuscleGroup) => {
     setSelectedMuscles(prev => 
@@ -60,8 +64,11 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
   };
 
   const handleGenerate = () => {
-    if (selectedMuscles.length === 0) return alert("Välj minst en muskelgrupp eller split.");
-    
+    if (selectedMuscles.length === 0) {
+      showToast("Välj minst en muskelgrupp eller split", "warning");
+      return;
+    }
+
     setIsGenerating(true);
     
     // Kort fördröjning för att visa laddningseffekt
@@ -76,7 +83,7 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
       );
 
       if (generated.length === 0) {
-        alert(`Kunde inte hitta några övningar i "${activeZone.name}" för de valda musklerna.`);
+        setShowNoExercisesModal(true);
         setIsGenerating(false);
       } else {
         onGenerate(generated);
@@ -188,6 +195,18 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
            )}
          </button>
       </div>
+
+      {ToastComponent}
+
+      {showNoExercisesModal && (
+        <ConfirmModal
+          title="Inga övningar hittades"
+          message={`Kunde inte hitta några övningar i "${activeZone.name}" för de valda musklerna. Kontrollera att gymmet har rätt utrustning eller välj andra muskelgrupper.`}
+          confirmLabel="OK"
+          onConfirm={() => setShowNoExercisesModal(false)}
+          onCancel={() => setShowNoExercisesModal(false)}
+        />
+      )}
     </div>
   );
 };

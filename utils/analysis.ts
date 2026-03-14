@@ -11,7 +11,10 @@ export const calculateVolumeByMuscleGroup = (
   const volumeMap: Record<string, number> = {};
 
   history.forEach(session => {
-    session.exercises.forEach(plannedEx => {
+    // Safety check: ensure exercises is an array
+    const exercises = Array.isArray(session.exercises) ? session.exercises : [];
+
+    exercises.forEach(plannedEx => {
       const exData = allExercises.find(e => e.id === plannedEx.exerciseId);
       if (!exData) return;
 
@@ -19,9 +22,13 @@ export const calculateVolumeByMuscleGroup = (
         .filter(s => s.completed)
         .reduce((sum, set) => sum + ((set.reps || 0) * (set.weight || 0)), 0);
 
+      // Safety check: ensure primaryMuscles and secondaryMuscles are arrays
+      const primaryMuscles = Array.isArray(exData.primaryMuscles) ? exData.primaryMuscles : [];
+      const secondaryMuscles = Array.isArray(exData.secondaryMuscles) ? exData.secondaryMuscles : [];
+
       const allMuscles = new Set([
-        ...exData.primaryMuscles,
-        ...(exData.secondaryMuscles || [])
+        ...primaryMuscles,
+        ...secondaryMuscles
       ]);
 
       allMuscles.forEach(muscle => {

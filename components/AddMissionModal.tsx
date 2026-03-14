@@ -76,6 +76,18 @@ export const AddMissionModal: React.FC<AddMissionModalProps> = ({ onClose, onSav
         }
     }
 
+    const smartConfigData = isSmart ? {
+      targetType,
+      exerciseId: targetType === 'exercise' ? selectedExerciseId : undefined,
+      measurementKey: targetType === 'body_measurement' ? measurementKey : (targetType === 'body_weight' ? 'weight' : undefined),
+      startValue,
+      targetValue,
+      deadline,
+      strategy,
+      startReps: targetType === 'exercise' ? startReps : undefined,
+      targetReps: targetType === 'exercise' ? targetReps : undefined,
+    } : undefined;
+
     const newMission: UserMission = {
       id: `m-${Date.now()}`,
       title: finalTitle || 'Nytt uppdrag',
@@ -84,23 +96,11 @@ export const AddMissionModal: React.FC<AddMissionModalProps> = ({ onClose, onSav
       progress: 0,
       total: isSmart ? targetValue : targetCount,
       createdAt: new Date().toISOString(),
-      
-      ...(isSmart && {
-        exerciseId: selectedExerciseId,
-        smartConfig: {
-          targetType,
-          exerciseId: targetType === 'exercise' ? selectedExerciseId : undefined,
-          measurementKey: targetType === 'body_measurement' ? measurementKey : (targetType === 'body_weight' ? 'weight' : undefined),
-          startValue,
-          targetValue,
-          deadline,
-          strategy,
-          startReps: targetType === 'exercise' ? startReps : undefined,
-          targetReps: targetType === 'exercise' ? targetReps : undefined,
-        }
-      })
+      exerciseId: isSmart ? selectedExerciseId : undefined,
+      smartConfig: smartConfigData
     };
-    
+
+    console.log('Creating mission:', newMission);
     onSave(newMission);
   };
   

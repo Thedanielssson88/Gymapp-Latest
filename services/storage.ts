@@ -70,9 +70,14 @@ export const storage = {
     }
 
     // 2. Sätt id till användarens Supabase-UUID istället för 'current'
-    const safeProfile = { ...rest, settings: safeSettings, id: user.id };
+    const safeProfile = { ...rest, settings: safeSettings, id: user.id, user_id: user.id };
     
-    await supabase.from('user_profiles').upsert(safeProfile);
+    const { error } = await supabase.from('user_profiles').upsert(safeProfile);
+
+    if (error) {
+      console.error("Fel vid sparning av profil i Supabase:", error.message);
+      alert("Kunde inte spara profilen: " + error.message);
+    }
 
     const newLog: BiometricLog = {
       id: `log-${Date.now()}`,
@@ -98,7 +103,17 @@ export const storage = {
     const { data } = await supabase.from('zones').select('*');
     return data || [];
   },
-  saveZone: async (zone: Zone) => await supabase.from('zones').upsert(zone),
+  saveZone: async (zone: Zone) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from('zones').upsert({ ...zone, user_id: user.id });
+
+    if (error) {
+      console.error("Fel vid sparning av zon i Supabase:", error.message);
+      alert("Kunde inte spara gymmet: " + error.message);
+    }
+  },
   deleteZone: async (id: string) => await supabase.from('zones').delete().eq('id', id),
 
   // --- WORKOUT HISTORY ---
@@ -107,8 +122,15 @@ export const storage = {
     return data || [];
   },
   saveToHistory: async (session: WorkoutSession) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("Ingen användare är inloggad!");
+      return;
+    }
+
     const completedSession = { 
       ...session, 
+      user_id: user.id,
       isCompleted: true, 
       date: session.date || new Date().toISOString(),
       duration: session.duration
@@ -135,10 +157,40 @@ export const storage = {
 
   // --- EXERCISES ---
   getAllExercises: async (): Promise<Exercise[]> => {
-    const { data } = await supabase.from('exercises').select('*');
-    return data || [];
+    // Hämta både publika bas-övningar och användarens egna övningar
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      // Om ingen är inloggad, hämta bara publika övningar
+      const { data } = await supabase
+        .from('exercises')
+        .select('*')
+        .eq('is_public', true);
+      return data || [];
+    }
+
+    // Hämta publika övningar + användarens egna övningar
+    const { data: exercises } = await supabase
+      .from('exercises')
+      .select('*')
+      .or(`is_public.eq.true,user_id.eq.${user.id}`);
+
+    return exercises || [];
   },
-  saveExercise: async (exercise: Exercise) => await supabase.from('exercises').upsert(exercise),
+  saveExercise: async (exercise: Exercise) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Admin can save public exercises without user_id, others save with user_id
+    const profile = await storage.getUserProfile();
+    const isAdmin = (profile as any).is_admin === true;
+
+    const exerciseData = isAdmin && (exercise as any).is_public
+      ? { ...exercise, user_id: null, is_public: true }
+      : { ...exercise, user_id: user.id, is_public: false };
+
+    await supabase.from('exercises').upsert(exerciseData);
+  },
   updateExercise: async (id: string, updates: Partial<Exercise>) => {
     await supabase.from('exercises').update(updates).eq('id', id);
   },
@@ -166,7 +218,64 @@ export const storage = {
     return data || [];
   },
   addScheduledActivity: async (activity: ScheduledActivity) => await supabase.from('scheduled_activities').upsert(activity),
+  updateScheduledActivity: async (id: string, updates: Partial<ScheduledActivity>) => {
+    console.log("Updating scheduled activity:", id, updates);
+    const { data, error } = await supabase
+      .from('scheduled_activities')
+      .update(updates)
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error("Fel vid uppdatering av scheduled activity:", error.message, error);
+      throw error;
+    }
+
+    console.log("Successfully updated scheduled activity:", data);
+    return data;
+  },
   deleteScheduledActivity: async (id: string) => await supabase.from('scheduled_activities').delete().eq('id', id),
+
+  // Reschedule AI Program - moves all future activities by the same offset
+  rescheduleAIProgram: async (programId: string, fromActivityId: string, newDateStr: string): Promise<void> => {
+    // Get all activities for this program
+    const { data: allActivities } = await supabase
+      .from('scheduled_activities')
+      .select('*')
+      .eq('programId', programId);
+
+    if (!allActivities) return;
+
+    const targetActivity = allActivities.find(a => a.id === fromActivityId);
+    if (!targetActivity) return;
+
+    const oldDate = new Date(targetActivity.date);
+    const newDate = new Date(newDateStr);
+
+    const diffTime = newDate.getTime() - oldDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return;
+
+    // Update all non-completed activities from the target date onwards
+    const updates = allActivities
+      .filter(a => !a.isCompleted && new Date(a.date) >= oldDate)
+      .map(a => {
+        const d = new Date(a.date);
+        d.setDate(d.getDate() + diffDays);
+        return {
+          ...a,
+          date: d.toISOString().split('T')[0]
+        };
+      });
+
+    // Bulk update via upsert
+    if (updates.length > 0) {
+      for (const activity of updates) {
+        await supabase.from('scheduled_activities').upsert(activity);
+      }
+    }
+  },
 
   // Recurring Plans
   getRecurringPlans: async (): Promise<RecurringPlan[]> => {
@@ -182,11 +291,95 @@ export const storage = {
 
   // Missions
   getUserMissions: async (): Promise<UserMission[]> => {
-    const { data } = await supabase.from('user_missions').select('*');
-    return data || [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.log("No user logged in, returning empty missions");
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('user_missions')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error("Error fetching user missions:", error);
+      return [];
+    }
+
+    console.log("Fetched user missions (raw):", data);
+
+    // Convert snake_case to camelCase
+    const missions = (data || []).map((dbMission: any) => ({
+      id: dbMission.id,
+      title: dbMission.title,
+      type: dbMission.type,
+      isCompleted: dbMission.is_completed ?? false,
+      progress: dbMission.progress ?? 0,
+      total: dbMission.total ?? 0,
+      createdAt: dbMission.created_at,
+      completedAt: dbMission.completed_at,
+      exerciseId: dbMission.exercise_id,
+      smartConfig: dbMission.smart_config
+    }));
+
+    console.log("Converted missions:", missions);
+    return missions;
   },
-  addUserMission: async (mission: UserMission) => await supabase.from('user_missions').upsert(mission),
-  updateUserMission: async (mission: UserMission) => await supabase.from('user_missions').upsert(mission),
+  addUserMission: async (mission: UserMission) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("Ingen användare är inloggad!");
+      return;
+    }
+
+    // Convert camelCase to snake_case for database
+    const dbMission = {
+      id: mission.id,
+      title: mission.title,
+      type: mission.type,
+      is_completed: mission.isCompleted,
+      progress: mission.progress,
+      total: mission.total,
+      created_at: mission.createdAt,
+      completed_at: mission.completedAt,
+      exercise_id: mission.exerciseId,
+      smart_config: mission.smartConfig,
+      user_id: user.id
+    };
+
+    console.log("Saving mission to Supabase:", dbMission);
+
+    const { data, error } = await supabase.from('user_missions').insert(dbMission).select();
+
+    if (error) {
+      console.error("Fel vid sparning av mission:", error.message, error);
+      throw error;
+    }
+
+    console.log("Mission saved successfully:", data);
+  },
+  updateUserMission: async (mission: UserMission) => {
+    // Convert camelCase to snake_case for database
+    const dbMission = {
+      id: mission.id,
+      title: mission.title,
+      type: mission.type,
+      is_completed: mission.isCompleted,
+      progress: mission.progress,
+      total: mission.total,
+      created_at: mission.createdAt,
+      completed_at: mission.completedAt,
+      exercise_id: mission.exerciseId,
+      smart_config: mission.smartConfig
+    };
+
+    const { error } = await supabase.from('user_missions').upsert(dbMission);
+    if (error) {
+      console.error("Fel vid uppdatering av mission:", error.message, error);
+      throw error;
+    }
+  },
   deleteUserMission: async (id: string) => await supabase.from('user_missions').delete().eq('id', id),
 
   // För aiPrograms

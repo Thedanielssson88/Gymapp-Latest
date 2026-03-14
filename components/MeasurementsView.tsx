@@ -45,7 +45,7 @@ export const MeasurementsView: React.FC<MeasurementsViewProps> = ({ profile, onU
       setLoading(false);
     };
     loadHistory();
-  }, []);
+  }, [profile]); // Reload when profile updates
 
   const latestLog = useMemo(() => history[history.length - 1], [history]);
 
@@ -159,13 +159,39 @@ const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, on
 
   // Prepare data for graph
   const chartData = useMemo(() => {
-    return history
-      .map((log: BiometricLog) => ({
-        date: new Date(log.date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' }),
-        value: field.key === 'weight' ? log.weight : log.measurements?.[field.key as keyof BodyMeasurements]
-      }))
-      .filter((d: any) => d.value !== undefined);
+    const data = history
+      .map((log: BiometricLog, index: number) => {
+        const dateObj = new Date(log.date);
+        const displayDate = dateObj.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+        const displayTime = dateObj.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+        const fullDateTime = `${displayDate} kl ${displayTime}`;
+
+        return {
+          // Unique key for each data point
+          id: `${log.date}-${index}`,
+          // Full date + time for tooltip
+          dateTime: fullDateTime,
+          // Display label for X-axis (just date)
+          displayLabel: displayDate,
+          value: field.key === 'weight' ? log.weight : log.measurements?.[field.key as keyof BodyMeasurements],
+          timestamp: dateObj.getTime()
+        };
+      })
+      .filter((d: any) => d.value !== undefined && d.value !== null);
+
+    console.log('Chart data:', data);
+    return data;
   }, [history, field.key]);
+
+  // Calculate Y-axis domain with proper padding
+  const yAxisDomain = useMemo(() => {
+    if (chartData.length === 0) return [0, 100];
+    const values = chartData.map(d => d.value as number);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const padding = Math.max((max - min) * 0.1, 2); // 10% padding or at least 2 units
+    return [Math.floor(min - padding), Math.ceil(max + padding)];
+  }, [chartData]);
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#0f0d15] flex flex-col animate-in slide-in-from-bottom duration-300 overflow-hidden">
@@ -196,11 +222,26 @@ const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, on
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="date" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1a1721', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                <XAxis
+                  dataKey="displayLabel"
+                  stroke="rgba(255,255,255,0.3)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis hide domain={yAxisDomain} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1a1721', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '8px 12px' }}
                   itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                  formatter={(value: any) => [`${value} ${field.unit}`, field.label]}
+                  labelFormatter={(label: any, payload: any) => {
+                    if (payload && payload[0] && payload[0].payload) {
+                      return payload[0].payload.dateTime;
+                    }
+                    return label;
+                  }}
+                  labelStyle={{ color: '#999', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
                 />
                 <Area type="monotone" dataKey="value" stroke="#ff2d55" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
               </AreaChart>

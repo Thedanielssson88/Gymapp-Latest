@@ -68,8 +68,12 @@ const getMuscleGroupsTrainedInPeriod = (
     (session.exercises || []).forEach(plannedEx => {
       const exData = exercisesMeta.find(e => e.id === plannedEx.exerciseId);
       if (exData) {
-        exData.primaryMuscles.forEach(m => trainedMuscles.add(m));
-        exData.secondaryMuscles?.forEach(m => trainedMuscles.add(m));
+        // Safety check: ensure primaryMuscles and secondaryMuscles are arrays
+        const primaryMuscles = Array.isArray(exData.primaryMuscles) ? exData.primaryMuscles : [];
+        const secondaryMuscles = Array.isArray(exData.secondaryMuscles) ? exData.secondaryMuscles : [];
+
+        primaryMuscles.forEach(m => trainedMuscles.add(m));
+        secondaryMuscles.forEach(m => trainedMuscles.add(m));
       }
     });
   });
@@ -354,9 +358,15 @@ export const TargetsView: React.FC<TargetsViewProps> = ({
               <span className="text-[10px] font-black text-text-dim uppercase tracking-widest mt-0.5">{stats.currentLevelXP} / {stats.xpToNextLevel} XP</span>
             </div>
             <div className="pt-1">
-               <div className="h-4 bg-black/50 rounded-full overflow-hidden border border-white/5 relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 animate-pulse" style={{ animationDuration: '3s' }} />
-                  <div className="h-full bg-gradient-to-r from-accent-blue to-purple-500 transition-all duration-1000 ease-out relative" style={{ width: `${stats.xpProgress}%` }}><div className="absolute right-0 top-0 bottom-0 w-1 bg-white/50" /></div>
+               <div className="h-4 bg-white/5 rounded-full overflow-hidden border border-white/10 relative shadow-inner">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 animate-pulse" style={{ animationDuration: '3s' }} />
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-400 via-accent-blue to-purple-500 transition-all duration-1000 ease-out relative shadow-[0_0_20px_rgba(59,130,246,0.5)]"
+                    style={{ width: `${stats.xpProgress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
+                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/80 shadow-lg" />
+                  </div>
               </div>
               <p className="text-[10px] text-text-dim mt-2 text-right">{stats.xpToNextLevel - stats.currentLevelXP} XP kvar till nästa nivå</p>
             </div>

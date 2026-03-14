@@ -197,12 +197,15 @@ export const generateWorkoutSession = (
     const hasEquipment = hasRequiredEquipment(ex, zone.inventory);
     if (!hasEquipment) return false;
 
-    // Träffar valda muskelgrupper
-    const hitsTarget = ex.muscleGroups.some(m => targetMuscles.includes(m));
+    // Träffar valda muskelgrupper (kolla både muscleGroups och primaryMuscles)
+    const muscleGroups = ex.muscleGroups || [];
+    const primaryMuscles = ex.primaryMuscles || [];
+    const allMuscles = [...muscleGroups, ...primaryMuscles];
+    const hitsTarget = allMuscles.some(m => targetMuscles.includes(m));
     if (!hitsTarget) return false;
 
     // Skadeskydd
-    const impactsInjuredMuscle = ex.primaryMuscles.some(m => injuries.includes(m));
+    const impactsInjuredMuscle = primaryMuscles.some(m => injuries.includes(m));
     if (impactsInjuredMuscle) {
       return ex.pattern === MovementPattern.REHAB;
     }

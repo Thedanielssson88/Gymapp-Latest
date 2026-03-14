@@ -139,6 +139,7 @@ export interface Exercise {
   userModified?: boolean;
   score?: number;
   userRating?: 'up' | 'down' | null;
+  lastUpdated?: string; // ISO timestamp when exercise was last updated
 }
 
 export interface BodyMeasurements {
@@ -183,6 +184,7 @@ export interface UserProfile {
   injuries: MuscleGroup[];
   measurements: BodyMeasurements;
   settings?: UserSettings;
+  is_admin?: boolean;
 }
 
 export interface Zone {

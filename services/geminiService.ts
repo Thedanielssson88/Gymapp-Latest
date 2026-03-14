@@ -250,7 +250,8 @@ INSTRUKTIONER:
     if (error instanceof Error && error.message.includes("Ingen API-nyckel hittad")) {
         throw error;
     }
-    throw new Error("AI-genereringen misslyckades.");
+    console.error("AI generation error details:", error);
+    throw new Error(`AI-genereringen misslyckades: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

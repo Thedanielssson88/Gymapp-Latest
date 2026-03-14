@@ -65,7 +65,10 @@ export const StatsView: React.FC<StatsViewProps> = ({
   
   const exercisesWithHistory = useMemo(() => {
     const performedExerciseIds = new Set(
-      history.flatMap(sess => sess.exercises.map(e => e.exerciseId))
+      history.flatMap(sess => {
+        const exercises = Array.isArray(sess.exercises) ? sess.exercises : [];
+        return exercises.map(e => e.exerciseId);
+      })
     );
     return allExercises.filter(ex => performedExerciseIds.has(ex.id));
   }, [allExercises, history]);
@@ -84,7 +87,13 @@ export const StatsView: React.FC<StatsViewProps> = ({
     const filteredLogs = filterDataByRange(logs, 'date', timeRange).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // 1. Volym & Pass
-    const totalVolume = filteredHistory.reduce((acc, sess) => acc + sess.exercises.reduce((sAcc, ex) => sAcc + ex.sets.filter(s => s.completed).reduce((rAcc, s) => rAcc + (s.weight * s.reps), 0), 0), 0);
+    const totalVolume = filteredHistory.reduce((acc, sess) => {
+      const exercises = Array.isArray(sess.exercises) ? sess.exercises : [];
+      return acc + exercises.reduce((sAcc, ex) => {
+        const sets = Array.isArray(ex.sets) ? ex.sets : [];
+        return sAcc + sets.filter(s => s.completed).reduce((rAcc, s) => rAcc + (s.weight * s.reps), 0);
+      }, 0);
+    }, 0);
     
     // 2. Veckoaktivitet
     const weekMap: Record<string, number> = {};
@@ -102,9 +111,11 @@ export const StatsView: React.FC<StatsViewProps> = ({
     const strengthData: any[] = [];
     if (selectedExerciseId) {
       filteredHistory.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).forEach(sess => {
-         const ex = sess.exercises.find(e => e.exerciseId === selectedExerciseId);
+         const exercises = Array.isArray(sess.exercises) ? sess.exercises : [];
+         const ex = exercises.find(e => e.exerciseId === selectedExerciseId);
          if(ex) {
-            const max1RM = Math.max(...ex.sets.filter(s => s.completed).map(s => calculate1RM(s.weight, s.reps)), 0);
+            const sets = Array.isArray(ex.sets) ? ex.sets : [];
+            const max1RM = Math.max(...sets.filter(s => s.completed).map(s => calculate1RM(s.weight, s.reps)), 0);
             if (max1RM > 0) strengthData.push({ date: formatDate(sess.date), oneRM: Math.round(max1RM) });
          }
       });
@@ -112,13 +123,19 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
     // 5. Muskelbalans (Radar)
     const muscleCounts: Record<string, number> = {};
-    filteredHistory.forEach(s => s.exercises.forEach(pe => {
-       const ex = allExercises.find(e => e.id === pe.exerciseId);
-       if(ex) {
-          const muscle = ex.primaryMuscles?.[0] || ex.muscleGroups[0];
-          muscleCounts[muscle] = (muscleCounts[muscle] || 0) + pe.sets.filter(s => s.completed).length;
-       }
-    }));
+    filteredHistory.forEach(s => {
+      const exercises = Array.isArray(s.exercises) ? s.exercises : [];
+      exercises.forEach(pe => {
+        const ex = allExercises.find(e => e.id === pe.exerciseId);
+        if(ex) {
+          const primaryMuscles = Array.isArray(ex.primaryMuscles) ? ex.primaryMuscles : [];
+          const muscleGroups = Array.isArray(ex.muscleGroups) ? ex.muscleGroups : [];
+          const muscle = primaryMuscles[0] || muscleGroups[0];
+          const sets = Array.isArray(pe.sets) ? pe.sets : [];
+          muscleCounts[muscle] = (muscleCounts[muscle] || 0) + sets.filter(s => s.completed).length;
+        }
+      });
+    });
     const radarData = Object.entries(muscleCounts).map(([subject, A]) => ({ subject, A, fullMark: 100 })).sort((a,b) => b.A - a.A).slice(0, 6);
 
     return { totalVolume, count: filteredHistory.length, weeklyData, weightData, strengthData, radarData };

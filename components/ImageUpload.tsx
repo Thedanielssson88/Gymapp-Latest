@@ -1,13 +1,22 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, X, Loader2 } from 'lucide-react';
 import { compressImage } from '../utils/image';
+import { uploadBase64Image } from '../services/imageStorage';
+import { UserProfile } from '../types';
 
 interface ImageUploadProps {
-  onImageSaved: (base64: string) => void;
+  onImageSaved: (base64OrUrl: string) => void;
   currentImage?: string;
+  exerciseId?: string;
+  userProfile?: UserProfile;
 }
 
-export const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSaved, currentImage }) => {
+export const ImageUpload: React.FC<ImageUploadProps> = ({
+  onImageSaved,
+  currentImage,
+  exerciseId,
+  userProfile
+}) => {
   const [preview, setPreview] = useState<string | null>(currentImage || null);
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -22,11 +31,25 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSaved, currentI
 
     try {
       setIsUploading(true);
-      
+
       const base64String = await compressImage(file);
       setPreview(base64String);
-      onImageSaved(base64String);
-      
+
+      // Admin users: Upload to Supabase Storage
+      if (userProfile?.is_admin && exerciseId) {
+        try {
+          const publicUrl = await uploadBase64Image(base64String, exerciseId);
+          onImageSaved(publicUrl);
+        } catch (error) {
+          console.error('Supabase upload failed:', error);
+          alert('Kunde inte ladda upp bilden till Supabase. Sparar lokalt istället.');
+          onImageSaved(base64String);
+        }
+      } else {
+        // Regular users: Save to localStorage as base64
+        onImageSaved(base64String);
+      }
+
     } catch (error) {
       alert("Kunde inte spara bilden.");
       console.error(error);

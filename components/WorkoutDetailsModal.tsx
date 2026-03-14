@@ -28,20 +28,30 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ activi
   };
 
   const handleReschedule = async (moveAll: boolean) => {
-    if (!newDate) return;
+    console.log("handleReschedule called with:", { moveAll, newDate, activityId: activity.id });
 
-    if (moveAll && activity.programId) {
-        await storage.rescheduleAIProgram(activity.programId, activity.id, newDate);
-        alert("Schemat uppdaterat! Alla efterföljande pass har flyttats.");
-    } else {
-        // Move only this one
-        const updated = { ...activity, date: newDate };
-        await storage.addScheduledActivity(updated);
-        alert("Passet flyttat.");
+    if (!newDate) {
+      console.log("No date selected, returning");
+      return;
     }
-    
-    if (onUpdate) onUpdate();
-    onClose();
+
+    try {
+      if (moveAll && activity.programId) {
+          await storage.rescheduleAIProgram(activity.programId, activity.id, newDate);
+          alert("Schemat uppdaterat! Alla efterföljande pass har flyttats.");
+      } else {
+          // Move only this one - use update instead of upsert
+          console.log("Moving activity to new date:", activity.id, newDate);
+          await storage.updateScheduledActivity(activity.id, { date: newDate });
+          alert("Passet flyttat.");
+      }
+
+      if (onUpdate) await onUpdate();
+      onClose();
+    } catch (error) {
+      console.error("Failed to reschedule:", error);
+      alert("Kunde inte flytta passet: " + (error as Error).message);
+    }
   };
 
   return (
