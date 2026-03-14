@@ -284,8 +284,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Vänta tills auth är klar innan vi startar appen
+    if (isInitializingAuth) {
+      console.log('⏳ Väntar på auth...');
+      return;
+    }
+
     const initApp = async () => {
-      console.log('🚀 initApp() startar...');
+      console.log('🚀 initApp() startar (auth klar, session cachad)...');
       try {
         setLoadingStatus('Ansluter till databas...');
         console.log('📦 storage.init()...');
@@ -336,7 +342,7 @@ export default function App() {
       }
     };
     initApp();
-  }, []);
+  }, [isInitializingAuth]); // Kör när auth är klar!
 
   useEffect(() => {
     const checkMissions = async () => {
