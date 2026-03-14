@@ -13,9 +13,29 @@ export const setCachedSession = (session: any) => {
   cachedSession = session;
 };
 
-// Hjälpfunktion för att hämta användare SNABBT (använder memory-cache)
+// Hjälpfunktion för att hämta användare SNABBT (använder memory-cache ELLER localStorage)
 const getCurrentUser = () => {
-  return cachedSession?.user || null;
+  // 1. Försök memory-cache först
+  if (cachedSession?.user) {
+    return cachedSession.user;
+  }
+
+  // 2. Fallback: Läs från Supabase's localStorage-cache (synkront!)
+  try {
+    const item = localStorage.getItem('sb-ztxehsvcbfdrgrhqlzzz-auth-token');
+    if (item) {
+      const { currentSession } = JSON.parse(item);
+      if (currentSession?.user) {
+        // Uppdatera memory-cache för framtida anrop
+        cachedSession = currentSession;
+        return currentSession.user;
+      }
+    }
+  } catch (e) {
+    console.warn('Kunde inte läsa session från localStorage:', e);
+  }
+
+  return null;
 };
 
 // Hjälpfunktioner för objekt till databas-rader
