@@ -247,10 +247,13 @@ export default function App() {
 
   useEffect(() => {
     const initApp = async () => {
+      console.log('🚀 initApp() startar...');
       try {
         setLoadingStatus('Ansluter till databas...');
+        console.log('📦 storage.init()...');
         await storage.init();
         setLoadingStatus('Kollar molnsynkronisering...');
+        console.log('👤 Hämtar användarprofil...');
         const initialProfile = await storage.getUserProfile();
         if (initialProfile.settings?.googleDriveLinked && initialProfile.settings?.restoreOnStartup) {
            try {
@@ -272,17 +275,20 @@ export default function App() {
            }
         }
         setLoadingStatus('Synkroniserar övningsbibliotek...');
+        console.log('🔄 db.syncExercises() (max 10s)...');
         try {
           const syncPromise = db.syncExercises();
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Sync timeout')), 10000)
           );
           await Promise.race([syncPromise, timeoutPromise]);
+          console.log('✅ Synk klar');
         } catch (e) {
           console.warn("Kunde inte synka övningar vid start:", e);
           setLoadingStatus('Synk misslyckades, laddar lokalt...');
         }
         setLoadingStatus('Läser in användardata...');
+        console.log('📊 refreshData()...');
         await refreshData();
         const activeSess = await storage.getActiveSession();
         if (activeSess) setActiveTab('workout');
