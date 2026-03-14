@@ -272,32 +272,12 @@ export default function App() {
 
     // 3. Lyssna på inloggningar/utloggningar i realtid
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log(`🔐 Auth event: ${_event}`);
       setSession(session);
       setCachedSession(session); // Uppdatera memory-cache för snabb access!
 
-      // Om användaren precis loggat in, kolla migrering och ladda om data
-      if (_event === 'SIGNED_IN' && session?.user) {
-        setLoadingStatus('Kontrollerar datamigrering...');
-        await autoMigrateOnStartup();
-        // Ladda om data efter migrering (MED TIMEOUT!)
-        try {
-          const refreshPromise = refreshData();
-          const refreshTimeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('refreshData timeout (onAuthStateChange) efter 30s')), 30000)
-          );
-          await Promise.race([refreshPromise, refreshTimeout]);
-        } catch (refreshError) {
-          console.error('⚠️ refreshData misslyckades i onAuthStateChange, sätter default-user:', refreshError);
-          // Sätt en minimal user så att appen kan starta
-          setUser({
-            id: session?.user?.id || 'temp',
-            name: session?.user?.email?.split('@')[0] || 'Användare',
-            email: session?.user?.email || '',
-            settings: {},
-            createdAt: new Date().toISOString()
-          } as any);
-        }
-      }
+      // VIKTIGT: Kör INTE refreshData här! Det körs redan i initApp()
+      // Detta förhindrar dubbel-laddning vid refresh
     });
 
     return () => subscription.unsubscribe();
