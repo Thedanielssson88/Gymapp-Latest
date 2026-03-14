@@ -4,6 +4,7 @@ import { DEFAULT_PROFILE } from '../constants';
 
 const ACTIVE_SESSION_KEY = 'morphfit_active_session';
 const LOCAL_API_KEY_STORAGE = 'morphfit_gemini_api_key';
+const CACHED_PROFILE_KEY = 'morphfit_cached_profile';
 
 // VIKTIGT: Memory-cache för användarsession (uppdateras av onAuthStateChange)
 let cachedSession: any = null;
@@ -70,16 +71,47 @@ export const storage = {
       return { id: 'current', ...DEFAULT_PROFILE };
     }
 
-    // 2. Leta efter profilen med användarens unika ID istället för 'current'
-    console.log(`⏱️ getUserProfile: Hämtar profil för user ${user.id}`);
+    // 2. Försök hämta från localStorage-cache FÖRST (instant!)
+    try {
+      const cached = localStorage.getItem(CACHED_PROFILE_KEY);
+      if (cached) {
+        const cachedProfile = JSON.parse(cached);
+        // Verifiera att det är rätt användare
+        if (cachedProfile.id === user.id) {
+          console.log(`⚡ getUserProfile: Använder cached profil (instant!)`);
+          // Tryck in API-nyckeln från LocalStorage
+          const localApiKey = storage.getLocalApiKey();
+          if (localApiKey) {
+            cachedProfile.settings = { ...cachedProfile.settings, geminiApiKey: localApiKey } as any;
+          }
+
+          // Hämta från Supabase i bakgrunden (för att uppdatera cache)
+          supabase.from('user_profiles').select('*').eq('id', user.id).single().then(({ data }) => {
+            if (data) {
+              localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(data));
+            }
+          });
+
+          return cachedProfile;
+        }
+      }
+    } catch (e) {
+      console.warn('Kunde inte läsa cached profile:', e);
+    }
+
+    // 3. Fallback: Hämta från Supabase (långsamt första gången)
+    console.log(`⏱️ getUserProfile: Hämtar profil från Supabase (första gången)...`);
     const startTime = performance.now();
     const { data, error } = await supabase.from('user_profiles').select('*').eq('id', user.id).single();
     console.log(`⏱️ getUserProfile: Supabase query tog ${Math.round(performance.now() - startTime)}ms`);
-    
+
     let profile = data as UserProfile | null;
     if (!profile || error) {
       profile = { id: user.id, ...DEFAULT_PROFILE };
     }
+
+    // Spara i cache för nästa gång!
+    localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(profile));
 
     // Tryck in API-nyckeln från LocalStorage innan vi returnerar
     const localApiKey = storage.getLocalApiKey();
@@ -114,6 +146,9 @@ export const storage = {
     if (error) {
       console.error("Fel vid sparning av profil i Supabase:", error.message);
       alert("Kunde inte spara profilen: " + error.message);
+    } else {
+      // Uppdatera localStorage-cache efter lyckad sparning
+      localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(safeProfile));
     }
 
     const newLog: BiometricLog = {
