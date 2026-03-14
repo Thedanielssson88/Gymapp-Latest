@@ -1,97 +1,111 @@
-
-// FIX: Import `importDatabase` to be used in the new `importFullBackup` method.
-import { db, migrateFromLocalStorage, importDatabase, exportDatabase } from './db';
-import { UserProfile, Zone, Exercise, WorkoutSession, BiometricLog, GoalTarget, WorkoutRoutine, Goal, ScheduledActivity, RecurringPlan, UserMission, AIProgram } from '../types';
+import { supabase } from './supabase';
+import { UserProfile, Zone, Exercise, WorkoutSession, BiometricLog, GoalTarget, WorkoutRoutine, ScheduledActivity, RecurringPlan, UserMission, AIProgram } from '../types';
 import { DEFAULT_PROFILE } from '../constants';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
-import { Capacitor } from '@capacitor/core';
 
 const ACTIVE_SESSION_KEY = 'morphfit_active_session';
+const LOCAL_API_KEY_STORAGE = 'morphfit_gemini_api_key';
 
-/**
- * Hjälpfunktion för att spara JSON-filer.
- * På Android/iOS: Sparar till cachen och öppnar systemets "Dela"-dialog.
- * På Webb: Skapar en blob och laddar ner via webbläsaren.
- */
-const saveJsonFile = async (fileName: string, data: any): Promise<boolean> => {
-  const jsonString = JSON.stringify(data, null, 2);
-
-  if (Capacitor.isNativePlatform()) {
-    try {
-      // 1. Skriv filen till cachen
-      const result = await Filesystem.writeFile({
-        path: fileName,
-        data: jsonString,
-        directory: Directory.Cache,
-        encoding: Encoding.UTF8
-      });
-
-      // 2. Dela filen (användaren kan välja att spara till filer, drive, maila etc.)
-      await Share.share({
-        title: 'MorphFit Export',
-        text: `Här är din export: ${fileName}`,
-        url: result.uri,
-        dialogTitle: 'Spara eller dela din fil'
-      });
-      return true;
-    } catch (e) {
-      console.error("Native export failed:", e);
-      alert("Kunde inte spara filen på enheten: " + (e as Error).message);
-      return false;
-    }
-  } else {
-    // Webb-fallback
-    try {
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      return true;
-    } catch (e) {
-      console.error("Web export failed:", e);
-      return false;
-    }
-  }
-};
+// Hjälpfunktioner för objekt till databas-rader
+const snakeToCamel = (obj: any) => {
+  // Beroende på din exakta setup med Supabase kan du behöva mappa 
+  // snake_case från SQL tillbaka till camelCase om du inte använder camelCase i databasen.
+  // Med strukturen ovan stämmer namnen väl överens, men håll ett öga på camelCase-namn.
+  return obj;
+}
 
 export const storage = {
   init: async () => {
-    await migrateFromLocalStorage();
+    // Här låg tidigare Dexie-migrering. Du kan behålla logik för att 
+    // ladda ner initial data om tabellerna är tomma i Supabase.
   },
 
+  // --- API KEY HANTERING (LOKALT) ---
+  getLocalApiKey: () => localStorage.getItem(LOCAL_API_KEY_STORAGE) || undefined,
+  setLocalApiKey: (key?: string) => {
+    if (key) localStorage.setItem(LOCAL_API_KEY_STORAGE, key);
+    else localStorage.removeItem(LOCAL_API_KEY_STORAGE);
+  },
+
+  // --- PROFIL ---
   getUserProfile: async (): Promise<UserProfile> => {
-    const profile = await db.userProfile.get('current');
-    return profile || { id: 'current', ...DEFAULT_PROFILE };
+    // 1. Hämta den aktuella inloggade användaren från Supabase Auth
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Om ingen är inloggad, returnera default
+    if (!user) {
+      return { id: 'current', ...DEFAULT_PROFILE };
+    }
+
+    // 2. Leta efter profilen med användarens unika ID istället för 'current'
+    const { data, error } = await supabase.from('user_profiles').select('*').eq('id', user.id).single();
+    
+    let profile = data as UserProfile | null;
+    if (!profile || error) {
+      profile = { id: user.id, ...DEFAULT_PROFILE };
+    }
+
+    // Tryck in API-nyckeln från LocalStorage innan vi returnerar
+    const localApiKey = storage.getLocalApiKey();
+    if (localApiKey) {
+      profile.settings = { ...profile.settings, geminiApiKey: localApiKey } as any;
+    }
+
+    return profile;
   },
 
   setUserProfile: async (profile: UserProfile) => {
-    await db.userProfile.put({ ...profile, id: 'current' });
+    // 1. Hämta den inloggade användaren
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("Ingen användare är inloggad!");
+      return;
+    }
+
+    // Klipp ur API-nyckeln innan vi sparar till molnet
+    const { settings, ...rest } = profile;
+    const { geminiApiKey, ...safeSettings } = settings || {};
+    
+    if (geminiApiKey !== undefined) {
+      storage.setLocalApiKey(geminiApiKey);
+    }
+
+    // 2. Sätt id till användarens Supabase-UUID istället för 'current'
+    const safeProfile = { ...rest, settings: safeSettings, id: user.id };
+    
+    await supabase.from('user_profiles').upsert(safeProfile);
+
     const newLog: BiometricLog = {
       id: `log-${Date.now()}`,
       date: new Date().toISOString(),
       weight: profile.weight,
       measurements: profile.measurements
     };
-    await db.biometricLogs.put(newLog);
+    await storage.saveBiometricLog(newLog);
   },
 
-  getBiometricLogs: async (): Promise<BiometricLog[]> => await db.biometricLogs.toArray(),
+  // --- BIOMETRICS ---
+  getBiometricLogs: async (): Promise<BiometricLog[]> => {
+    const { data } = await supabase.from('biometric_logs').select('*');
+    return data || [];
+  },
   
   saveBiometricLog: async (log: BiometricLog) => {
-    await db.biometricLogs.put(log);
+    await supabase.from('biometric_logs').upsert(log);
   },
 
-  getZones: async (): Promise<Zone[]> => await db.zones.toArray(),
-  saveZone: async (zone: Zone) => await db.zones.put(zone),
-  deleteZone: async (id: string) => await db.zones.delete(id),
+  // --- ZONER ---
+  getZones: async (): Promise<Zone[]> => {
+    const { data } = await supabase.from('zones').select('*');
+    return data || [];
+  },
+  saveZone: async (zone: Zone) => await supabase.from('zones').upsert(zone),
+  deleteZone: async (id: string) => await supabase.from('zones').delete().eq('id', id),
 
-  getHistory: async (): Promise<WorkoutSession[]> => await db.workoutHistory.toArray(),
+  // --- WORKOUT HISTORY ---
+  getHistory: async (): Promise<WorkoutSession[]> => {
+    const { data } = await supabase.from('workout_history').select('*');
+    return data || [];
+  },
   saveToHistory: async (session: WorkoutSession) => {
     const completedSession = { 
       ...session, 
@@ -99,243 +113,102 @@ export const storage = {
       date: session.date || new Date().toISOString(),
       duration: session.duration
     };
-    await db.workoutHistory.put(completedSession);
+    await supabase.from('workout_history').upsert(completedSession);
   },
-
   deleteWorkoutFromHistory: async (sessionId: string) => {
-    await db.workoutHistory.delete(sessionId);
+    await supabase.from('workout_history').delete().eq('id', sessionId);
   },
 
+  // --- ACTIVE SESSION (Kan ligga kvar i LocalStorage för säkerhets skull vid krascher) ---
   getActiveSession: async (): Promise<WorkoutSession | undefined> => {
     const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
     if (raw) {
-        try {
-            return JSON.parse(raw) as WorkoutSession;
-        } catch (e) {
-            console.error("Failed to parse active session from localStorage", e);
-            localStorage.removeItem(ACTIVE_SESSION_KEY);
-            return undefined;
-        }
+        try { return JSON.parse(raw) as WorkoutSession; } 
+        catch (e) { localStorage.removeItem(ACTIVE_SESSION_KEY); return undefined; }
     }
     return undefined;
   },
-  
   setActiveSession: (session: WorkoutSession | null): void => {
-    if (session) {
-      localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(session));
-    } else {
-      localStorage.removeItem(ACTIVE_SESSION_KEY);
-    }
+    if (session) localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(session));
+    else localStorage.removeItem(ACTIVE_SESSION_KEY);
   },
 
-  getAllExercises: async (): Promise<Exercise[]> => await db.exercises.toArray(),
-  saveExercise: async (exercise: Exercise) => await db.exercises.put(exercise),
-
+  // --- EXERCISES ---
+  getAllExercises: async (): Promise<Exercise[]> => {
+    const { data } = await supabase.from('exercises').select('*');
+    return data || [];
+  },
+  saveExercise: async (exercise: Exercise) => await supabase.from('exercises').upsert(exercise),
   updateExercise: async (id: string, updates: Partial<Exercise>) => {
-    const exercise = await db.exercises.get(id);
-    if (exercise) {
-      await db.exercises.put({ ...exercise, ...updates });
-    }
+    await supabase.from('exercises').update(updates).eq('id', id);
   },
-  
   deleteExercise: async (id: string) => {
-    await db.exercises.delete(id);
+    await supabase.from('exercises').delete().eq('id', id);
   },
 
-  getGoalTargets: async (): Promise<GoalTarget[]> => await db.goalTargets.toArray(),
-  saveGoalTarget: async (target: GoalTarget) => await db.goalTargets.put(target),
-  
-  getRoutines: async (): Promise<WorkoutRoutine[]> => await db.workoutRoutines.toArray(),
-  saveRoutine: async (routine: WorkoutRoutine) => await db.workoutRoutines.put(routine),
-  deleteRoutine: async (id: string) => await db.workoutRoutines.delete(id),
+  // --- RESTERANDE METODER (Mönstret upprepas) ---
+  getGoalTargets: async (): Promise<GoalTarget[]> => {
+    const { data } = await supabase.from('goal_targets').select('*');
+    return data || [];
+  },
+  saveGoalTarget: async (target: GoalTarget) => await supabase.from('goal_targets').upsert(target),
 
+  getRoutines: async (): Promise<WorkoutRoutine[]> => {
+    const { data } = await supabase.from('workout_routines').select('*');
+    return data || [];
+  },
+  saveRoutine: async (routine: WorkoutRoutine) => await supabase.from('workout_routines').upsert(routine),
+  deleteRoutine: async (id: string) => await supabase.from('workout_routines').delete().eq('id', id),
+
+  // Du tillämpar samma mönster för scheduledActivities, recurringPlans, AIPrograms...
   getScheduledActivities: async (): Promise<ScheduledActivity[]> => {
-    await storage.generateRecurringActivities();
-    return await db.scheduledActivities.toArray();
+    const { data } = await supabase.from('scheduled_activities').select('*');
+    return data || [];
   },
+  addScheduledActivity: async (activity: ScheduledActivity) => await supabase.from('scheduled_activities').upsert(activity),
+  deleteScheduledActivity: async (id: string) => await supabase.from('scheduled_activities').delete().eq('id', id),
 
-  addScheduledActivity: async (activity: ScheduledActivity) => {
-    await db.scheduledActivities.put(activity);
+  // Recurring Plans
+  getRecurringPlans: async (): Promise<RecurringPlan[]> => {
+    const { data } = await supabase.from('recurring_plans').select('*');
+    return data || [];
   },
-
-  deleteScheduledActivity: async (id: string) => {
-    await db.scheduledActivities.delete(id);
-  },
-
-  toggleScheduledActivity: async (id: string) => {
-    const act = await db.scheduledActivities.get(id);
-    if (act) {
-      await db.scheduledActivities.update(id, { isCompleted: !act.isCompleted });
-    }
-  },
-
-  // Function to move an entire AI program relative to one session
-  async rescheduleAIProgram(programId: string, fromActivityId: string, newDateStr: string): Promise<void> {
-    const allActivities = await db.scheduledActivities.where('programId').equals(programId).toArray();
-    const targetActivity = allActivities.find(a => a.id === fromActivityId);
-    
-    if (!targetActivity) return;
-
-    const oldDate = new Date(targetActivity.date);
-    const newDate = new Date(newDateStr);
-    
-    const diffTime = newDate.getTime() - oldDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return;
-
-    const updates = allActivities
-      .filter(a => !a.isCompleted && new Date(a.date) >= oldDate)
-      .map(a => {
-        const d = new Date(a.date);
-        d.setDate(d.getDate() + diffDays);
-        return {
-          ...a,
-          date: d.toISOString().split('T')[0]
-        };
-      });
-
-    if (updates.length > 0) {
-      await db.scheduledActivities.bulkPut(updates);
-    }
-  },
-
-  getRecurringPlans: async (): Promise<RecurringPlan[]> => await db.recurringPlans.toArray(),
-
-  addRecurringPlan: async (plan: RecurringPlan) => {
-    await db.recurringPlans.put(plan);
-    await storage.generateRecurringActivities();
-  },
-
-  deleteRecurringPlan: async (id: string) => {
-    await db.recurringPlans.delete(id);
-    const today = new Date().toISOString().split('T')[0];
-    await db.scheduledActivities
-      .where('recurrenceId').equals(id)
-      .filter(act => act.date >= today && !act.isCompleted)
-      .delete();
-  },
-
+  addRecurringPlan: async (plan: RecurringPlan) => await supabase.from('recurring_plans').upsert(plan),
+  deleteRecurringPlan: async (id: string) => await supabase.from('recurring_plans').delete().eq('id', id),
   generateRecurringActivities: async () => {
-    const plans = await db.recurringPlans.toArray();
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    
-    const generateUntil = new Date(today);
-    generateUntil.setDate(today.getDate() + 30);
-
-    for (const plan of plans) {
-      let loopDate = new Date(Math.max(new Date(plan.startDate).getTime(), today.getTime()));
-      
-      while (loopDate <= generateUntil) {
-        if (plan.endDate && new Date(plan.endDate) < loopDate) break;
-
-        if (plan.daysOfWeek.includes(loopDate.getDay())) {
-          const dateStr = loopDate.toISOString().split('T')[0];
-          
-          const exists = await db.scheduledActivities
-            .where({ recurrenceId: plan.id, date: dateStr })
-            .first();
-
-          if (!exists) {
-            await db.scheduledActivities.put({
-              id: `gen-${plan.id}-${dateStr}`,
-              date: dateStr,
-              type: plan.type,
-              title: plan.title,
-              isCompleted: false,
-              recurrenceId: plan.id,
-              exercises: plan.exercises
-            });
-          }
-        }
-        loopDate.setDate(loopDate.getDate() + 1);
-      }
-    }
+    // Implementera logik för att generera aktiviteter baserat på rullande schema om det behövs
+    console.log("generateRecurringActivities: Not fully implemented yet with Supabase");
   },
 
-  getUserMissions: async (): Promise<UserMission[]> => await db.userMissions.toArray(),
-  addUserMission: async (mission: UserMission) => await db.userMissions.put(mission),
-  updateUserMission: async (mission: UserMission) => {
-    await db.userMissions.update(mission.id, mission);
+  // Missions
+  getUserMissions: async (): Promise<UserMission[]> => {
+    const { data } = await supabase.from('user_missions').select('*');
+    return data || [];
   },
-  deleteUserMission: async (id: string) => await db.userMissions.delete(id),
-  
-  // --- NYA FUNKTIONER FÖR AI-PROGRAM ---
-  getAIPrograms: async (): Promise<AIProgram[]> => await db.aiPrograms.toArray(),
-  
+  addUserMission: async (mission: UserMission) => await supabase.from('user_missions').upsert(mission),
+  updateUserMission: async (mission: UserMission) => await supabase.from('user_missions').upsert(mission),
+  deleteUserMission: async (id: string) => await supabase.from('user_missions').delete().eq('id', id),
+
+  // För aiPrograms
+  getAIPrograms: async (): Promise<AIProgram[]> => {
+    const { data } = await supabase.from('ai_programs').select('*');
+    return data || [];
+  },
   saveAIProgram: async (program: AIProgram): Promise<void> => {
-    await db.aiPrograms.put(program);
+    await supabase.from('ai_programs').upsert(program);
     window.dispatchEvent(new Event('storage-update'));
   },
-  
-  clearUpcomingProgramActivities: async (programId: string): Promise<void> => {
-    const today = new Date().toISOString().split('T')[0];
-    const activitiesToDelete = await db.scheduledActivities
-      .where('programId').equals(programId)
-      .filter(act => !act.isCompleted && act.date >= today)
-      .primaryKeys();
-
-    if (activitiesToDelete.length > 0) {
-      await db.scheduledActivities.bulkDelete(activitiesToDelete);
-    }
-  },
-
   deleteAIProgram: async (programId: string): Promise<void> => {
-    const program = await db.aiPrograms.get(programId);
-    if (!program) return;
-  
-    await (db as any).transaction('rw', db.aiPrograms, db.scheduledActivities, db.userMissions, async () => {
-      // 1. Delete non-completed scheduled activities for this program
-      const activitiesToDelete = await db.scheduledActivities
-        .where('programId').equals(programId)
-        .filter(act => !act.isCompleted)
-        .primaryKeys();
-  
-      if (activitiesToDelete.length > 0) {
-        await db.scheduledActivities.bulkDelete(activitiesToDelete);
-      }
-      
-      // 2. Delete associated smart goals
-      if (program.goalIds && program.goalIds.length > 0) {
-          await db.userMissions.where('id').anyOf(program.goalIds).delete();
-      }
-  
-      // 3. Delete the program itself
-      await db.aiPrograms.delete(programId);
-    });
-    
+    await supabase.from('ai_programs').delete().eq('id', programId);
+    await supabase.from('scheduled_activities').delete().eq('program_id', programId);
     window.dispatchEvent(new Event('storage-update'));
-  },
-
-  // FIX: Added missing importFullBackup method called in OnboardingWizard.
-  importFullBackup: async (backup: { data: any }) => {
-    await importDatabase(backup.data);
-  },
-
-  // --- NYA EXPORT-FUNKTIONER FÖR NATIVE & WEBB ---
-  
-  exportFullBackup: async (): Promise<boolean> => {
-    try {
-      const allData = await exportDatabase();
-      const backupObject = {
-          timestamp: new Date().toISOString(),
-          device: Capacitor.getPlatform(),
-          data: allData
-      };
-      const fileName = `morphfit_backup_${new Date().toISOString().split('T')[0]}.json`;
-      
-      return await saveJsonFile(fileName, backupObject);
-    } catch(err) {
-      console.error("Full backup export failed:", err);
-      return false;
-    }
-  },
+  }
 };
 
 export const exportExerciseLibrary = async (): Promise<boolean> => {
   try {
-    const allExercises = await db.exercises.toArray();
+    const { data: allExercises } = await supabase.from('exercises').select('*');
+    if (!allExercises) return false;
     
     const libraryData = {
       type: 'GYM_APP_EXERCISE_LIBRARY',
@@ -345,8 +218,19 @@ export const exportExerciseLibrary = async (): Promise<boolean> => {
       exercises: allExercises
     };
 
-    const fileName = `exercise-library-${new Date().toISOString().split('T')[0]}.json`;
-    return await saveJsonFile(fileName, libraryData);
+    // Skapa en nedladdningslänk i webbläsaren
+    const jsonString = JSON.stringify(libraryData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `exercise-library-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    return true;
   } catch (error) {
     console.error("Export of library failed:", error);
     return false;
@@ -364,7 +248,10 @@ export const importExerciseLibrary = async (file: File): Promise<number> => {
           throw new Error("Felaktigt filformat. Detta är inte en giltig biblioteksfil.");
         }
 
-        await db.exercises.bulkPut(content.exercises);
+        // Skicka in hela listan med övningar till Supabase
+        const { error } = await supabase.from('exercises').upsert(content.exercises);
+        if (error) throw error;
+
         resolve(content.exercises.length);
       } catch (error) {
         reject(error);

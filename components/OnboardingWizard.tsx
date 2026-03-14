@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { UserProfile, Goal, Zone, Equipment } from '../types';
 import { storage } from '../services/storage';
-import { getAccessToken, listBackups, downloadBackup, BackupData } from '../services/googleDrive';
-import { ChevronRight, Check, Dumbbell, Target, User, Weight, MapPin, Cloud, RefreshCw, Loader2 } from 'lucide-react';
+// Ta bort Google Drive-importerna
+import { ChevronRight, Check, Dumbbell, Target, User, Weight, MapPin } from 'lucide-react';
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -15,7 +15,7 @@ const EQUIPMENT_CATEGORIES = [
 ];
 
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
-  const [step, setStep] = useState(-1); // Start with step -1 for Cloud Sync option
+  const [step, setStep] = useState(0); // Börja direkt på steg 0 (Namn)
   
   // Temporärt state för wizard
   const [name, setName] = useState('');
@@ -23,67 +23,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   const [goal, setGoal] = useState<Goal>(Goal.HYPERTROPHY);
   const [gymName, setGymName] = useState('Mitt Gym');
   const [gymInventory, setGymInventory] = useState<Equipment[]>([]);
-  const [isSearchingCloud, setIsSearchingCloud] = useState(false);
-  const [foundBackup, setFoundBackup] = useState<BackupData | null>(null);
 
-  const totalSteps = 5; // -1, 0, 1, 2, 3
+  const totalSteps = 4; // 0, 1, 2, 3
 
   const handleNext = () => {
     if (step < 3) {
       setStep(step + 1);
     } else {
       finishOnboarding();
-    }
-  };
-
-  const handleConnectCloud = async () => {
-    setIsSearchingCloud(true);
-    try {
-      const token = await getAccessToken();
-      if (!token) {
-        setStep(0); // Move to normal onboarding
-        return;
-      }
-      
-      const files = await listBackups();
-      const fileId = files.length > 0 ? files[0].id : null;
-      if (fileId) {
-        const backup = await downloadBackup(fileId);
-        if (backup) {
-          setFoundBackup(backup);
-          return; // Stay on cloud step to show "Restore" option
-        }
-      }
-      setStep(0);
-    } catch (e) {
-      setStep(0);
-    } finally {
-      setIsSearchingCloud(false);
-    }
-  };
-
-  const handleRestoreBackup = async () => {
-    if (foundBackup) {
-      setIsSearchingCloud(true);
-      // Ensure Google Drive is linked in settings after restore
-      const restoredBackup: BackupData = {
-        ...foundBackup,
-        data: {
-          ...foundBackup.data,
-          profile: {
-            ...foundBackup.data.profile,
-            settings: {
-              ...foundBackup.data.profile.settings,
-              googleDriveLinked: true,
-              restoreOnStartup: true,
-              autoSyncMode: 'after_workout' as const
-            }
-          }
-        }
-      };
-      await storage.importFullBackup(restoredBackup);
-      alert("Återställning klar! Appen startas om.");
-      window.location.reload();
     }
   };
 
@@ -142,54 +89,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
 
       <div className="w-full max-w-md flex-1 flex flex-col">
         
-        {/* STEP -1: CLOUD SYNC OPTION */}
-        {step === -1 && (
-          <div className="animate-in slide-in-from-right-8 duration-500 space-y-8 flex-1 flex flex-col justify-center">
-            <div className="w-20 h-20 bg-accent-blue/10 rounded-full flex items-center justify-center text-accent-blue mb-4 mx-auto border border-accent-blue/20">
-              <Cloud size={40} />
-            </div>
-            <div className="text-center space-y-2">
-              <h2 className="text-3xl font-black italic uppercase">Välkommen tillbaka?</h2>
-              <p className="text-text-dim text-sm">Har du redan ett konto eller en backup på Google Drive? Vi kan återställa din historik direkt.</p>
-            </div>
-            
-            {foundBackup ? (
-               <div className="bg-white/5 border border-accent-green/30 p-6 rounded-[32px] space-y-4 animate-in zoom-in-95">
-                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-accent-green/20 rounded-2xl flex items-center justify-center text-accent-green">
-                      <Check size={24} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase text-accent-green tracking-widest">Backup Hittad</p>
-                      <h4 className="text-xl font-black italic uppercase">{foundBackup.data.profile.name}</h4>
-                    </div>
-                 </div>
-                 <p className="text-xs text-text-dim">Exporterad: {new Date(foundBackup.timestamp).toLocaleDateString('sv-SE')}</p>
-                 <button 
-                   onClick={handleRestoreBackup}
-                   disabled={isSearchingCloud}
-                   className="w-full py-4 bg-accent-green text-black rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all"
-                 >
-                   {isSearchingCloud ? <Loader2 className="animate-spin mx-auto" /> : 'Återställ All Data'}
-                 </button>
-               </div>
-            ) : (
-              <button 
-                onClick={handleConnectCloud}
-                disabled={isSearchingCloud}
-                className="w-full py-5 bg-white/5 border border-white/10 rounded-2xl font-black italic uppercase flex items-center justify-center gap-3 active:scale-95 transition-all"
-              >
-                {isSearchingCloud ? <Loader2 className="animate-spin" size={20} /> : <Cloud size={20} />}
-                {isSearchingCloud ? 'Söker efter backup...' : 'Hämta från Google Drive'}
-              </button>
-            )}
-
-            <button onClick={() => setStep(0)} className="text-xs text-text-dim font-bold uppercase tracking-widest text-center hover:text-white transition-colors">
-              {foundBackup ? 'Nej tack, starta på nytt' : 'Hoppa över, jag är ny här'}
-            </button>
-          </div>
-        )}
-
         {/* STEP 0: NAMN */}
         {step === 0 && (
           <div className="animate-in slide-in-from-right-8 duration-500 space-y-8 flex-1 flex flex-col justify-center">
@@ -313,7 +212,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
         <div className="mt-8">
           <button 
             onClick={handleNext}
-            disabled={(step === -1 && !foundBackup) || (step === 0 && !name) || (step === 3 && !gymName)}
+            disabled={(step === 0 && !name) || (step === 3 && !gymName)}
             className="w-full py-5 bg-white text-black rounded-[24px] font-black italic text-xl uppercase tracking-widest shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
           >
             {step === 3 ? 'Kör igång!' : 'Nästa'} <ChevronRight size={20} strokeWidth={3} />

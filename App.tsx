@@ -15,6 +15,8 @@ import { OnboardingWizard } from './components/OnboardingWizard';
 import { SettingsView } from './components/SettingsView';
 import { AIProgramDashboard } from './components/AIProgramDashboard';
 import { ZonePickerModal } from './components/ZonePickerModal';
+import { supabase } from './services/supabase';
+import Auth from './components/Auth';
 import { listBackups, downloadBackup, uploadBackup, getAccessToken } from './services/googleDrive';
 import { calculate1RM, getLastPerformance } from './utils/fitness';
 import { suggestWeightForReps } from './utils/progression';
@@ -26,6 +28,8 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { Dumbbell, User2, Calendar, X, MapPin, Activity, Home, Trees, ChevronRight, Settings, Trophy, BookOpen, Cloud, Sparkles } from 'lucide-react';
 
 export default function App() {
+  const [session, setSession] = useState<any>(null);
+  const [isInitializingAuth, setIsInitializingAuth] = useState(true);
   const [isReady, setIsReady] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState<string>('Initierar...');
   const [activeTab, setActiveTab] = useState<'workout' | 'body' | 'targets' | 'log' | 'library' | 'gyms' | 'ai'>('workout');
@@ -205,6 +209,21 @@ export default function App() {
     setPlannedActivities(allPlansForDisplay);
     setUserMissions(missions); 
   };
+
+  useEffect(() => {
+    // 1. Kolla om vi redan har en session när appen startar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsInitializingAuth(false);
+    });
+
+    // 2. Lyssna på inloggningar/utloggningar i realtid
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const initApp = async () => {
@@ -462,6 +481,20 @@ export default function App() {
   const handleAddMission = async (mission: UserMission) => { await storage.addUserMission(mission); await refreshData(); };
   const handleDeleteMission = async (id: string) => { if (confirm("Are you sure you want to delete this mission?")) { await storage.deleteUserMission(id); await refreshData(); } };
   const handleGoToExercise = (exerciseId: string) => { setTargetExerciseId(exerciseId); navigateToTab('library'); };
+
+  if (isInitializingAuth) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#0f0d15] text-white p-6">
+        <div className="relative"><div className="w-24 h-24 border-4 border-accent-pink/20 border-t-accent-pink rounded-full animate-spin"></div><Activity className="absolute inset-0 m-auto text-accent-pink animate-pulse" size={32} /></div>
+        <h1 className="mt-8 text-2xl font-black uppercase italic tracking-[0.3em] animate-pulse">MorphFit</h1>
+        <div className="mt-4 px-4 py-2 bg-white/5 rounded-xl border border-white/10"><p className="text-[10px] font-mono text-text-dim uppercase tracking-widest animate-pulse">Laddar MorphFit...</p></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Auth />;
+  }
 
   if (!isReady || !user) {
     return (
