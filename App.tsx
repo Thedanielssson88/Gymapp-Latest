@@ -27,6 +27,8 @@ import { triggerHaptic } from './utils/haptics';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Dumbbell, User2, Calendar, X, MapPin, Activity, Home, Trees, ChevronRight, Settings, Trophy, BookOpen, Cloud, Sparkles } from 'lucide-react';
 
+const APP_VERSION = 'v2.0.0-build-' + Date.now();
+
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [isInitializingAuth, setIsInitializingAuth] = useState(true);
@@ -272,7 +274,11 @@ export default function App() {
         }
         setLoadingStatus('Synkroniserar övningsbibliotek...');
         try {
-          await db.syncExercises(); 
+          const syncPromise = db.syncExercises();
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Sync timeout')), 10000)
+          );
+          await Promise.race([syncPromise, timeoutPromise]);
         } catch (e) {
           console.warn("Kunde inte synka övningar vid start:", e);
           setLoadingStatus('Synk misslyckades, laddar lokalt...');
@@ -517,11 +523,13 @@ export default function App() {
   const handleGoToExercise = (exerciseId: string) => { setTargetExerciseId(exerciseId); navigateToTab('library'); };
 
   if (isInitializingAuth) {
+    console.log('🔄 Loading screen - Version:', APP_VERSION);
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#0f0d15] text-white p-6">
         <div className="relative"><div className="w-24 h-24 border-4 border-accent-pink/20 border-t-accent-pink rounded-full animate-spin"></div><Activity className="absolute inset-0 m-auto text-accent-pink animate-pulse" size={32} /></div>
         <h1 className="mt-8 text-2xl font-black uppercase italic tracking-[0.3em] animate-pulse">MorphFit</h1>
         <div className="mt-4 px-4 py-2 bg-white/5 rounded-xl border border-white/10"><p className="text-[10px] font-mono text-text-dim uppercase tracking-widest animate-pulse">Laddar MorphFit...</p></div>
+        <div className="mt-2 px-2 py-1 bg-green-500/20 rounded border border-green-500/30"><p className="text-[8px] font-mono text-green-400">{APP_VERSION}</p></div>
       </div>
     );
   }
@@ -531,12 +539,13 @@ export default function App() {
   }
 
   if (!isReady || !user) {
-    console.log('⏳ Väntar på ready...', { isReady, user: user ? 'finns' : 'null' });
+    console.log('⏳ Väntar på ready...', { isReady, user: user ? 'finns' : 'null', version: APP_VERSION });
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#0f0d15] text-white p-6">
         <div className="relative"><div className="w-24 h-24 border-4 border-accent-pink/20 border-t-accent-pink rounded-full animate-spin"></div><Activity className="absolute inset-0 m-auto text-accent-pink animate-pulse" size={32} /></div>
         <h1 className="mt-8 text-2xl font-black uppercase italic tracking-[0.3em] animate-pulse">MorphFit</h1>
         <div className="mt-4 px-4 py-2 bg-white/5 rounded-xl border border-white/10"><p className="text-[10px] font-mono text-text-dim uppercase tracking-widest animate-pulse">{loadingStatus}</p></div>
+        <div className="mt-2 px-2 py-1 bg-green-500/20 rounded border border-green-500/30"><p className="text-[8px] font-mono text-green-400">{APP_VERSION}</p></div>
       </div>
     );
   }
