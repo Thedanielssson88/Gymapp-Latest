@@ -17,6 +17,7 @@ import { AIProgramDashboard } from './components/AIProgramDashboard';
 import { ZonePickerModal } from './components/ZonePickerModal';
 import { supabase } from './services/supabase';
 import Auth from './components/Auth';
+import { autoMigrateOnStartup } from './services/migrateToSupabase';
 import { listBackups, downloadBackup, uploadBackup, getAccessToken } from './services/googleDrive';
 import { calculate1RM, getLastPerformance } from './utils/fitness';
 import { suggestWeightForReps } from './utils/progression';
@@ -222,7 +223,6 @@ export default function App() {
       // 2. Om användaren är inloggad, kolla om migrering behövs INNAN vi laddar data
       if (session?.user) {
         setLoadingStatus('Kontrollerar datamigrering...');
-        const { autoMigrateOnStartup } = await import('./services/migrateToSupabase');
         await autoMigrateOnStartup();
       }
 
@@ -236,7 +236,6 @@ export default function App() {
       // Om användaren precis loggat in, kolla migrering och ladda om data
       if (_event === 'SIGNED_IN' && session?.user) {
         setLoadingStatus('Kontrollerar datamigrering...');
-        const { autoMigrateOnStartup } = await import('./services/migrateToSupabase');
         await autoMigrateOnStartup();
         // Ladda om data efter migrering
         await refreshData();
