@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Skapa PWA-ikoner - RÄTT STORLEKAR</title>
+</head>
+<body style="background: #0f0d15; color: white; font-family: Arial; padding: 20px;">
+    <h1>Genererar ikoner i rätt storlekar...</h1>
+    <div id="status"></div>
+    <canvas id="canvas" style="display:none"></canvas>
+    <script>
+        const sizes = [
+            { size: 192, filename: 'icon-192.png' },
+            { size: 512, filename: 'icon-512.png' },
+            { size: 180, filename: 'icon-apple-touch.png' }
+        ];
+
+        function drawIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Bakgrund
+            ctx.fillStyle = '#0f0d15';
+            ctx.fillRect(0, 0, size, size);
+
+            // Skala baserat på storlek
+            const scale = size / 512;
+            ctx.scale(scale, scale);
+
+            // Hantel - centrerad
+            const centerX = 256;
+            const centerY = 256;
+
+            // Stång
+            ctx.fillStyle = '#ff2d55';
+            ctx.fillRect(centerX - 120, centerY - 20, 240, 40);
+
+            // Vänster vikt
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(centerX - 160, centerY - 60, 50, 120);
+
+            // Highlight vänster
+            ctx.fillStyle = 'rgba(37, 99, 235, 0.5)';
+            ctx.fillRect(centerX - 165, centerY - 50, 60, 100);
+
+            // Höger vikt
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(centerX + 110, centerY - 60, 50, 120);
+
+            // Highlight höger
+            ctx.fillStyle = 'rgba(37, 99, 235, 0.5)';
+            ctx.fillRect(centerX + 105, centerY - 50, 60, 100);
+
+            // Gröna detaljer
+            ctx.fillStyle = '#2ed573';
+            ctx.beginPath();
+            ctx.arc(centerX - 135, centerY - 70, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX - 135, centerY + 70, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX + 135, centerY - 70, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX + 135, centerY + 70, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight på stången
+            ctx.fillStyle = 'rgba(255, 94, 126, 0.6)';
+            ctx.fillRect(centerX - 120, centerY - 18, 240, 8);
+
+            return canvas;
+        }
+
+        async function generateIcons() {
+            const status = document.getElementById('status');
+
+            for (const config of sizes) {
+                status.innerHTML += `<p>Skapar ${config.filename} (${config.size}x${config.size})...</p>`;
+
+                const canvas = drawIcon(config.size);
+
+                // Konvertera till blob och ladda ner
+                await new Promise(resolve => {
+                    canvas.toBlob(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = config.filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        status.innerHTML += `<p style="color: #2ed573;">✓ ${config.filename} klar!</p>`;
+                        setTimeout(resolve, 500);
+                    });
+                });
+            }
+
+            status.innerHTML += `<h2 style="color: #2ed573; margin-top: 30px;">🎉 KLART!</h2>`;
+            status.innerHTML += `<p>Alla 3 filer nedladdade:</p>`;
+            status.innerHTML += `<ul>
+                <li>icon-192.png (192x192)</li>
+                <li>icon-512.png (512x512)</li>
+                <li>icon-apple-touch.png (180x180)</li>
+            </ul>`;
+            status.innerHTML += `<p><strong>Nästa steg:</strong></p>`;
+            status.innerHTML += `<ol>
+                <li>Flytta filerna till <code>/workspace/group/Byggen/Gymapp/public/</code></li>
+                <li>Ersätt de gamla filerna</li>
+                <li>Commit och pusha till GitHub</li>
+                <li>Testa PWA på Android!</li>
+            </ol>`;
+        }
+
+        // Starta automatiskt
+        window.onload = () => {
+            setTimeout(generateIcons, 500);
+        };
+    </script>
+</body>
+</html>
