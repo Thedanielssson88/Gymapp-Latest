@@ -1,6 +1,6 @@
 // Service Worker för Gymapp PWA
-const CACHE_NAME = 'gymapp-v3';
-const RUNTIME_CACHE = 'gymapp-runtime-v3';
+const CACHE_NAME = 'gymapp-v4';
+const RUNTIME_CACHE = 'gymapp-runtime-v4';
 
 // Resurser att cache:a direkt vid installation (endast filer som garanterat finns)
 const PRECACHE_URLS = [
@@ -54,8 +54,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then(response => {
-          // Cacha API-svar för offline
-          if (response.status === 200) {
+          // Cacha endast GET-requests (POST kan inte cachas)
+          if (response.status === 200 && request.method === 'GET') {
             const responseClone = response.clone();
             caches.open(RUNTIME_CACHE).then(cache => {
               cache.put(request, responseClone);
@@ -64,8 +64,14 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Fallback till cache om offline
-          return caches.match(request);
+          // Fallback till cache om offline (endast för GET)
+          if (request.method === 'GET') {
+            return caches.match(request);
+          }
+          return new Response(JSON.stringify({ error: 'Offline' }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
         })
     );
     return;
