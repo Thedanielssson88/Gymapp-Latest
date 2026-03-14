@@ -167,22 +167,24 @@ export default function App() {
   }, [user?.settings?.vibrateButtons]);
 
   const refreshData = async () => {
-    const [p, z, h, logs, sess, ex, gt, r, scheduled, recurring, missions] = await Promise.all([
-      storage.getUserProfile(),
-      storage.getZones(),
-      storage.getHistory(),
-      storage.getBiometricLogs(),
-      storage.getActiveSession(),
-      storage.getAllExercises(),
-      storage.getGoalTargets(),
-      storage.getRoutines(),
-      storage.getScheduledActivities(),
-      storage.getRecurringPlans(),
-      storage.getUserMissions()
-    ]);
+    console.log('📥 refreshData - Hämtar alla data från Supabase...');
+    try {
+      const [p, z, h, logs, sess, ex, gt, r, scheduled, recurring, missions] = await Promise.all([
+        storage.getUserProfile(),
+        storage.getZones(),
+        storage.getHistory(),
+        storage.getBiometricLogs(),
+        storage.getActiveSession(),
+        storage.getAllExercises(),
+        storage.getGoalTargets(),
+        storage.getRoutines(),
+        storage.getScheduledActivities(),
+        storage.getRecurringPlans(),
+        storage.getUserMissions()
+      ]);
 
-    console.log('🔍 refreshData - Profil:', p);
-    console.log('🔍 refreshData - Zoner:', z.length);
+      console.log('🔍 refreshData - Profil:', p);
+      console.log('🔍 refreshData - Zoner:', z.length);
 
     // Visa onboarding endast om BÅDE zones saknas OCH profilen är default
     // Detta förhindrar onboarding vid tillfälliga laddningsproblem
@@ -212,7 +214,11 @@ export default function App() {
       }))
     ];
     setPlannedActivities(allPlansForDisplay);
-    setUserMissions(missions); 
+    setUserMissions(missions);
+    } catch (error) {
+      console.error('❌ refreshData fel:', error);
+      throw error;
+    }
   };
 
   useEffect(() => {
