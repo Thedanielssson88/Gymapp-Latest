@@ -220,9 +220,10 @@ export default function App() {
       console.log('🔍 refreshData - Profil:', p);
       console.log('🔍 refreshData - Zoner:', z.length);
 
-    // Visa onboarding endast om BÅDE zones saknas OCH profilen är default
-    // Detta förhindrar onboarding vid tillfälliga laddningsproblem
-    const isNewUser = z.length === 0 && p.name === "Atlet" && h.length === 0;
+    // Visa onboarding endast om BÅDE zones saknas OCH profilen är default OCH användaren aldrig sett onboarding
+    // Detta förhindrar onboarding vid tillfälliga laddningsproblem och efter refresh/re-login
+    const hasSeenOnboarding = localStorage.getItem('morphfit_onboarding_completed') === 'true';
+    const isNewUser = z.length === 0 && p.name === "Atlet" && h.length === 0 && !hasSeenOnboarding;
     setShowOnboarding(isNewUser);
 
     setUser(p);
@@ -621,7 +622,11 @@ export default function App() {
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#0f0d15] selection:bg-accent-pink selection:text-white relative overflow-x-hidden">
       <style>{globalStyles}</style>
-      {showOnboarding && isReady && ( <OnboardingWizard onComplete={() => { setShowOnboarding(false); refreshData(); }} /> )}
+      {showOnboarding && isReady && ( <OnboardingWizard onComplete={() => {
+        setShowOnboarding(false);
+        localStorage.setItem('morphfit_onboarding_completed', 'true');
+        refreshData();
+      }} /> )}
       {renderContent()}
       {showStartMenu && (
         <div className="fixed inset-0 bg-[#0f0d15] z-[150] p-8 pt-[calc(env(safe-area-inset-top)+2rem)] flex flex-col overflow-y-auto scrollbar-hide">
