@@ -22,7 +22,8 @@ const getCurrentUser = () => {
 
   // 2. Fallback: Läs från Supabase's localStorage-cache (synkront!)
   try {
-    const item = localStorage.getItem('sb-ztxehsvcbfdrgrhqlzzz-auth-token');
+    // Rätt nyckel baserat på Supabase URL: maviagpzwdjywatckgii
+    const item = localStorage.getItem('sb-maviagpzwdjywatckgii-auth-token');
     if (item) {
       const { currentSession } = JSON.parse(item);
       if (currentSession?.user) {
