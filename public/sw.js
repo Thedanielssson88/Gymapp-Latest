@@ -1,6 +1,6 @@
 // Service Worker för Gymapp PWA
-const CACHE_NAME = 'gymapp-v4';
-const RUNTIME_CACHE = 'gymapp-runtime-v4';
+const CACHE_NAME = 'gymapp-v5';
+const RUNTIME_CACHE = 'gymapp-runtime-v5';
 
 // Resurser att cache:a direkt vid installation (endast filer som garanterat finns)
 const PRECACHE_URLS = [
@@ -77,23 +77,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network First för HTML och JavaScript - alltid hämta senaste versionen
+  // Network ONLY för HTML och JavaScript - CACHA ALDRIG (för att undvika gamla versioner)
   if (request.destination === 'document' || url.pathname.endsWith('.js') || url.pathname.endsWith('.html')) {
     event.respondWith(
-      fetch(request)
-        .then(response => {
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(RUNTIME_CACHE).then(cache => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Fallback till cache om offline
-          return caches.match(request);
-        })
+      fetch(request).catch(() => {
+        // Om offline, visa felmeddelande istället för gammal cache
+        return new Response('Offline - kan inte ladda app', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      })
     );
     return;
   }
