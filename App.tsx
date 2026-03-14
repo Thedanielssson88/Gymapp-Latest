@@ -283,7 +283,17 @@ export default function App() {
       // Detta är viktigt för Incognito mode där appen startar INNAN inloggning
       if (_event === 'SIGNED_IN' && session?.user) {
         console.log('✅ SIGNED_IN event - laddar om data efter inloggning');
-        await refreshData();
+        try {
+          // Timeout efter 10s - om det tar längre, fortsätt ändå
+          const refreshPromise = refreshData();
+          const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('SIGNED_IN refreshData timeout')), 10000)
+          );
+          await Promise.race([refreshPromise, timeout]);
+        } catch (error) {
+          console.error('⚠️ refreshData i SIGNED_IN misslyckades:', error);
+          // Fortsätt ändå - appen kan starta med cached/default data
+        }
       }
     });
 
