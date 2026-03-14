@@ -1,6 +1,6 @@
 // Service Worker för Gymapp PWA
-const CACHE_NAME = 'gymapp-v1';
-const RUNTIME_CACHE = 'gymapp-runtime';
+const CACHE_NAME = 'gymapp-v2';
+const RUNTIME_CACHE = 'gymapp-runtime-v2';
 
 // Resurser att cache:a direkt vid installation
 const PRECACHE_URLS = [
@@ -71,19 +71,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache First för app-resurser
+  // Network First för HTML och JavaScript - alltid hämta senaste versionen
+  if (request.destination === 'document' || url.pathname.endsWith('.js') || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then(cache => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback till cache om offline
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Cache First för statiska assets (bilder, CSS, etc)
   event.respondWith(
     caches.match(request)
       .then(cachedResponse => {
         if (cachedResponse) {
-          // Returnera från cache, men uppdatera i bakgrunden
-          fetch(request).then(response => {
-            if (response.status === 200) {
-              caches.open(RUNTIME_CACHE).then(cache => {
-                cache.put(request, response);
-              });
-            }
-          }).catch(() => {});
           return cachedResponse;
         }
 
