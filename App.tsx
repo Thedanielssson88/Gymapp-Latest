@@ -212,14 +212,26 @@ export default function App() {
 
   useEffect(() => {
     // 1. Kolla om vi redan har en session när appen startar
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setIsInitializingAuth(false);
+
+      // 2. Om användaren är inloggad, kolla om migrering behövs
+      if (session?.user) {
+        const { autoMigrateOnStartup } = await import('./services/migrateToSupabase');
+        await autoMigrateOnStartup();
+      }
     });
 
-    // 2. Lyssna på inloggningar/utloggningar i realtid
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // 3. Lyssna på inloggningar/utloggningar i realtid
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
+
+      // Om användaren precis loggat in, kolla migrering
+      if (_event === 'SIGNED_IN' && session?.user) {
+        const { autoMigrateOnStartup } = await import('./services/migrateToSupabase');
+        await autoMigrateOnStartup();
+      }
     });
 
     return () => subscription.unsubscribe();
