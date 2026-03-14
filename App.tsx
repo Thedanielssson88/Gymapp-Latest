@@ -175,8 +175,11 @@ export default function App() {
       storage.getRoutines(),
       storage.getScheduledActivities(),
       storage.getRecurringPlans(),
-      storage.getUserMissions() 
+      storage.getUserMissions()
     ]);
+
+    console.log('🔍 refreshData - Profil:', p);
+    console.log('🔍 refreshData - Zoner:', z.length);
 
     // Visa onboarding endast om BÅDE zones saknas OCH profilen är default
     // Detta förhindrar onboarding vid tillfälliga laddningsproblem
@@ -283,6 +286,7 @@ export default function App() {
         console.error("Kritisk fel vid start:", error);
         setLoadingStatus(`Ett fel uppstod: ${error instanceof Error ? error.message : 'Okänt fel'}`);
       } finally {
+        console.log('✅ setIsReady(true) - Appen ska nu visa innehåll');
         setIsReady(true);
       }
     };
@@ -527,6 +531,7 @@ export default function App() {
   }
 
   if (!isReady || !user) {
+    console.log('⏳ Väntar på ready...', { isReady, user: user ? 'finns' : 'null' });
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#0f0d15] text-white p-6">
         <div className="relative"><div className="w-24 h-24 border-4 border-accent-pink/20 border-t-accent-pink rounded-full animate-spin"></div><Activity className="absolute inset-0 m-auto text-accent-pink animate-pulse" size={32} /></div>
