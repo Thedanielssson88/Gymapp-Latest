@@ -9,7 +9,7 @@ import { RoutinePicker } from './components/RoutinePicker';
 import { StatsView } from './components/StatsView';
 import { MeasurementsView } from './components/MeasurementsView';
 import { LocationManager } from './components/LocationManager';
-import { storage } from './services/storage';
+import { storage, setCachedSession } from './services/storage';
 import { db, importDatabase, exportDatabase } from './services/db'; 
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { SettingsView } from './components/SettingsView';
@@ -259,6 +259,7 @@ export default function App() {
     // 1. Kolla om vi redan har en session när appen startar
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
+      setCachedSession(session); // Sätt memory-cache direkt!
 
       // 2. Om användaren är inloggad, kolla om migrering behövs INNAN vi laddar data
       if (session?.user) {
@@ -272,6 +273,7 @@ export default function App() {
     // 3. Lyssna på inloggningar/utloggningar i realtid
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
+      setCachedSession(session); // Uppdatera memory-cache för snabb access!
 
       // Om användaren precis loggat in, kolla migrering och ladda om data
       if (_event === 'SIGNED_IN' && session?.user) {

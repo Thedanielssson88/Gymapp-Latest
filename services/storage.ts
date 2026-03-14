@@ -5,11 +5,17 @@ import { DEFAULT_PROFILE } from '../constants';
 const ACTIVE_SESSION_KEY = 'morphfit_active_session';
 const LOCAL_API_KEY_STORAGE = 'morphfit_gemini_api_key';
 
-// VIKTIGT: Hjälpfunktion för att hämta användare SNABBT (cached)
-// Använd ALLTID detta istället för supabase.auth.getUser() som tar 15+ sekunder!
-const getCurrentUser = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user || null;
+// VIKTIGT: Memory-cache för användarsession (uppdateras av onAuthStateChange)
+let cachedSession: any = null;
+
+// Exportera funktion för att sätta cached session (anropas från App.tsx)
+export const setCachedSession = (session: any) => {
+  cachedSession = session;
+};
+
+// Hjälpfunktion för att hämta användare SNABBT (använder memory-cache)
+const getCurrentUser = () => {
+  return cachedSession?.user || null;
 };
 
 // Hjälpfunktioner för objekt till databas-rader
