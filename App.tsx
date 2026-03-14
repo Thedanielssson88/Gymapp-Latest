@@ -274,12 +274,16 @@ export default function App() {
         }
         setLoadingStatus('Läser in användardata...');
         console.log('📊 refreshData()...');
-        const refreshPromise = refreshData();
-        const refreshTimeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('refreshData timeout')), 15000)
-        );
-        await Promise.race([refreshPromise, refreshTimeout]);
-        console.log('✅ refreshData klar!');
+        try {
+          const refreshPromise = refreshData();
+          const refreshTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('refreshData timeout efter 15s')), 15000)
+          );
+          await Promise.race([refreshPromise, refreshTimeout]);
+          console.log('✅ refreshData klar!');
+        } catch (refreshError) {
+          console.error('⚠️ refreshData misslyckades, fortsätter ändå:', refreshError);
+        }
         const activeSess = await storage.getActiveSession();
         if (activeSess) setActiveTab('workout');
         setLoadingStatus('Slutför...');
