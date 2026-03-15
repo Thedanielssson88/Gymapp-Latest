@@ -533,11 +533,12 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
   const [currentRecentIndex, setCurrentRecentIndex] = useState(0);
 
   const handleStartFromHistory = useCallback((session: WorkoutSession) => {
-    // Create a new session based on the historical session
+    // Create a new active session based on the historical session
     const newSession: WorkoutSession = {
       id: generateId(),
       date: new Date().toISOString(),
       zoneId: activeZone.id,
+      name: session.name,
       exercises: session.exercises.map(ex => ({
         ...ex,
         sets: ex.sets.map(s => ({
@@ -546,7 +547,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
         }))
       })),
       isCompleted: false,
-      isManual: true,
+      isManual: false, // Active workout, not manual registration
       locationName: activeZone.name
     };
 
