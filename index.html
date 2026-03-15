@@ -84,6 +84,18 @@
     textarea {
       user-select: text !important;
       -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+      -ms-user-select: text !important;
+    }
+    /* Extra specificity for inputs inside any container */
+    div input[type="text"],
+    div input[type="number"],
+    div textarea {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+      -ms-user-select: text !important;
+      cursor: text !important;
     }
   </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
