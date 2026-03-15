@@ -50,6 +50,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({ title, totalSe
   };
 
   const handleSaveFollowing = () => {
+    // Uppdatera både nuvarande set OCH kommande sets
+    onSelect(currentTotal);
     if (onSelectFollowing) {
       onSelectFollowing(currentTotal);
     }
@@ -128,7 +130,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({ title, totalSe
           {hasFollowingSets && onSelectFollowing && (
             <button onClick={handleSaveFollowing} className="w-full py-4 rounded-2xl bg-accent-pink text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-accent-pink/20 active:scale-95 transition-all flex items-center justify-center gap-2">
               <RefreshCw size={16} strokeWidth={3} />
-              Uppdatera {followingSetsCount} kommande set
+              Uppdatera detta + {followingSetsCount} set
             </button>
           )}
           <button onClick={handleSave} className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase italic tracking-widest active:scale-95 transition-all">

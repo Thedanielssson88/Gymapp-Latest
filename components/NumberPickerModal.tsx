@@ -60,8 +60,11 @@ export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
   };
 
   const handleSaveFollowing = () => {
+    const finalValue = getFinalValue(localVal);
+    // Uppdatera både nuvarande set OCH kommande sets
+    onSave(finalValue);
     if (onSaveFollowing) {
-      onSaveFollowing(getFinalValue(localVal));
+      onSaveFollowing(finalValue);
     }
   };
 
@@ -148,7 +151,7 @@ export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
                 <div className="flex items-center gap-2">
                   <RefreshCw size={16} strokeWidth={3} /> Uppdatera
                 </div>
-                <span className="text-[8px] opacity-80">Kommande {followingSetsCount} set</span>
+                <span className="text-[8px] opacity-80">Detta + {followingSetsCount} set</span>
               </button>
             )}
           </div>
@@ -241,7 +244,7 @@ export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
           {hasFollowingSets && onSaveFollowing && (
             <button onClick={handleSaveFollowing} className="w-full py-4 rounded-2xl bg-accent-pink text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-accent-pink/20 active:scale-95 transition-all flex items-center justify-center gap-2">
               <RefreshCw size={16} strokeWidth={3} />
-              Uppdatera {followingSetsCount} kommande set
+              Uppdatera detta + {followingSetsCount} set
             </button>
           )}
           <div className="grid grid-cols-2 gap-4">
