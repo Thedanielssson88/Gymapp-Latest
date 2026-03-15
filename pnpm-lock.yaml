@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@capacitor/android':
-        specifier: ^8.2.0
-        version: 8.2.0(@capacitor/core@6.2.1)
+        specifier: ^6.2.1
+        version: 6.2.1(@capacitor/core@6.2.1)
       '@capacitor/app':
         specifier: ^6.0.0
         version: 6.0.3(@capacitor/core@6.2.1)
@@ -33,8 +33,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.3(@capacitor/core@6.2.1)
       '@capgo/capacitor-social-login':
-        specifier: ^8.3.2
-        version: 8.3.4(@capacitor/core@6.2.1)
+        specifier: ^6.0.1
+        version: 6.0.1(@capacitor/core@6.2.1)
       '@google/genai':
         specifier: ^1.40.0
         version: 1.42.0
@@ -158,10 +158,10 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@capacitor/android@8.2.0':
-    resolution: {integrity: sha512-XLm5OsWLPfXQxDxzFS7SOdMEgGvW+2c7TGLXkTR2cSKdkWK5Abns4imlT5qghKYhjM9r74IrDkBWg/9ALUGNKQ==}
+  '@capacitor/android@6.2.1':
+    resolution: {integrity: sha512-8gd4CIiQO5LAIlPIfd5mCuodBRxMMdZZEdj8qG8m+dQ1sQ2xyemVpzHmRK8qSCHorsBUCg3D62j2cp6bEBAkdw==}
     peerDependencies:
-      '@capacitor/core': ^8.2.0
+      '@capacitor/core': ^6.2.0
 
   '@capacitor/app@6.0.3':
     resolution: {integrity: sha512-4gFUCbcVz0N/YYN32OBFerocWXslIv3Nc90gDiRsBkJc0plwK6kIUT6PKa5WtW2kfhteUeCVXQbvArH2fH+0Ug==}
@@ -196,10 +196,10 @@ packages:
     peerDependencies:
       '@capacitor/core': ^6.0.0
 
-  '@capgo/capacitor-social-login@8.3.4':
-    resolution: {integrity: sha512-doMqcN3RXlKQbmDz25S69tSjKz0iwcP3e2Cvwf+T+rfbDdiAuhxs4LUSrAuWIHWuFeZfzZMuhud6AQX7vPnDsg==}
+  '@capgo/capacitor-social-login@6.0.1':
+    resolution: {integrity: sha512-ji5/fBd2T2ofIIGrblvxteU7qUUpxaBsbpE60xZrbDo+dz0BdSzXN5VGS+WXUcwf9jR3vsuyKFeyj6bVIHXR2g==}
     peerDependencies:
-      '@capacitor/core': '>=8.0.0'
+      '@capacitor/core': '>=6.0.0'
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -1589,7 +1589,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@capacitor/android@8.2.0(@capacitor/core@6.2.1)':
+  '@capacitor/android@6.2.1(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
 
@@ -1639,7 +1639,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 6.2.1
 
-  '@capgo/capacitor-social-login@8.3.4(@capacitor/core@6.2.1)':
+  '@capgo/capacitor-social-login@6.0.1(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
 
