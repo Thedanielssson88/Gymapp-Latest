@@ -77,6 +77,14 @@
     .shadow-glow {
       box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.4), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     }
+    /* Allow text selection in input fields and textareas */
+    .select-text,
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+    }
   </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="importmap">
