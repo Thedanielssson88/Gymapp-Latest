@@ -575,16 +575,36 @@ const InfoTab = ({ formData, setFormData, userProfile, allExercises }: { formDat
           Fyll i med AI
         </button>
       </div>
-      <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-pink select-text" placeholder="T.ex. Bänkpress" />
+      <input
+        type="text"
+        value={formData.name}
+        onChange={e => setFormData({ ...formData, name: e.target.value })}
+        onMouseDown={e => e.stopPropagation()}
+        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-pink select-text"
+        placeholder="T.ex. Bänkpress"
+      />
       
       <div className="space-y-2">
         <label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Engelskt Namn</label>
-        <input type="text" value={formData.englishName || ''} onChange={e => setFormData({ ...formData, englishName: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-blue select-text" placeholder="T.ex. Bench Press" />
+        <input
+          type="text"
+          value={formData.englishName || ''}
+          onChange={e => setFormData({ ...formData, englishName: e.target.value })}
+          onMouseDown={e => e.stopPropagation()}
+          className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-blue select-text"
+          placeholder="T.ex. Bench Press"
+        />
       </div>
 
       <div className="space-y-2">
         <label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Instruktioner</label>
-        <textarea value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-medium text-sm outline-none focus:border-accent-blue min-h-[120px] select-text" placeholder="1. Sänk stången... 2. Pressa upp..." />
+        <textarea
+          value={formData.description || ''}
+          onChange={e => setFormData({ ...formData, description: e.target.value })}
+          onMouseDown={e => e.stopPropagation()}
+          className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-medium text-sm outline-none focus:border-accent-blue min-h-[120px] select-text"
+          placeholder="1. Sänk stången... 2. Pressa upp..."
+        />
       </div>
 
       <div className="space-y-2">
