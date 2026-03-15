@@ -96,14 +96,14 @@ export const MeasurementsView: React.FC<MeasurementsViewProps> = ({ profile, onU
 
       {/* DETAIL MODAL */}
       {selectedField && (
-        <MeasurementDetailModal 
+        <MeasurementDetailModal
           field={selectedField}
           history={history}
           profile={profile}
           onClose={() => setSelectedField(null)}
           onSave={async (val, date) => {
             const currentMeasurements = { ...(latestLog?.measurements || profile.measurements || {}) };
-            
+
             const newLog: BiometricLog = {
               id: `log-${Date.now()}`,
               date: date.toISOString(),
@@ -113,22 +113,28 @@ export const MeasurementsView: React.FC<MeasurementsViewProps> = ({ profile, onU
                 [selectedField.key]: selectedField.key !== 'weight' ? val : (currentMeasurements[selectedField.key as keyof BodyMeasurements])
               }
             };
-            
+
             await storage.saveBiometricLog(newLog);
-            
+
             const updatedProfile = {
                 ...profile,
                 weight: newLog.weight,
                 measurements: newLog.measurements
             };
             await storage.setUserProfile(updatedProfile);
-            
+
             onUpdate();
-            
+
             const logs = await storage.getBiometricLogs();
             setHistory(logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
-            
+
             setSelectedField(null);
+          }}
+          onDelete={async (logId: string) => {
+            await storage.deleteBiometricLog(logId);
+            const logs = await storage.getBiometricLogs();
+            setHistory(logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+            onUpdate();
           }}
         />
       )}
@@ -142,18 +148,12 @@ interface DetailModalProps {
     profile: UserProfile;
     onClose: () => void;
     onSave: (val: number, date: Date) => Promise<void>;
+    onDelete: (logId: string) => Promise<void>;
 }
 
-const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, onClose, onSave }) => {
+const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, onClose, onSave, onDelete }) => {
   const [newValue, setNewValue] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  const handleDeleteLog = async (logId: string) => {
-    if (confirm(`Är du säker på att du vill ta bort denna mätning?`)) {
-      await storage.deleteBiometricLog(logId);
-      window.location.reload(); // Reload to refresh data
-    }
-  };
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -326,16 +326,18 @@ const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, on
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      const logToDelete = history.find((log, logIdx) => {
-                        const dateObj = new Date(log.date);
-                        const displayDate = dateObj.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
-                        const displayTime = dateObj.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-                        const fullDateTime = `${displayDate} kl ${displayTime}`;
-                        return fullDateTime === entry.dateTime;
-                      });
-                      if (logToDelete) {
-                        handleDeleteLog(logToDelete.id);
+                    onClick={async () => {
+                      if (confirm(`Är du säker på att du vill ta bort denna mätning?`)) {
+                        const logToDelete = history.find((log, logIdx) => {
+                          const dateObj = new Date(log.date);
+                          const displayDate = dateObj.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+                          const displayTime = dateObj.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                          const fullDateTime = `${displayDate} kl ${displayTime}`;
+                          return fullDateTime === entry.dateTime;
+                        });
+                        if (logToDelete) {
+                          await onDelete(logToDelete.id);
+                        }
                       }
                     }}
                     className="p-3 bg-white/5 rounded-xl text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors"
