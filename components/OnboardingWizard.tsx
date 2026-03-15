@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserProfile, Goal, Zone, Equipment } from '../types';
 import { storage } from '../services/storage';
 // Ta bort Google Drive-importerna
-import { ChevronRight, Check, Dumbbell, Target, User, Weight, MapPin } from 'lucide-react';
+import { ChevronRight, Check, Dumbbell, Target, User, Weight, MapPin, Users } from 'lucide-react';
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -20,14 +20,15 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   // Temporärt state för wizard
   const [name, setName] = useState('');
   const [weight, setWeight] = useState<number>(80);
+  const [biologicalSex, setBiologicalSex] = useState<'Man' | 'Kvinna' | 'Annan'>('Man');
   const [goal, setGoal] = useState<Goal>(Goal.HYPERTROPHY);
   const [gymName, setGymName] = useState('Mitt Gym');
   const [gymInventory, setGymInventory] = useState<Equipment[]>([]);
 
-  const totalSteps = 4; // 0, 1, 2, 3
+  const totalSteps = 5; // 0, 1, 2, 3, 4
 
   const handleNext = () => {
-    if (step < 3) {
+    if (step < 4) {
       setStep(step + 1);
     } else {
       finishOnboarding();
@@ -39,9 +40,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
     const profile: UserProfile = {
       name,
       weight,
-      height: 180, 
+      height: 180,
       level: 'Medel',
       goal,
+      biologicalSex,
       injuries: [],
       measurements: {}
     };
@@ -82,7 +84,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
       
       {/* Progress Indicator */}
       <div className="w-full max-w-md flex gap-2 mb-12">
-        {Array.from({ length: 4 }).map((_, idx) => (
+        {Array.from({ length: 5 }).map((_, idx) => (
           <div key={idx} className={`h-1 flex-1 rounded-full transition-all duration-500 ${idx <= step ? 'bg-accent-pink' : 'bg-white/10'}`} />
         ))}
       </div>
@@ -128,8 +130,36 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
           </div>
         )}
 
-        {/* STEP 2: MÅL */}
+        {/* STEP 2: BIOLOGISKT KÖN */}
         {step === 2 && (
+          <div className="animate-in slide-in-from-right-8 duration-500 space-y-6 flex-1 flex flex-col justify-center">
+            <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center text-purple-400 mb-4 mx-auto border border-purple-500/20">
+              <Users size={40} />
+            </div>
+            <div className="text-center space-y-2 mb-4">
+              <h2 className="text-3xl font-black italic uppercase">Biologiskt Kön</h2>
+              <p className="text-text-dim text-sm">Detta hjälper oss att göra bättre beräkningar för återhämtning och volym.</p>
+            </div>
+            <div className="grid gap-3">
+              {(['Man', 'Kvinna', 'Annan'] as const).map((sex) => (
+                <button
+                  key={sex}
+                  onClick={() => setBiologicalSex(sex)}
+                  className={`p-6 rounded-3xl border text-left transition-all ${
+                    biologicalSex === sex
+                      ? 'bg-white text-black border-white scale-105 shadow-xl'
+                      : 'bg-white/5 border-white/5 text-text-dim hover:bg-white/10'
+                  }`}
+                >
+                  <span className="font-black uppercase italic text-lg">{sex}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: MÅL */}
+        {step === 3 && (
           <div className="animate-in slide-in-from-right-8 duration-500 space-y-6 flex-1 flex flex-col justify-center">
             <div className="w-20 h-20 bg-[var(--accent-green)]/10 rounded-full flex items-center justify-center text-[var(--accent-green)] mb-4 mx-auto border border-[var(--accent-green)]/20">
               <Target size={40} />
@@ -156,8 +186,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
           </div>
         )}
 
-        {/* STEP 3: GYM & UTRUSTNING */}
-        {step === 3 && (
+        {/* STEP 4: GYM & UTRUSTNING */}
+        {step === 4 && (
           <div className="animate-in slide-in-from-right-8 duration-500 space-y-4 flex-1 flex flex-col">
             <div className="text-center space-y-1 pt-4">
               <div className="flex items-center justify-center gap-2 text-accent-pink mb-2">
@@ -210,12 +240,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
 
         {/* NAVIGATION BUTTON */}
         <div className="mt-8">
-          <button 
+          <button
             onClick={handleNext}
-            disabled={(step === 0 && !name) || (step === 3 && !gymName)}
+            disabled={(step === 0 && !name) || (step === 4 && !gymName)}
             className="w-full py-5 bg-white text-black rounded-[24px] font-black italic text-xl uppercase tracking-widest shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
           >
-            {step === 3 ? 'Kör igång!' : 'Nästa'} <ChevronRight size={20} strokeWidth={3} />
+            {step === 4 ? 'Kör igång!' : 'Nästa'} <ChevronRight size={20} strokeWidth={3} />
           </button>
         </div>
 

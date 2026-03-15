@@ -181,6 +181,7 @@ export interface UserProfile {
   height: number;
   level: 'Nybörjare' | 'Medel' | 'Avancerad' | 'Elit';
   goal: Goal;
+  biologicalSex?: 'Man' | 'Kvinna' | 'Annan';
   injuries: MuscleGroup[];
   measurements: BodyMeasurements;
   settings?: UserSettings;

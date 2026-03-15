@@ -234,24 +234,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
             <div className="grid grid-cols-2 gap-4">
                <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-black uppercase text-text-dim">Vikt (kg)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     onFocus={(e) => e.target.select()}
-                    value={localProfile.weight} 
+                    value={localProfile.weight}
                     onChange={e => setLocalProfile({...localProfile, weight: Number(e.target.value)})}
                     className="bg-white/5 border border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-accent-pink"
                   />
                </div>
                <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-black uppercase text-text-dim">Mål</label>
-                  <select 
-                    value={localProfile.goal} 
+                  <select
+                    value={localProfile.goal}
                     onChange={e => setLocalProfile({...localProfile, goal: e.target.value as Goal})}
                     className="bg-white/5 border border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-accent-pink"
                   >
                      {Object.values(Goal).map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                </div>
+            </div>
+            <div className="flex flex-col gap-1">
+               <label className="text-[10px] font-black uppercase text-text-dim">Biologiskt Kön</label>
+               <select
+                 value={localProfile.biologicalSex || 'Man'}
+                 onChange={e => setLocalProfile({...localProfile, biologicalSex: e.target.value as 'Man' | 'Kvinna' | 'Annan'})}
+                 className="bg-white/5 border border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-accent-pink"
+               >
+                  <option value="Man">Man</option>
+                  <option value="Kvinna">Kvinna</option>
+                  <option value="Annan">Annan</option>
+               </select>
             </div>
          </div>
       </section>

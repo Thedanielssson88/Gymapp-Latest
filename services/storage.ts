@@ -102,7 +102,13 @@ export const storage = {
           supabase.from('user_profiles').select('*').eq('id', user.id).single().then(async ({ data }) => {
             if (data) {
               console.log('✅ Uppdaterade cached profil från Supabase:', data);
-              localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(data));
+              // Mappa snake_case till camelCase innan cache
+              const rawData = data as any;
+              const mappedProfile = {
+                ...(data as UserProfile),
+                biologicalSex: rawData.biological_sex as 'Man' | 'Kvinna' | 'Annan' | undefined
+              };
+              localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(mappedProfile));
 
               // Dekryptera och uppdatera API-nyckel om den finns i Supabase
               if ((data as any).encrypted_api_key) {
@@ -151,6 +157,13 @@ export const storage = {
     let profile = data as UserProfile | null;
     if (!profile || error) {
       profile = { id: user.id, ...DEFAULT_PROFILE };
+    } else {
+      // Mappa snake_case från Supabase till camelCase
+      const rawData = data as any;
+      profile = {
+        ...profile,
+        biologicalSex: rawData.biological_sex as 'Man' | 'Kvinna' | 'Annan' | undefined
+      };
     }
 
     // Spara i cache för nästa gång!
@@ -219,6 +232,7 @@ export const storage = {
       settings: safeSettings,
       id: user.id,
       user_id: user.id,
+      biological_sex: profile.biologicalSex, // Mappa camelCase till snake_case
       encrypted_api_key: encryptedApiKey // Spara krypterad API-nyckel
     };
 
