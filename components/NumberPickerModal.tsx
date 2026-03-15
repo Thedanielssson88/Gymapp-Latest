@@ -132,13 +132,13 @@ export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
   }
 
   // --- UI FOR KG & REPS ---
-  const quickWeights = Array.from({ length: 30 }, (_, i) => (i + 1) * 5);
+  const quickWeights = Array.from({ length: 60 }, (_, i) => (i + 1) * 2.5);
   const quickReps = Array.from({ length: 50 }, (_, i) => i + 1);
 
   const scrollToCurrent = (val: number, behavior: ScrollBehavior = 'smooth') => {
     if (scrollRef.current) {
       const isKg = unit === 'kg';
-      const closestQuickValue = isKg ? Math.round(val / 5) * 5 : Math.round(val);
+      const closestQuickValue = isKg ? Math.round(val / 2.5) * 2.5 : Math.round(val);
       const elementId = isKg ? `quick-weight-${closestQuickValue}` : `quick-rep-${closestQuickValue}`;
       const element = scrollRef.current.querySelector(`[id="${elementId}"]`);
       if (element) {
@@ -193,14 +193,14 @@ export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
           <div className="my-8 relative">
             <div className="flex justify-between items-center mb-3 px-1">
               <p className="text-[10px] text-text-dim font-bold uppercase tracking-wider">Dra för att snabbspola</p>
-              <span className="text-[10px] text-accent-blue font-black uppercase">{unit === 'kg' ? '5kg intervall' : '1 rep intervall'}</span>
+              <span className="text-[10px] text-accent-blue font-black uppercase">{unit === 'kg' ? '2.5kg intervall' : '1 rep intervall'}</span>
             </div>
             <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-6 pt-2 px-10 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none' }}>
               {(unit === 'kg' ? quickWeights : quickReps).map((val) => {
-                const isSelected = (unit === 'kg' ? Math.round(localVal / 5) * 5 : Math.round(localVal)) === val;
+                const isSelected = (unit === 'kg' ? Math.round(localVal / 2.5) * 2.5 : Math.round(localVal)) === val;
                 return (
                   <button key={val} id={unit === 'kg' ? `quick-weight-${val}` : `quick-rep-${val}`} onClick={() => { setLocalVal(val); scrollToCurrent(val); }} className={`flex-shrink-0 w-16 h-16 rounded-2xl border-2 snap-center flex flex-col items-center justify-center transition-all duration-300 ${isSelected ? 'bg-accent-blue border-accent-blue text-white scale-110 shadow-xl shadow-accent-blue/30 z-10' : 'bg-white/5 border-white/10 text-text-dim scale-90 opacity-60'}`}>
-                    <span className="text-lg font-black">{val}</span>
+                    <span className="text-lg font-black">{val % 1 === 0 ? val : val.toFixed(1)}</span>
                     <span className="text-[8px] font-bold uppercase opacity-60">{unit}</span>
                   </button>
                 );
