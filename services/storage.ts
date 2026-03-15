@@ -227,16 +227,25 @@ export const storage = {
     }
 
     // 2. Sätt id till användarens Supabase-UUID istället för 'current'
+    // Ta bort biologicalSex från rest-objektet (annars validerar Supabase mot fel schema)
+    const { biologicalSex, ...restWithoutBioSex } = rest;
+
     const safeProfile = {
-      ...rest,
+      ...restWithoutBioSex,
       settings: safeSettings,
       id: user.id,
       user_id: user.id,
-      biological_sex: profile.biologicalSex, // Mappa camelCase till snake_case
+      biological_sex: biologicalSex, // Mappa camelCase till snake_case
       encrypted_api_key: encryptedApiKey // Spara krypterad API-nyckel
     };
 
-    const { error } = await supabase.from('user_profiles').upsert(safeProfile);
+    // Använd { count: 'exact' } för att undvika schema-validering
+    const { error } = await supabase
+      .from('user_profiles')
+      .upsert(safeProfile, {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      });
 
     if (error) {
       console.error("Fel vid sparning av profil i Supabase:", error.message);

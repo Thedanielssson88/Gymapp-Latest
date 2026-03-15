@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation: Biologiskt Kön</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #ff2d55;
+            border-bottom: 3px solid #ff2d55;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #333;
+            margin-top: 30px;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #007aff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .step-number {
+            background: #007aff;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        code {
+            background: #1a1721;
+            color: #00ff00;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        pre {
+            background: #1a1721;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .copy-btn:hover {
+            background: #0056b3;
+        }
+        .copy-btn.copied {
+            background: #34c759;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .link-button {
+            display: inline-block;
+            background: #ff2d55;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .link-button:hover {
+            background: #cc0033;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧬 Installation: Biologiskt Kön</h1>
+
+        <div class="warning">
+            <strong>⚠️ Viktig information:</strong> Du får just nu felmeddelandet <code>Could not find the 'biologicalSex' column</code> eftersom databaskolumnen inte finns än. Den här guiden fixar problemet!
+        </div>
+
+        <h2>📋 Snabbstart (3 minuter)</h2>
+
+        <div class="step">
+            <div>
+                <span class="step-number">1</span>
+                <strong>Öppna Supabase Dashboard</strong>
+            </div>
+            <p style="margin-top: 10px;">
+                Klicka på länken nedan för att öppna din Gymapp-databas:
+            </p>
+            <a href="https://supabase.com/dashboard/project/maviagpzwdjywatckgii/sql/new" class="link-button" target="_blank">
+                🚀 Öppna SQL Editor
+            </a>
+        </div>
+
+        <div class="step">
+            <div>
+                <span class="step-number">2</span>
+                <strong>Kopiera SQL-koden</strong>
+            </div>
+            <p style="margin-top: 10px;">
+                Klicka på <strong>"Kopiera"</strong>-knappen nedan för att kopiera SQL-koden:
+            </p>
+            <div style="position: relative;">
+                <button class="copy-btn" onclick="copySQL()">📋 Kopiera</button>
+                <pre id="sql-code">-- 🧬 Lägg till stöd för biologiskt kön i user_profiles
+-- Datum: 2026-03-15
+-- Syfte: Aktivera könsbaserade träningsanpassningar
+
+-- 1. Lägg till kolumnen biological_sex
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS biological_sex TEXT;
+
+-- 2. Lägg till validering (endast Man/Kvinna/Annan tillåtna)
+ALTER TABLE user_profiles
+ADD CONSTRAINT biological_sex_check
+CHECK (biological_sex IN ('Man', 'Kvinna', 'Annan') OR biological_sex IS NULL);
+
+-- 3. Kommentar för dokumentation
+COMMENT ON COLUMN user_profiles.biological_sex IS
+'Användarens biologiska kön (Man/Kvinna/Annan) - används för återhämtningsberäkningar och volymrekommendationer';
+
+-- 4. Sätt standardvärde för befintliga användare (valfritt)
+-- UPDATE user_profiles SET biological_sex = 'Man' WHERE biological_sex IS NULL;
+
+-- 🎉 Klart! Kolumnen biological_sex är nu tillgänglig.</pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <div>
+                <span class="step-number">3</span>
+                <strong>Klistra in och Kör</strong>
+            </div>
+            <p style="margin-top: 10px;">
+                1. Klistra in SQL-koden i SQL Editor<br>
+                2. Klicka på <strong>"Run"</strong> (eller tryck <code>Ctrl+Enter</code>)<br>
+                3. Vänta på bekräftelsen <code>Success. No rows returned</code>
+            </p>
+        </div>
+
+        <div class="step">
+            <div>
+                <span class="step-number">4</span>
+                <strong>Testa Gymapp</strong>
+            </div>
+            <p style="margin-top: 10px;">
+                1. Gå tillbaka till Gymapp<br>
+                2. Öppna <strong>Profil</strong><br>
+                3. Välj <strong>Biologiskt Kön</strong> (Man/Kvinna/Annan)<br>
+                4. Spara profilen ✅
+            </p>
+        </div>
+
+        <div class="success">
+            <strong>✅ När migrationen är klar:</strong><br><br>
+            <strong>Män:</strong> 72h återhämtning, standard volym (4 set Tier 1)<br>
+            <strong>Kvinnor:</strong> 54h återhämtning, +1 set extra (5 set Tier 1)<br>
+            <strong>Annan:</strong> 60h återhämtning, +1 set extra (5 set Tier 1)
+        </div>
+
+        <h2>📚 Vad händer bakom kulisserna?</h2>
+
+        <p>
+            <strong>1. Återhämtningstid:</strong><br>
+            Kvinnor återhämtar sig 25% snabbare (54h vs 72h) pga lägre testosteronnivåer och bättre kapillärtäthet.
+        </p>
+
+        <p>
+            <strong>2. Volymtolerans:</strong><br>
+            Kvinnor tål mer volym (fler set) pga högre andel typ I-muskelfibrer. De får därför +1 set per övning.
+        </p>
+
+        <p>
+            <strong>3. Strain Score:</strong><br>
+            Kvinnor får högre Strain Score för samma pass (eftersom de gör fler set). Divisorn är 250 vs mäns 300.
+        </p>
+
+        <h2>🔍 Felsökning</h2>
+
+        <div class="warning">
+            <strong>Problem:</strong> Får felmeddelande "permission denied"<br>
+            <strong>Lösning:</strong> Kontrollera att du är inloggad som admin på Supabase Dashboard
+        </div>
+
+        <div class="warning">
+            <strong>Problem:</strong> Kolumnen finns redan<br>
+            <strong>Lösning:</strong> SQL-koden använder <code>IF NOT EXISTS</code>, så det är säkert att köra flera gånger
+        </div>
+
+        <h2>📖 Dokumentation</h2>
+        <p>
+            För mer information om könsbaserade träningsanpassningar, se:<br>
+            <code>/workspace/group/Byggen/Gymapp/GENDER-BASED-TRAINING.md</code>
+        </p>
+
+        <hr style="margin: 40px 0; border: none; border-top: 2px solid #eee;">
+
+        <p style="text-align: center; color: #666;">
+            <strong>Gymapp v2.0</strong> • Biologiskt Kön Feature<br>
+            Implementerat: 2026-03-15 • Commit: 4f07865
+        </p>
+    </div>
+
+    <script>
+        function copySQL() {
+            const sqlCode = document.getElementById('sql-code').textContent;
+            navigator.clipboard.writeText(sqlCode).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✅ Kopierat!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Kopiera';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
