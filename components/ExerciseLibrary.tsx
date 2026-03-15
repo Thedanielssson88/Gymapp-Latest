@@ -580,6 +580,8 @@ const InfoTab = ({ formData, setFormData, userProfile, allExercises }: { formDat
         value={formData.name}
         onChange={e => setFormData({ ...formData, name: e.target.value })}
         onMouseDown={e => e.stopPropagation()}
+        onPointerDown={e => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
         className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-pink select-text"
         placeholder="T.ex. Bänkpress"
       />
@@ -591,6 +593,8 @@ const InfoTab = ({ formData, setFormData, userProfile, allExercises }: { formDat
           value={formData.englishName || ''}
           onChange={e => setFormData({ ...formData, englishName: e.target.value })}
           onMouseDown={e => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
           className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-blue select-text"
           placeholder="T.ex. Bench Press"
         />
@@ -602,6 +606,8 @@ const InfoTab = ({ formData, setFormData, userProfile, allExercises }: { formDat
           value={formData.description || ''}
           onChange={e => setFormData({ ...formData, description: e.target.value })}
           onMouseDown={e => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
           className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-medium text-sm outline-none focus:border-accent-blue min-h-[120px] select-text"
           placeholder="1. Sänk stången... 2. Pressa upp..."
         />
