@@ -243,7 +243,7 @@ export default function App() {
     setRoutines(r);
     
     const allPlansForDisplay: PlannedActivityForLogDisplay[] = [
-      ...scheduled,
+      ...scheduled.filter(s => !s.isCompleted), // Filter out completed activities
       ...recurring.map(rp => ({
           id: rp.id,
           date: rp.startDate,
