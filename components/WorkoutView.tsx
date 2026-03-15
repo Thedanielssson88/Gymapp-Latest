@@ -686,7 +686,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                               </div>
                               <div className="text-left">
                                 <h4 className="text-lg font-black italic uppercase text-white leading-tight">
-                                  {session.locationName || activeZone.name}
+                                  {session.name || session.locationName || activeZone.name}
                                 </h4>
                                 <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">
                                   {session.exercises?.length || 0} övningar • {new Date(session.date).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}
