@@ -501,6 +501,36 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
     return plansForToday;
   }, [plannedActivities]);
 
+  const recentSessions = useMemo(() => {
+    // Get the 3 most recent completed sessions
+    return [...history]
+      .filter(s => s.isCompleted && s.exercises && s.exercises.length > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+  }, [history]);
+
+  const handleStartFromHistory = useCallback((session: WorkoutSession) => {
+    // Create a new session based on the historical session
+    const newSession: WorkoutSession = {
+      id: generateId(),
+      date: new Date().toISOString(),
+      zoneId: activeZone.id,
+      exercises: session.exercises.map(ex => ({
+        ...ex,
+        sets: ex.sets.map(s => ({
+          ...s,
+          completed: false
+        }))
+      })),
+      isCompleted: false,
+      isManual: true,
+      locationName: activeZone.name
+    };
+
+    storage.setActiveSession(newSession);
+    setLocalSession(newSession);
+  }, [activeZone]);
+
   const handleUpdateSessionName = useCallback(async (name: string) => {
     if (localSession) {
       const updatedSession = { ...localSession, name };
@@ -564,6 +594,47 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                       {(plan.exercises?.length || 0) > 8 && (
                         <span className="text-xs text-text-dim self-center">
                           +{(plan.exercises?.length || 0) - 8} mer
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Workouts Section */}
+          {recentSessions.length > 0 && (
+            <div className="space-y-4 pt-6">
+              <div className="flex items-center gap-2 px-2"><History size={14} className="text-accent-blue" /><h3 className="text-[10px] font-black uppercase text-text-dim tracking-widest">Senaste Pass</h3></div>
+              <div className="grid gap-4">
+                {recentSessions.map(session => (
+                  <button key={session.id} onClick={() => handleStartFromHistory(session)} className="bg-[#1a1721] border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-blue/20">
+                    <div className="flex justify-between items-center w-full">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500"><History size={24} /></div>
+                        <div className="text-left">
+                          <h4 className="text-lg font-black italic uppercase text-white leading-tight">{session.locationName || activeZone.name}</h4>
+                          <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">
+                            {session.exercises?.length || 0} övningar • {new Date(session.date).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-accent-blue group-hover:text-accent-blue transition-colors"><Play size={18} fill="currentColor" /></div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 px-3 py-3 bg-white/5 rounded-2xl border border-white/5">
+                      {(session.exercises || []).slice(0, 8).map((pe, idx) => {
+                        const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
+                        if (!exName) return null;
+                        return (
+                          <span key={idx} className="text-[9px] bg-black/30 text-text-dim px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
+                            {exName}
+                          </span>
+                        );
+                      })}
+                      {(session.exercises?.length || 0) > 8 && (
+                        <span className="text-xs text-text-dim self-center">
+                          +{(session.exercises?.length || 0) - 8} mer
                         </span>
                       )}
                     </div>
