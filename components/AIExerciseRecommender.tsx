@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Plus, ArrowRight, Trash2, History, Dumbbell, Save, Info, Sparkles, Play, AlertTriangle, X } from 'lucide-react';
+import { Search, Loader2, Plus, ArrowRight, Trash2, History, Dumbbell, Save, Info, Sparkles, Play, AlertTriangle, X, Check } from 'lucide-react';
 import { recommendExercises, ExerciseRecommendation, ExerciseSearchResponse } from '../services/geminiService';
 import { storage } from '../services/storage';
 import { Exercise, ScheduledActivity, SetType, Zone, WorkoutSession } from '../types';
@@ -34,9 +34,12 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
   const [currentQuery, setCurrentQuery] = useState('');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
-  
+
   // NY STATE: Håller koll på övningar vi lagt till just nu för direkt UI-feedback
   const [locallyAdded, setLocallyAdded] = useState<string[]>([]);
+
+  // STATE: Håller koll på övningar tillagda i workout
+  const [addedToWorkout, setAddedToWorkout] = useState<string[]>([]);
 
   useEffect(() => {
     loadHistory();
@@ -133,6 +136,8 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
         // Om vi är i workout-kontext, lägg till övningen i träningspasset
         if (onAddToWorkout && exerciseToUse) {
             onAddToWorkout(exerciseToUse);
+            // Tracka att övningen är tillagd i workout
+            setAddedToWorkout(prev => [...prev, exerciseToUse.id]);
         }
 
     } catch (error) {
@@ -207,6 +212,7 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
         {recs.map((rec, idx) => {
             const existingId = getExistingExerciseId(rec);
             const exists = !!existingId;
+            const isAddedToWorkout = existingId ? addedToWorkout.includes(existingId) : false;
 
             const handleCardClick = () => {
                 if (exists) {
@@ -246,13 +252,19 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
                     <div className="pt-2 border-t border-white/5 mt-1">
                         {exists ? (
                             onAddToWorkout ? (
-                                // Workout context: Show button to add to current workout
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleAddExercise(rec); }}
-                                    className="w-full py-3.5 rounded-2xl bg-accent-pink hover:bg-accent-pink/80 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-pink-500/10"
-                                >
-                                    <Plus size={16} strokeWidth={3} /> Lägg till i passet
-                                </button>
+                                // Workout context: Show button to add to current workout or green if added
+                                isAddedToWorkout ? (
+                                    <div className="w-full py-3.5 rounded-2xl bg-[#2ed573]/20 text-[#2ed573] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-[#2ed573]/30">
+                                        <Check size={16} strokeWidth={3} /> Tillagd i passet
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleAddExercise(rec); }}
+                                        className="w-full py-3.5 rounded-2xl bg-accent-pink hover:bg-accent-pink/80 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-pink-500/10"
+                                    >
+                                        <Plus size={16} strokeWidth={3} /> Lägg till i passet
+                                    </button>
+                                )
                             ) : (
                                 // Library context: Show info button
                                 <div className="w-full py-3.5 rounded-2xl bg-white/5 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-white/5">

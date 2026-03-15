@@ -754,7 +754,6 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
               onUpdate={onUpdate}
               onAddToWorkout={(exercise) => {
                 addNewExercise(exercise);
-                setShowAIScout(false);
               }}
             />
           </div>
