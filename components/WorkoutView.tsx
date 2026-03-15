@@ -673,7 +673,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                     {recentSessions.map((session, idx) => (
                       <div
                         key={session.id}
-                        className="flex-shrink-0 w-[calc(100vw-2rem)] snap-center"
+                        className="flex-shrink-0 w-[calc(100vw-2rem)] md:w-[400px] snap-center"
                       >
                         <button
                           onClick={() => handleStartFromHistory(session)}
