@@ -72,9 +72,10 @@ interface LocationManagerProps {
     onUpdate: () => void;
     initialZoneToEdit?: Zone | null;
     onClearInitialZone?: () => void;
+    onEditClose?: () => void;
 }
 
-export const LocationManager: React.FC<LocationManagerProps> = ({ zones, onUpdate, initialZoneToEdit, onClearInitialZone }) => {
+export const LocationManager: React.FC<LocationManagerProps> = ({ zones, onUpdate, initialZoneToEdit, onClearInitialZone, onEditClose }) => {
   const [editingZone, setEditingZone] = useState<Zone | null>(initialZoneToEdit || null);
 
   useEffect(() => {
@@ -96,6 +97,7 @@ export const LocationManager: React.FC<LocationManagerProps> = ({ zones, onUpdat
     await storage.saveZone(zone);
     setEditingZone(null);
     onUpdate();
+    onEditClose?.();
   };
 
   const handleDelete = async (id: string) => {
@@ -103,7 +105,13 @@ export const LocationManager: React.FC<LocationManagerProps> = ({ zones, onUpdat
       await storage.deleteZone(id);
       setEditingZone(null);
       onUpdate();
+      onEditClose?.();
     }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingZone(null);
+    onEditClose?.();
   };
 
   const createNew = () => {
@@ -170,9 +178,9 @@ export const LocationManager: React.FC<LocationManagerProps> = ({ zones, onUpdat
 
       {/* EDIT MODAL */}
       {editingZone && (
-        <LocationEditor 
-          zone={editingZone} 
-          onClose={() => setEditingZone(null)} 
+        <LocationEditor
+          zone={editingZone}
+          onClose={handleCancelEdit}
           onSave={handleSave}
           onDelete={handleDelete}
         />

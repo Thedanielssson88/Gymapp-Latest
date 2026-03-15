@@ -61,6 +61,7 @@ export default function App() {
   const [pendingActivity, setPendingActivity] = useState<ScheduledActivity | null>(null);
   const [showZonePicker, setShowZonePicker] = useState(false);
   const [initialZoneToEdit, setInitialZoneToEdit] = useState<Zone | null>(null);
+  const [returnToStartMenuAfterEdit, setReturnToStartMenuAfterEdit] = useState(false);
 
   const globalStyles = `
     :root {
@@ -649,7 +650,13 @@ export default function App() {
       case 'log': return <WorkoutLog history={history} plannedActivities={plannedActivities} routines={routines} allExercises={allExercises} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onDeleteHistory={handleDeleteHistory} onMovePlan={handleMovePlan} onStartActivity={handleStartSession} onStartManualWorkout={handleStartManualWorkout} onStartLiveWorkout={handleStartEmptyWorkout} onUpdate={refreshData} />;
       case 'targets': return <TargetsView userMissions={userMissions} history={history} exercises={allExercises} userProfile={user} biometricLogs={biometricLogs} onAddMission={handleAddMission} onDeleteMission={handleDeleteMission} />;
       case 'library': return ( <ExerciseLibrary allExercises={allExercises} history={history} onUpdate={refreshData} userProfile={user} initialExerciseId={targetExerciseId} onClose={() => setTargetExerciseId(null)} /> );
-      case 'gyms': return <LocationManager zones={zones} onUpdate={refreshData} initialZoneToEdit={initialZoneToEdit} onClearInitialZone={() => setInitialZoneToEdit(null)} />;
+      case 'gyms': return <LocationManager zones={zones} onUpdate={refreshData} initialZoneToEdit={initialZoneToEdit} onClearInitialZone={() => setInitialZoneToEdit(null)} onEditClose={() => {
+        if (returnToStartMenuAfterEdit) {
+          setReturnToStartMenuAfterEdit(false);
+          setShowStartMenu(true);
+          navigateToTab('workout', {});
+        }
+      }} />;
       case 'ai': return <AIProgramDashboard onStartSession={handleStartSession} onGoToExercise={handleGoToExercise} onUpdate={refreshData} />;
       default: return null;
     }
@@ -674,6 +681,7 @@ export default function App() {
                   onClick={() => {
                     setShowStartMenu(false);
                     setSelectedZoneForStart(null);
+                    setReturnToStartMenuAfterEdit(true);
                     setInitialZoneToEdit({
                       id: `zone-${Date.now()}`,
                       name: '',
@@ -710,6 +718,7 @@ export default function App() {
                       e.stopPropagation();
                       setShowStartMenu(false);
                       setSelectedZoneForStart(null);
+                      setReturnToStartMenuAfterEdit(true);
                       setInitialZoneToEdit(z);
                       navigateToTab('gyms', {});
                     }}
