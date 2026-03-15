@@ -135,6 +135,7 @@ export const MeasurementsView: React.FC<MeasurementsViewProps> = ({ profile, onU
             const logs = await storage.getBiometricLogs();
             setHistory(logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
             onUpdate();
+            setSelectedField(null); // Close modal to refresh with new data
           }}
         />
       )}
