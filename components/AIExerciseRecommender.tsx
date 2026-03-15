@@ -10,6 +10,7 @@ import { ExerciseInfoModal } from './ExerciseInfoModal';
 interface AIExerciseRecommenderProps {
   onEditExercise?: (exerciseId: string) => void;
   onStartSession?: (activity: ScheduledActivity) => void;
+  onAddToWorkout?: (exercise: Exercise) => void;
   onClose?: () => void;
   allExercises: Exercise[];
   history: WorkoutSession[];
@@ -26,7 +27,7 @@ interface HistoryItem {
     timestamp: number;
 }
 
-export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ onEditExercise, onStartSession, onClose, allExercises, onUpdate, history: fullHistory }) => {
+export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ onEditExercise, onStartSession, onAddToWorkout, onClose, allExercises, onUpdate, history: fullHistory }) => {
   const [request, setRequest] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentResult, setCurrentResult] = useState<ExerciseSearchResponse | null>(null);
@@ -108,25 +109,31 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
         let cleanId = sanitizeId(rec.data.id || rec.data.name);
         if (!cleanId || cleanId.length < 2) cleanId = `ex-${Date.now()}`;
 
-        const exists = allExercises.find(e => e.id === cleanId || e.name.toLowerCase() === rec.data.name.toLowerCase());
-        if (exists) {
-            onUpdate();
-            return;
+        let exerciseToUse: Exercise | undefined = allExercises.find(e => e.id === cleanId || e.name.toLowerCase() === rec.data.name.toLowerCase());
+
+        if (!exerciseToUse) {
+            // Övningen finns inte, skapa den
+            const exerciseToSave: Exercise = {
+                ...rec.data,
+                id: cleanId,
+                userModified: true,
+                muscleGroups: rec.data.muscleGroups || Array.from(new Set([...rec.data.primaryMuscles, ...(rec.data.secondaryMuscles || [])]))
+            };
+
+            await storage.saveExercise(exerciseToSave);
+
+            // UPPDATERING: Lägg till ID:t i lokal state direkt
+            setLocallyAdded(prev => [...prev, cleanId]);
+
+            onUpdate(); // Säg till appen att uppdatera DB-listan
+
+            exerciseToUse = exerciseToSave;
         }
 
-        const exerciseToSave: Exercise = {
-            ...rec.data,
-            id: cleanId, 
-            userModified: true,
-            muscleGroups: rec.data.muscleGroups || Array.from(new Set([...rec.data.primaryMuscles, ...(rec.data.secondaryMuscles || [])]))
-        };
-
-        await storage.saveExercise(exerciseToSave);
-        
-        // UPPDATERING: Lägg till ID:t i lokal state direkt
-        setLocallyAdded(prev => [...prev, cleanId]);
-        
-        onUpdate(); // Säg till appen att uppdatera DB-listan
+        // Om vi är i workout-kontext, lägg till övningen i träningspasset
+        if (onAddToWorkout && exerciseToUse) {
+            onAddToWorkout(exerciseToUse);
+        }
 
     } catch (error) {
         console.error("Fel vid sparande av övning:", error);

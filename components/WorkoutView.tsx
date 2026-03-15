@@ -10,8 +10,9 @@ import { WorkoutHeader } from './WorkoutHeader';
 import { WorkoutStats } from './WorkoutStats';
 import { ExerciseCard } from './ExerciseCard';
 import { ExerciseLibrary } from './ExerciseLibrary';
+import { AIExerciseRecommender } from './AIExerciseRecommender';
 import { registerBackHandler } from '../utils/backHandler';
-import { Search, X, Plus, RefreshCw, Info, Sparkles, History, BookOpen, ArrowDownToLine, MapPin, Check, ArrowRightLeft, Dumbbell, Play, Pause, Timer as TimerIcon, AlertCircle, Thermometer, Zap, Activity, Shuffle, Calendar, Trophy, ArrowRight, Repeat, MessageSquare } from 'lucide-react';
+import { Search, X, Plus, RefreshCw, Info, Sparkles, History, BookOpen, ArrowDownToLine, MapPin, Check, ArrowRightLeft, Dumbbell, Play, Pause, Timer as TimerIcon, AlertCircle, Thermometer, Zap, Activity, Shuffle, Calendar, Trophy, ArrowRight, Repeat, MessageSquare, Shield } from 'lucide-react';
 import { Haptics, NotificationType, ImpactStyle } from '@capacitor/haptics';
 import { triggerHaptic } from '../utils/haptics';
 import { ConfirmModal } from './ConfirmModal';
@@ -52,6 +53,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
   const [restTimer, setRestTimer] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
+  const [showAIScout, setShowAIScout] = useState(false);
   const [openNotesIdx, setOpenNotesIdx] = useState<number | null>(null);
   const [infoModalData, setInfoModalData] = useState<{ exercise: Exercise; index: number } | null>(null);
   const [showSummary, setShowSummary] = useState(false);
@@ -76,12 +78,13 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
   useEffect(() => {
     if (showGenerator) return registerBackHandler(() => setShowGenerator(false));
     if (showAddModal) return registerBackHandler(() => setShowAddModal(false));
+    if (showAIScout) return registerBackHandler(() => setShowAIScout(false));
     if (localShowZonePicker) return registerBackHandler(() => setLocalShowZonePicker(false));
     if (showSummary) return registerBackHandler(() => setShowSummary(false));
     if (exerciseToDelete !== null) return registerBackHandler(() => setExerciseToDelete(null));
     if (typeSelectorData) return registerBackHandler(() => setTypeSelectorData(null));
     if (imageUploadTarget) return registerBackHandler(() => setImageUploadTarget(null));
-  }, [showGenerator, showAddModal, localShowZonePicker, showSummary, exerciseToDelete, typeSelectorData, imageUploadTarget]);
+  }, [showGenerator, showAddModal, showAIScout, localShowZonePicker, showSummary, exerciseToDelete, typeSelectorData, imageUploadTarget]);
 
 
   useEffect(() => {
@@ -507,11 +510,12 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
   }, [localSession]);
 
   const hasExercises = localSession?.exercises && localSession.exercises.length > 0;
-  
+
   const ActionButtons = (
-    <div className="flex gap-2 mx-2 mt-4 mb-4">
-      <button onClick={() => setShowGenerator(true)} className="flex-1 py-10 bg-accent-blue/5 border-2 border-dashed border-accent-blue/10 rounded-[40px] flex flex-col items-center justify-center gap-3 text-accent-blue hover:bg-accent-blue/10 transition-all active:scale-95"><Sparkles size={28} /><span className="font-black uppercase tracking-widest text-[9px] italic">Smart PT Generator</span></button>
-      <button onClick={() => setShowAddModal(true)} className="flex-1 py-10 border-2 border-dashed border-white/5 rounded-[40px] flex flex-col items-center justify-center gap-3 text-text-dim hover:border-accent-pink/30 active:scale-95"><Plus size={28} /><span className="font-black uppercase tracking-widest text-[9px] italic">Lägg till övning</span></button>
+    <div className="grid grid-cols-3 gap-2 mx-2 mt-4 mb-4">
+      <button onClick={() => setShowGenerator(true)} className="py-10 bg-accent-blue/5 border-2 border-dashed border-accent-blue/10 rounded-[40px] flex flex-col items-center justify-center gap-3 text-accent-blue hover:bg-accent-blue/10 transition-all active:scale-95"><Sparkles size={24} /><span className="font-black uppercase tracking-widest text-[8px] italic">Smart PT</span></button>
+      <button onClick={() => setShowAIScout(true)} className="py-10 border-2 border-dashed border-purple-500/10 rounded-[40px] flex flex-col items-center justify-center gap-3 text-purple-400 hover:border-purple-500/30 active:scale-95"><Shield size={24} /><span className="font-black uppercase tracking-widest text-[8px] italic">AI Scout</span></button>
+      <button onClick={() => setShowAddModal(true)} className="py-10 border-2 border-dashed border-white/5 rounded-[40px] flex flex-col items-center justify-center gap-3 text-text-dim hover:border-accent-pink/30 active:scale-95"><Plus size={24} /><span className="font-black uppercase tracking-widest text-[8px] italic">Lägg till</span></button>
     </div>
   );
 
@@ -736,6 +740,24 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
       {showAddModal && (
         <div className="fixed inset-0 bg-[#0f0d15] z-[9999] flex flex-col animate-in slide-in-from-bottom-10 duration-500 overscroll-y-contain">
           <ExerciseLibrary allExercises={allExercises} history={history} onSelect={addNewExercise} onClose={() => setShowAddModal(false)} onUpdate={onUpdate} activeZone={activeZone} userProfile={userProfile} />
+        </div>
+      )}
+
+      {showAIScout && (
+        <div className="fixed inset-0 z-[9999] bg-[#0f0d15] flex flex-col">
+          <div style={{ paddingTop: 'env(safe-area-inset-top)' }} className="flex-1 flex flex-col overflow-hidden">
+            <AIExerciseRecommender
+              onClose={() => setShowAIScout(false)}
+              allExercises={allExercises}
+              history={history}
+              activeZone={activeZone}
+              onUpdate={onUpdate}
+              onAddToWorkout={(exercise) => {
+                addNewExercise(exercise);
+                setShowAIScout(false);
+              }}
+            />
+          </div>
         </div>
       )}
 
