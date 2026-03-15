@@ -26,7 +26,7 @@ import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { triggerHaptic } from './utils/haptics';
 import { App as CapacitorApp } from '@capacitor/app';
-import { Dumbbell, User2, Calendar, X, MapPin, Activity, Home, Trees, ChevronRight, Settings, Trophy, BookOpen, Cloud, Sparkles } from 'lucide-react';
+import { Dumbbell, User2, Calendar, X, MapPin, Activity, Home, Trees, ChevronRight, Settings, Trophy, BookOpen, Cloud, Sparkles, Plus, Edit3 } from 'lucide-react';
 
 const APP_VERSION = 'v2.0.0-build-' + Date.now();
 
@@ -665,10 +665,46 @@ export default function App() {
       {renderContent()}
       {showStartMenu && (
         <div className="fixed inset-0 bg-[#0f0d15] z-[150] p-8 pt-[calc(env(safe-area-inset-top)+2rem)] flex flex-col overflow-y-auto scrollbar-hide">
-          <header className="flex justify-between items-center mb-10"><h3 className="text-3xl font-black italic uppercase tracking-tighter">{selectedZoneForStart ? 'Välj Rutin' : 'Vart tränar du?'}</h3><button onClick={() => { setShowStartMenu(false); setSelectedZoneForStart(null); setPendingManualDate(null); }} className="text-text-dim p-2"><X size={32}/></button></header>
+          <header className="flex justify-between items-center mb-10">
+            <div className="flex items-center gap-4">
+              <h3 className="text-3xl font-black italic uppercase tracking-tighter">{selectedZoneForStart ? 'Välj Rutin' : 'Vart tränar du?'}</h3>
+              {!selectedZoneForStart && (
+                <button
+                  onClick={() => navigateToTab('gyms', {})}
+                  className="p-3 bg-accent-pink text-white rounded-2xl shadow-lg active:scale-95 transition-all"
+                  title="Hantera platser"
+                >
+                  <Plus size={20} strokeWidth={3} />
+                </button>
+              )}
+            </div>
+            <button onClick={() => { setShowStartMenu(false); setSelectedZoneForStart(null); setPendingManualDate(null); }} className="text-text-dim p-2"><X size={32}/></button>
+          </header>
           {!selectedZoneForStart ? (
             <div className="grid grid-cols-1 w-full gap-4">
-              {zones.map(z => (<button key={z.id} onClick={() => setSelectedZoneForStart(z)} className="bg-white/5 p-8 rounded-[40px] border border-white/10 flex items-center justify-between group active:scale-95 transition-all"><div className="flex items-center gap-6"><div className="w-16 h-16 bg-white/5 rounded-[24px] flex items-center justify-center">{z.name.toLowerCase().includes('hem') ? <Home size={32} /> : z.name.toLowerCase().includes('ute') ? <Trees size={32} /> : <MapPin size={32} />}</div><span className="text-2xl font-black uppercase italic tracking-tight">{z.name}</span></div><ChevronRight size={32} className="text-text-dim" /></button>))}
+              {zones.map(z => (
+                <div key={z.id} className="relative group flex gap-2">
+                  <button onClick={() => setSelectedZoneForStart(z)} className="flex-1 bg-white/5 p-8 rounded-[40px] border border-white/10 flex items-center justify-between active:scale-95 transition-all hover:bg-white/10">
+                    <div className="flex items-center gap-6">
+                      <div className="w-16 h-16 bg-white/5 rounded-[24px] flex items-center justify-center">
+                        {z.name.toLowerCase().includes('hem') ? <Home size={32} /> : z.name.toLowerCase().includes('ute') ? <Trees size={32} /> : <MapPin size={32} />}
+                      </div>
+                      <span className="text-2xl font-black uppercase italic tracking-tight">{z.name}</span>
+                    </div>
+                    <ChevronRight size={32} className="text-text-dim" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToTab('gyms', {});
+                    }}
+                    className="p-6 bg-white/5 rounded-2xl text-text-dim hover:text-white hover:bg-white/10 transition-colors"
+                    title="Redigera plats"
+                  >
+                    <Edit3 size={24} />
+                  </button>
+                </div>
+              ))}
             </div>
           ) : ( <RoutinePicker onStart={handleStartWorkout} activeZone={selectedZoneForStart} allExercises={allExercises} userProfile={user} routines={routines} onUpdate={refreshData} history={history} /> )}
         </div>
