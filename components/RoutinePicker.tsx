@@ -24,6 +24,7 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Partial<WorkoutRoutine> | null>(null);
+  const [sessionName, setSessionName] = useState("Fri Träning");
 
   // Hantera Android Back
   useEffect(() => {
@@ -35,7 +36,7 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
     setIsGenerating(true);
     try {
       const workout = await generateWorkoutFromPrompt(prompt, allExercises, activeZone, history);
-      onStart(workout, `AI Scout: ${prompt}`);
+      onStart(workout, sessionName || `AI Scout: ${prompt}`);
     } catch (e) {
       alert("Kunde inte generera pass. Försök igen.");
     } finally {
@@ -48,7 +49,7 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
     const morphedExercises = routine.exercises.map(pe => {
       const originalEx = allExercises.find(ex => ex.id === pe.exerciseId);
       if (!originalEx) return { ...pe, sets: pe.sets.map(s => ({ ...s, completed: false })) };
-      
+
       const isAvailable = originalEx.equipment.every(eq => activeZone.inventory.includes(eq));
       if (!isAvailable) {
         const replacement = findReplacement(originalEx, activeZone, allExercises);
@@ -57,7 +58,7 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
       }
       return { ...pe, sets: pe.sets.map(s => ({ ...s, completed: false })) };
     });
-    onStart(morphedExercises, routine.name);
+    onStart(morphedExercises, sessionName || routine.name);
   };
 
   const saveRoutine = async (routineToSave: WorkoutRoutine) => {
@@ -114,10 +115,22 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
 
   return (
     <div className="space-y-4 animate-in fade-in pb-20">
-      
+
+      {/* Session Name Input */}
+      <div className="bg-white/5 border border-white/10 rounded-[32px] p-6">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-text-dim mb-3">Namnge ditt pass</label>
+        <input
+          type="text"
+          value={sessionName}
+          onChange={(e) => setSessionName(e.target.value)}
+          placeholder="T.ex. Push Day, Bröst & Triceps..."
+          className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-text-dim/50 focus:outline-none focus:border-accent-blue transition-colors"
+        />
+      </div>
+
       {/* 1. FRI TRÄNING - NU MED STOR DESIGN */}
-      <button 
-        onClick={() => onStart([], "Fri Träning")}
+      <button
+        onClick={() => onStart([], sessionName || "Fri Träning")}
         className="w-full bg-accent-blue/10 border border-accent-blue/30 p-8 rounded-[40px] flex items-center justify-between group active:scale-95 transition-all shadow-lg"
       >
         <div className="flex items-center gap-6">
