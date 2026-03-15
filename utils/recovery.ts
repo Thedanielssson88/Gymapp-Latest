@@ -5,7 +5,30 @@ export type MuscleStatus = {
   [key in MuscleGroup]: number; // 0 to 100
 };
 
-const RECOVERY_HOURS = 72; // Ökat till 72h för att matcha tung styrketräning
+/**
+ * Hämtar återhämtningstid baserat på biologiskt kön
+ * - Män: 72h (standard för tung styrketräning)
+ * - Kvinnor: 54h (snabbare återhämtning pga hormonella skillnader)
+ * - Annan: 60h (mitt emellan)
+ */
+const getRecoveryHours = (biologicalSex?: 'Man' | 'Kvinna' | 'Annan'): number => {
+  if (biologicalSex === 'Kvinna') return 54;
+  if (biologicalSex === 'Annan') return 60;
+  return 72; // Man eller undefined
+};
+
+/**
+ * Hämtar belastningsdivisor baserat på biologiskt kön
+ * Används för att beräkna Strain Score och fatigue
+ * - Män: 60 (standard)
+ * - Kvinnor: 50 (lägre divisor = högre känslighet för volym)
+ * - Annan: 55 (mitt emellan)
+ */
+export const getFatigueDivisor = (biologicalSex?: 'Man' | 'Kvinna' | 'Annan'): number => {
+  if (biologicalSex === 'Kvinna') return 50;
+  if (biologicalSex === 'Annan') return 55;
+  return 60; // Man eller undefined
+};
 
 export const ALL_MUSCLE_GROUPS: MuscleGroup[] = [
   'Mage', 'Rygg', 'Biceps', 'Bröst', 'Säte', 'Baksida lår', 
@@ -81,8 +104,8 @@ export const calculateExerciseImpact = (
 
 
 export const calculateMuscleRecovery = (
-  history: WorkoutSession[], 
-  allExercises: Exercise[], 
+  history: WorkoutSession[],
+  allExercises: Exercise[],
   userProfile: UserProfile | null
 ): MuscleStatus => {
   const status: MuscleStatus = {} as MuscleStatus;
@@ -93,11 +116,13 @@ export const calculateMuscleRecovery = (
   const now = new Date().getTime();
   const sortedHistory = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  const RECOVERY_HOURS = getRecoveryHours(userProfile.biologicalSex);
+
   sortedHistory.forEach(session => {
     const sessionTime = new Date(session.date).getTime();
     const hoursSince = (now - sessionTime) / (1000 * 60 * 60);
-    
-    // Använder den nya konstanten (72h)
+
+    // Använder könsspecifik återhämtningstid
     if (hoursSince > (RECOVERY_HOURS * 1.5)) return;
 
     const sessionRpe = session.rpe || 7.5; 
@@ -114,28 +139,28 @@ export const calculateMuscleRecovery = (
       if (setsToCount.length === 0) return;
 
       const baseFatigue = calculateExerciseImpact(exData, setsToCount, userProfile.weight);
-      
-      // SÄNKT DIVISOR: Från 300 till 60.
-      // Detta gör systemet 5 gånger känsligare.
-      // Exempel 140kg bänk x 8 x 4 = ~10,000 impact / 60 = 166% fatigue -> 0% återhämtning. Rätt.
-      // Exempel 40kg RDL x 10 x 3 = ~1600 impact / 60 = 26% fatigue. Rätt.
-      const finalFatigue = (baseFatigue / 60) * intensityFactor;
+
+      // Könsspecifik divisor för fatigue-beräkning
+      // Män: 60, Kvinnor: 50, Annan: 55
+      // Lägre divisor = högre känslighet för volym (passar kvinnor som tål mer volym)
+      const fatigueDivisor = getFatigueDivisor(userProfile.biologicalSex);
+      const finalFatigue = (baseFatigue / fatigueDivisor) * intensityFactor;
 
       const primaries = exData.primaryMuscles?.length ? exData.primaryMuscles : exData.muscleGroups;
-      primaries?.forEach(m => applyFatigue(status, m, finalFatigue, hoursSince));
-      exData.secondaryMuscles?.forEach(m => applyFatigue(status, m, finalFatigue * 0.5, hoursSince));
+      primaries?.forEach(m => applyFatigue(status, m, finalFatigue, hoursSince, RECOVERY_HOURS));
+      exData.secondaryMuscles?.forEach(m => applyFatigue(status, m, finalFatigue * 0.5, hoursSince, RECOVERY_HOURS));
     });
   });
 
   return status;
 };
 
-const applyFatigue = (status: MuscleStatus, muscle: MuscleGroup, amount: number, hoursSince: number) => {
+const applyFatigue = (status: MuscleStatus, muscle: MuscleGroup, amount: number, hoursSince: number, recoveryHours: number) => {
   if (status[muscle] === undefined) return;
-  
-  // Återhämtningen är nu spridd över 72h
-  const recoveryFactor = Math.min(1, hoursSince / RECOVERY_HOURS);
-  
+
+  // Återhämtningen är könsspecifik
+  const recoveryFactor = Math.min(1, hoursSince / recoveryHours);
+
   // Icke-linjär återhämtning (går långsammare i början om man är riktigt sliten)
   // Men vi håller det linjärt för nu för att det är mer förutsägbart för användaren.
   const remainingFatigue = amount * (1 - recoveryFactor);

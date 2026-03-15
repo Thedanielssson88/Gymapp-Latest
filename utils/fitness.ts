@@ -134,27 +134,33 @@ export const createSmartSets = (lastSets: WorkoutSet[], applyOverload: boolean, 
 };
 
 /**
- * Hjälpfunktion för att bestämma set och reps baserat på mål och övnings-tier.
+ * Hjälpfunktion för att bestämma set och reps baserat på mål, övnings-tier och biologiskt kön.
+ * Kvinnor får fler set men samma reps (högre volymtolerans).
  */
-const getTargetVolume = (goal: Goal, tier: ExerciseTier = 'tier_2') => {
+const getTargetVolume = (goal: Goal, tier: ExerciseTier = 'tier_2', biologicalSex?: 'Man' | 'Kvinna' | 'Annan') => {
+  // Volymjustering baserat på kön
+  // Kvinnor: +1 set (högre volymtolerans)
+  // Annan: +0.5 set (avrundat till närmaste heltal)
+  const volumeBonus = biologicalSex === 'Kvinna' ? 1 : (biologicalSex === 'Annan' ? 1 : 0);
+
   if (goal === Goal.STRENGTH) {
-    if (tier === 'tier_1') return { sets: 5, reps: 5 }; 
-    if (tier === 'tier_2') return { sets: 4, reps: 8 }; 
-    return { sets: 3, reps: 12 }; 
+    if (tier === 'tier_1') return { sets: 5 + volumeBonus, reps: 5 };
+    if (tier === 'tier_2') return { sets: 4 + volumeBonus, reps: 8 };
+    return { sets: 3 + volumeBonus, reps: 12 };
   }
-  
+
   if (goal === Goal.ENDURANCE) {
-    return { sets: 3, reps: 15 };
+    return { sets: 3 + volumeBonus, reps: 15 };
   }
 
   if (goal === Goal.REHAB) {
-     return { sets: 3, reps: 15 };
+     return { sets: 3 + volumeBonus, reps: 15 };
   }
 
   // HYPERTROFI (Default)
-  if (tier === 'tier_1') return { sets: 4, reps: 8 };
-  if (tier === 'tier_2') return { sets: 3, reps: 10 };
-  return { sets: 3, reps: 12 }; 
+  if (tier === 'tier_1') return { sets: 4 + volumeBonus, reps: 8 };
+  if (tier === 'tier_2') return { sets: 3 + volumeBonus, reps: 10 };
+  return { sets: 3 + volumeBonus, reps: 12 };
 };
 
 /**
@@ -247,7 +253,7 @@ export const generateWorkoutSession = (
       });
 
       const chosen = pool[0];
-      const volume = getTargetVolume(userProfile.goal, chosen.tier);
+      const volume = getTargetVolume(userProfile.goal, chosen.tier, userProfile.biologicalSex);
       const weight = suggestWeight(chosen.id, history, volume.reps);
 
       plannedExercises.push({
@@ -260,7 +266,7 @@ export const generateWorkoutSession = (
         })),
         notes: chosen.pattern === MovementPattern.REHAB ? 'Rehab-fokus pga skada.' : 'Smart PT val'
       });
-      
+
       selectedIds.add(chosen.id);
     }
   });

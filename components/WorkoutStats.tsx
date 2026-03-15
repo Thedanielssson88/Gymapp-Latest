@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { WorkoutSession, Exercise, MuscleGroup, UserProfile } from '../types';
-import { calculateExerciseImpact } from '../utils/recovery';
+import { calculateExerciseImpact, getFatigueDivisor } from '../utils/recovery';
 import { X, Dumbbell, Activity, Plus, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 
 interface WorkoutStatsProps {
@@ -83,9 +83,6 @@ export const WorkoutStats: React.FC<WorkoutStatsProps> = ({ session, allExercise
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // SCALING FACTOR: Förvandlar råa poäng (t.ex. 20 000) till en "Strain Score" (0-100)
-  const POINTS_DIVISOR = 300;
-
   const stats = useMemo(() => {
     if (!session) return { totalLoad: 0, totalSets: 0, totalReps: 0, strainScore: 0 };
 
@@ -100,13 +97,17 @@ export const WorkoutStats: React.FC<WorkoutStatsProps> = ({ session, allExercise
       if (exData && completedSets.length > 0) {
         totalLoad += calculateExerciseImpact(exData, completedSets, userProfile.weight);
       }
-      
+
       completedSets.forEach(set => {
         totalSets++;
         totalReps += set.reps || 0;
       });
     });
 
+    // Könsspecifik divisor för Strain Score
+    // Män: 300, Kvinnor: 250, Annan: 275
+    // Lägre divisor = högre Strain Score för samma volym (passar kvinnor som tål mer volym)
+    const POINTS_DIVISOR = getFatigueDivisor(userProfile.biologicalSex) * 5;
     const strainScore = Math.round(totalLoad / POINTS_DIVISOR);
 
     return { totalLoad, totalSets, totalReps, strainScore };
