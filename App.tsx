@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, Zone, WorkoutSession, Exercise, BiometricLog, PlannedExercise, GoalTarget, WorkoutRoutine, ScheduledActivity, RecurringPlan, PlannedActivityForLogDisplay, UserMission, BodyMeasurements, SetType } from './types';
+import { UserProfile, Zone, WorkoutSession, Exercise, BiometricLog, PlannedExercise, GoalTarget, WorkoutRoutine, ScheduledActivity, RecurringPlan, PlannedActivityForLogDisplay, UserMission, BodyMeasurements, SetType, Equipment } from './types';
 import { WorkoutView } from './components/WorkoutView';
 import { ExerciseLibrary } from './components/ExerciseLibrary';
 import { WorkoutLog } from './components/WorkoutLog';
@@ -60,8 +60,7 @@ export default function App() {
 
   const [pendingActivity, setPendingActivity] = useState<ScheduledActivity | null>(null);
   const [showZonePicker, setShowZonePicker] = useState(false);
-  const [initialZoneToEdit, setInitialZoneToEdit] = useState<Zone | null>(null);
-  const [returnToStartMenuAfterEdit, setReturnToStartMenuAfterEdit] = useState(false);
+  const [editingZoneInStartMenu, setEditingZoneInStartMenu] = useState<Zone | null>(null);
 
   const globalStyles = `
     :root {
@@ -650,13 +649,7 @@ export default function App() {
       case 'log': return <WorkoutLog history={history} plannedActivities={plannedActivities} routines={routines} allExercises={allExercises} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onDeleteHistory={handleDeleteHistory} onMovePlan={handleMovePlan} onStartActivity={handleStartSession} onStartManualWorkout={handleStartManualWorkout} onStartLiveWorkout={handleStartEmptyWorkout} onUpdate={refreshData} />;
       case 'targets': return <TargetsView userMissions={userMissions} history={history} exercises={allExercises} userProfile={user} biometricLogs={biometricLogs} onAddMission={handleAddMission} onDeleteMission={handleDeleteMission} />;
       case 'library': return ( <ExerciseLibrary allExercises={allExercises} history={history} onUpdate={refreshData} userProfile={user} initialExerciseId={targetExerciseId} onClose={() => setTargetExerciseId(null)} /> );
-      case 'gyms': return <LocationManager zones={zones} onUpdate={refreshData} initialZoneToEdit={initialZoneToEdit} onClearInitialZone={() => setInitialZoneToEdit(null)} onEditClose={() => {
-        if (returnToStartMenuAfterEdit) {
-          setReturnToStartMenuAfterEdit(false);
-          setShowStartMenu(true);
-          navigateToTab('workout', {});
-        }
-      }} />;
+      case 'gyms': return null; // Platser-fliken borttagen - allt hanteras från "Vart tränar du"
       case 'ai': return <AIProgramDashboard onStartSession={handleStartSession} onGoToExercise={handleGoToExercise} onUpdate={refreshData} />;
       default: return null;
     }
@@ -676,20 +669,16 @@ export default function App() {
           <header className="flex justify-between items-center mb-10">
             <div className="flex items-center gap-4">
               <h3 className="text-3xl font-black italic uppercase tracking-tighter">{selectedZoneForStart ? 'Välj Rutin' : 'Vart tränar du?'}</h3>
-              {!selectedZoneForStart && (
+              {!selectedZoneForStart && !editingZoneInStartMenu && (
                 <button
                   onClick={() => {
-                    setShowStartMenu(false);
-                    setSelectedZoneForStart(null);
-                    setReturnToStartMenuAfterEdit(true);
-                    setInitialZoneToEdit({
+                    setEditingZoneInStartMenu({
                       id: `zone-${Date.now()}`,
                       name: '',
                       icon: 'building',
                       inventory: [],
                       availablePlates: [25, 20, 15, 10, 5, 2.5, 1.25]
                     });
-                    navigateToTab('gyms', {});
                   }}
                   className="p-3 bg-accent-pink text-white rounded-2xl shadow-lg active:scale-95 transition-all"
                   title="Lägg till plats"
@@ -700,7 +689,15 @@ export default function App() {
             </div>
             <button onClick={() => { setShowStartMenu(false); setSelectedZoneForStart(null); setPendingManualDate(null); }} className="text-text-dim p-2"><X size={32}/></button>
           </header>
-          {!selectedZoneForStart ? (
+          {editingZoneInStartMenu ? (
+            <LocationManager
+              zones={zones}
+              onUpdate={refreshData}
+              initialZoneToEdit={editingZoneInStartMenu}
+              onClearInitialZone={() => {}}
+              onEditClose={() => setEditingZoneInStartMenu(null)}
+            />
+          ) : !selectedZoneForStart ? (
             <div className="grid grid-cols-1 w-full gap-4">
               {zones.map(z => (
                 <div key={z.id} className="relative group flex gap-2">
@@ -716,11 +713,7 @@ export default function App() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowStartMenu(false);
-                      setSelectedZoneForStart(null);
-                      setReturnToStartMenuAfterEdit(true);
-                      setInitialZoneToEdit(z);
-                      navigateToTab('gyms', {});
+                      setEditingZoneInStartMenu(z);
                     }}
                     className="p-6 bg-white/5 rounded-2xl text-text-dim hover:text-white hover:bg-white/10 transition-colors"
                     title="Redigera plats"
@@ -742,10 +735,6 @@ export default function App() {
             <button onClick={() => navigateToTab('workout', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'workout' ? 'bg-white text-black' : 'text-text-dim'}`}>
               <Dumbbell size={18} />
               <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">Träning</span>
-            </button>
-            <button onClick={() => navigateToTab('gyms', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'gyms' ? 'bg-white text-black' : 'text-text-dim'}`}>
-              <MapPin size={18} />
-              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-center truncate w-full">Platser</span>
             </button>
             <button onClick={() => navigateToTab('body', { fromNav: true })} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl transition-all ${activeTab === 'body' ? 'bg-white text-black' : 'text-text-dim'}`}>
               <User2 size={18} />
