@@ -1,6 +1,6 @@
 // Service Worker för Gymapp PWA
-const CACHE_NAME = 'gymapp-v6-encrypted-api';
-const RUNTIME_CACHE = 'gymapp-runtime-v6-encrypted-api';
+const CACHE_NAME = 'gymapp-v7-2.5kg-intervals';
+const RUNTIME_CACHE = 'gymapp-runtime-v7-2.5kg-intervals';
 
 // Resurser att cache:a direkt vid installation (endast filer som garanterat finns)
 const PRECACHE_URLS = [
