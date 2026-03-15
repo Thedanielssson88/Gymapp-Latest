@@ -25,6 +25,66 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     setPreview(currentImage || null);
   }, [currentImage]);
 
+  // Paste functionality (Ctrl+V to upload screenshot)
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      // Only handle paste if this component is likely in focus
+      // (We check if there are any clipboard items with images)
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        // Check if item is an image
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault(); // Prevent default paste behavior
+
+          const blob = item.getAsFile();
+          if (!blob) continue;
+
+          try {
+            setIsUploading(true);
+
+            const base64String = await compressImage(blob);
+            setPreview(base64String);
+
+            // Admin users: Upload to Supabase Storage
+            if (userProfile?.is_admin && exerciseId) {
+              try {
+                const publicUrl = await uploadBase64Image(base64String, exerciseId);
+                onImageSaved(publicUrl);
+              } catch (error) {
+                console.error('Supabase upload failed:', error);
+                alert('Kunde inte ladda upp bilden till Supabase. Sparar lokalt istället.');
+                onImageSaved(base64String);
+              }
+            } else {
+              // Regular users: Save to localStorage as base64
+              onImageSaved(base64String);
+            }
+
+          } catch (error) {
+            alert("Kunde inte spara bilden.");
+            console.error(error);
+          } finally {
+            setIsUploading(false);
+          }
+
+          break; // Only process first image
+        }
+      }
+    };
+
+    // Add paste listener to document
+    document.addEventListener('paste', handlePaste);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [userProfile, exerciseId, onImageSaved]);
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -98,6 +158,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             <>
               <Camera size={24} />
               <span className="text-[10px] font-black uppercase tracking-widest">Lägg till bild</span>
+              <span className="text-[8px] font-normal text-text-dim/50">Klicka eller tryck Ctrl+V</span>
             </>
           )}
         </button>
