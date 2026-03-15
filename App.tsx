@@ -60,6 +60,7 @@ export default function App() {
 
   const [pendingActivity, setPendingActivity] = useState<ScheduledActivity | null>(null);
   const [showZonePicker, setShowZonePicker] = useState(false);
+  const [initialZoneToEdit, setInitialZoneToEdit] = useState<Zone | null>(null);
 
   const globalStyles = `
     :root {
@@ -648,7 +649,7 @@ export default function App() {
       case 'log': return <WorkoutLog history={history} plannedActivities={plannedActivities} routines={routines} allExercises={allExercises} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onDeleteHistory={handleDeleteHistory} onMovePlan={handleMovePlan} onStartActivity={handleStartSession} onStartManualWorkout={handleStartManualWorkout} onStartLiveWorkout={handleStartEmptyWorkout} onUpdate={refreshData} />;
       case 'targets': return <TargetsView userMissions={userMissions} history={history} exercises={allExercises} userProfile={user} biometricLogs={biometricLogs} onAddMission={handleAddMission} onDeleteMission={handleDeleteMission} />;
       case 'library': return ( <ExerciseLibrary allExercises={allExercises} history={history} onUpdate={refreshData} userProfile={user} initialExerciseId={targetExerciseId} onClose={() => setTargetExerciseId(null)} /> );
-      case 'gyms': return <LocationManager zones={zones} onUpdate={refreshData} />;
+      case 'gyms': return <LocationManager zones={zones} onUpdate={refreshData} initialZoneToEdit={initialZoneToEdit} onClearInitialZone={() => setInitialZoneToEdit(null)} />;
       case 'ai': return <AIProgramDashboard onStartSession={handleStartSession} onGoToExercise={handleGoToExercise} onUpdate={refreshData} />;
       default: return null;
     }
@@ -670,9 +671,20 @@ export default function App() {
               <h3 className="text-3xl font-black italic uppercase tracking-tighter">{selectedZoneForStart ? 'Välj Rutin' : 'Vart tränar du?'}</h3>
               {!selectedZoneForStart && (
                 <button
-                  onClick={() => navigateToTab('gyms', {})}
+                  onClick={() => {
+                    setShowStartMenu(false);
+                    setSelectedZoneForStart(null);
+                    setInitialZoneToEdit({
+                      id: `zone-${Date.now()}`,
+                      name: '',
+                      icon: 'building',
+                      inventory: [],
+                      availablePlates: [25, 20, 15, 10, 5, 2.5, 1.25]
+                    });
+                    navigateToTab('gyms', {});
+                  }}
                   className="p-3 bg-accent-pink text-white rounded-2xl shadow-lg active:scale-95 transition-all"
-                  title="Hantera platser"
+                  title="Lägg till plats"
                 >
                   <Plus size={20} strokeWidth={3} />
                 </button>
@@ -696,6 +708,9 @@ export default function App() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setShowStartMenu(false);
+                      setSelectedZoneForStart(null);
+                      setInitialZoneToEdit(z);
                       navigateToTab('gyms', {});
                     }}
                     className="p-6 bg-white/5 rounded-2xl text-text-dim hover:text-white hover:bg-white/10 transition-colors"

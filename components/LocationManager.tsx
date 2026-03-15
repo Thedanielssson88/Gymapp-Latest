@@ -70,10 +70,19 @@ const EQUIPMENT_CATEGORIES = [
 interface LocationManagerProps {
     zones: Zone[];
     onUpdate: () => void;
+    initialZoneToEdit?: Zone | null;
+    onClearInitialZone?: () => void;
 }
 
-export const LocationManager: React.FC<LocationManagerProps> = ({ zones, onUpdate }) => {
-  const [editingZone, setEditingZone] = useState<Zone | null>(null);
+export const LocationManager: React.FC<LocationManagerProps> = ({ zones, onUpdate, initialZoneToEdit, onClearInitialZone }) => {
+  const [editingZone, setEditingZone] = useState<Zone | null>(initialZoneToEdit || null);
+
+  useEffect(() => {
+    if (initialZoneToEdit) {
+      setEditingZone(initialZoneToEdit);
+      onClearInitialZone?.();
+    }
+  }, [initialZoneToEdit, onClearInitialZone]);
 
   useEffect(() => {
     if (editingZone) {
