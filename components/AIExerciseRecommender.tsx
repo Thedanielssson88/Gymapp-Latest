@@ -245,15 +245,26 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
 
                     <div className="pt-2 border-t border-white/5 mt-1">
                         {exists ? (
-                            <div className="w-full py-3.5 rounded-2xl bg-white/5 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-white/5">
-                                <Info size={14} /> Visa Info & Historik
-                            </div>
+                            onAddToWorkout ? (
+                                // Workout context: Show button to add to current workout
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleAddExercise(rec); }}
+                                    className="w-full py-3.5 rounded-2xl bg-accent-pink hover:bg-accent-pink/80 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-pink-500/10"
+                                >
+                                    <Plus size={16} strokeWidth={3} /> Lägg till i passet
+                                </button>
+                            ) : (
+                                // Library context: Show info button
+                                <div className="w-full py-3.5 rounded-2xl bg-white/5 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-white/5">
+                                    <Info size={14} /> Visa Info & Historik
+                                </div>
+                            )
                         ) : (
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); handleAddExercise(rec); }}
                                 className="w-full py-3.5 rounded-2xl bg-[#2ed573] hover:bg-[#26b963] text-black text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-500/10"
                             >
-                                <Plus size={16} strokeWidth={3} /> Lägg till i bibliotek
+                                <Plus size={16} strokeWidth={3} /> {onAddToWorkout ? 'Lägg till i bibliotek + passet' : 'Lägg till i bibliotek'}
                             </button>
                         )}
                     </div>
