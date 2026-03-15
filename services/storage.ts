@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { UserProfile, Zone, Exercise, WorkoutSession, BiometricLog, GoalTarget, WorkoutRoutine, ScheduledActivity, RecurringPlan, UserMission, AIProgram } from '../types';
 import { DEFAULT_PROFILE } from '../constants';
+import { encrypt, decrypt } from '../utils/crypto';
 
 const ACTIVE_SESSION_KEY = 'morphfit_active_session';
 const LOCAL_API_KEY_STORAGE = 'morphfit_gemini_api_key';
@@ -96,19 +97,43 @@ export const storage = {
         // Verifiera att det är rätt användare
         if (cachedProfile.id === user.id) {
           console.log(`⚡ getUserProfile: Använder cached profil (instant!)`, cachedProfile);
-          // Tryck in API-nyckeln från LocalStorage
-          const localApiKey = storage.getLocalApiKey();
-          if (localApiKey) {
-            cachedProfile.settings = { ...cachedProfile.settings, geminiApiKey: localApiKey } as any;
-          }
 
-          // Hämta från Supabase i bakgrunden (för att uppdatera cache)
-          supabase.from('user_profiles').select('*').eq('id', user.id).single().then(({ data }) => {
+          // Hämta från Supabase i bakgrunden (för att uppdatera cache + API-nyckel)
+          supabase.from('user_profiles').select('*').eq('id', user.id).single().then(async ({ data }) => {
             if (data) {
               console.log('✅ Uppdaterade cached profil från Supabase:', data);
               localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(data));
+
+              // Dekryptera och uppdatera API-nyckel om den finns i Supabase
+              if ((data as any).encrypted_api_key) {
+                try {
+                  const decryptedKey = await decrypt((data as any).encrypted_api_key, user.id);
+                  storage.setLocalApiKey(decryptedKey);
+                  console.log('✅ API-nyckel dekrypterad och sparad i localStorage');
+                } catch (e) {
+                  console.warn('⚠️ Kunde inte dekryptera API-nyckel:', e);
+                }
+              }
             }
           });
+
+          // Dekryptera API-nyckel från cache om den finns
+          let apiKey = storage.getLocalApiKey(); // Kolla localStorage först
+
+          // Om ingen nyckel i localStorage MEN den finns krypterad i cache → dekryptera den
+          if (!apiKey && (cachedProfile as any).encrypted_api_key) {
+            try {
+              apiKey = await decrypt((cachedProfile as any).encrypted_api_key, user.id);
+              storage.setLocalApiKey(apiKey); // Spara i localStorage för snabbare åtkomst
+              console.log('✅ API-nyckel dekrypterad från cached profil');
+            } catch (e) {
+              console.warn('⚠️ Kunde inte dekryptera API-nyckel från cache:', e);
+            }
+          }
+
+          if (apiKey) {
+            cachedProfile.settings = { ...cachedProfile.settings, geminiApiKey: apiKey } as any;
+          }
 
           return cachedProfile;
         }
@@ -131,10 +156,22 @@ export const storage = {
     // Spara i cache för nästa gång!
     localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(profile));
 
-    // Tryck in API-nyckeln från LocalStorage innan vi returnerar
-    const localApiKey = storage.getLocalApiKey();
-    if (localApiKey) {
-      profile.settings = { ...profile.settings, geminiApiKey: localApiKey } as any;
+    // Dekryptera API-nyckel från Supabase om den finns
+    let apiKey = storage.getLocalApiKey(); // Kolla localStorage först
+
+    // Om ingen nyckel i localStorage MEN den finns krypterad i Supabase → dekryptera den
+    if (!apiKey && (profile as any).encrypted_api_key) {
+      try {
+        apiKey = await decrypt((profile as any).encrypted_api_key, user.id);
+        storage.setLocalApiKey(apiKey); // Spara i localStorage för snabbare åtkomst
+        console.log('✅ API-nyckel dekrypterad från Supabase');
+      } catch (e) {
+        console.warn('⚠️ Kunde inte dekryptera API-nyckel:', e);
+      }
+    }
+
+    if (apiKey) {
+      profile.settings = { ...profile.settings, geminiApiKey: apiKey } as any;
     }
 
     return profile;
@@ -148,23 +185,50 @@ export const storage = {
       return;
     }
 
-    // Klipp ur API-nyckeln innan vi sparar till molnet
+    // Klipp ur API-nyckeln och kryptera den
     const { settings, ...rest } = profile;
-    const { geminiApiKey, ...safeSettings } = settings || {};
-    
+    let { geminiApiKey, ...safeSettings } = settings || {};
+
+    // Om ingen nyckel finns i settings, försök hämta från localStorage
+    if (!geminiApiKey) {
+      geminiApiKey = storage.getLocalApiKey();
+      console.log('🔍 API-nyckel saknas i settings, hämtar från localStorage:', geminiApiKey ? 'FINNS' : 'SAKNAS');
+    }
+
+    // Spara i localStorage för snabb åtkomst
     if (geminiApiKey !== undefined) {
       storage.setLocalApiKey(geminiApiKey);
     }
 
+    // Kryptera API-nyckeln innan den sparas i Supabase
+    let encryptedApiKey: string | null = null;
+    if (geminiApiKey) {
+      try {
+        encryptedApiKey = await encrypt(geminiApiKey, user.id);
+        console.log('✅ API-nyckel krypterad för Supabase');
+      } catch (e) {
+        console.error('❌ Kunde inte kryptera API-nyckel:', e);
+      }
+    } else {
+      console.warn('⚠️ Ingen API-nyckel att kryptera (varken i settings eller localStorage)');
+    }
+
     // 2. Sätt id till användarens Supabase-UUID istället för 'current'
-    const safeProfile = { ...rest, settings: safeSettings, id: user.id, user_id: user.id };
-    
+    const safeProfile = {
+      ...rest,
+      settings: safeSettings,
+      id: user.id,
+      user_id: user.id,
+      encrypted_api_key: encryptedApiKey // Spara krypterad API-nyckel
+    };
+
     const { error } = await supabase.from('user_profiles').upsert(safeProfile);
 
     if (error) {
       console.error("Fel vid sparning av profil i Supabase:", error.message);
       alert("Kunde inte spara profilen: " + error.message);
     } else {
+      console.log('✅ Profil sparad i Supabase (med krypterad API-nyckel)');
       // Uppdatera localStorage-cache efter lyckad sparning
       localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(safeProfile));
     }
@@ -268,18 +332,34 @@ export const storage = {
     return exercises || [];
   },
   saveExercise: async (exercise: Exercise) => {
+    console.log('🔵 saveExercise: START', exercise.name);
     const user = await getCurrentUser();
-    if (!user) return;
+    console.log('🔵 saveExercise: user =', user ? user.id : 'NULL');
+
+    if (!user) {
+      console.error('❌ saveExercise: Ingen användare inloggad! Övning sparas INTE till Supabase.');
+      alert('⚠️ Ingen användare inloggad! Övning sparas INTE.');
+      return;
+    }
 
     // Admin can save public exercises without user_id, others save with user_id
     const profile = await storage.getUserProfile();
     const isAdmin = (profile as any).is_admin === true;
+    console.log('🔵 saveExercise: isAdmin =', isAdmin);
 
     const exerciseData = isAdmin && (exercise as any).is_public
       ? { ...exercise, user_id: null, is_public: true }
       : { ...exercise, user_id: user.id, is_public: false };
 
-    await supabase.from('exercises').upsert(exerciseData);
+    console.log('🔵 saveExercise: Sparar till Supabase...', exerciseData.name);
+    const { data, error } = await supabase.from('exercises').upsert(exerciseData).select();
+
+    if (error) {
+      console.error('❌ saveExercise: Supabase ERROR:', error);
+      alert('❌ Kunde inte spara övning: ' + error.message);
+    } else {
+      console.log('✅ saveExercise: SUCCESS!', data);
+    }
   },
   updateExercise: async (id: string, updates: Partial<Exercise>) => {
     await supabase.from('exercises').update(updates).eq('id', id);
