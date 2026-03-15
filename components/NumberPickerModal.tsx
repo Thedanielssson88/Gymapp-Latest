@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Check, ChevronUp, ChevronDown, Scale } from 'lucide-react';
+import { X, Check, ChevronUp, ChevronDown, Scale, RefreshCw } from 'lucide-react';
 import { PlateDisplay } from './PlateDisplay';
 import { UserProfile } from '../types';
 import { triggerHaptic } from '../utils/haptics';
@@ -17,12 +17,15 @@ interface NumberPickerModalProps {
   barWeight?: number;
   availablePlates?: number[];
   onSave: (value: number) => void;
+  onSaveFollowing?: (value: number) => void;
+  currentSetIndex?: number;
+  totalSets?: number;
   onClose: () => void;
   userProfile?: UserProfile;
 }
 
 export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
-  title, unit, value, step = 1, min = 0, max = 99999, precision = 2, barWeight = 0, onSave, onClose, availablePlates, userProfile
+  title, unit, value, step = 1, min = 0, max = 99999, precision = 2, barWeight = 0, onSave, onSaveFollowing, currentSetIndex, totalSets, onClose, availablePlates, userProfile
 }) => {
   const [localVal, setLocalVal] = useState(value);
   const [isEditing, setIsEditing] = useState(false);
@@ -33,24 +36,37 @@ export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
     return registerBackHandler(onClose);
   }, [onClose]);
 
-  const handleFinalSave = () => {
-    const num = localVal || 0;
-    
+  const getFinalValue = (val: number) => {
+    const num = val || 0;
+
     // Special rounding for barbell exercises
     if (unit === 'kg' && barWeight > 0 && step === 2.5) {
         const plateWeight = num - barWeight;
         if (plateWeight > 0) {
             const roundedPlateWeight = Math.round(plateWeight / 2.5) * 2.5;
             const finalWeight = barWeight + roundedPlateWeight;
-            onSave(Math.max(min, Math.min(max, finalWeight)));
+            return Math.max(min, Math.min(max, finalWeight));
         } else {
-            onSave(Math.max(min, Math.min(max, barWeight)));
+            return Math.max(min, Math.min(max, barWeight));
         }
     } else {
         const rounded = precision === 0 ? Math.round(num) : parseFloat(num.toFixed(precision));
-        onSave(Math.max(min, Math.min(max, rounded)));
+        return Math.max(min, Math.min(max, rounded));
     }
   };
+
+  const handleFinalSave = () => {
+    onSave(getFinalValue(localVal));
+  };
+
+  const handleSaveFollowing = () => {
+    if (onSaveFollowing) {
+      onSaveFollowing(getFinalValue(localVal));
+    }
+  };
+
+  const hasFollowingSets = currentSetIndex !== undefined && totalSets !== undefined && currentSetIndex < totalSets - 1;
+  const followingSetsCount = hasFollowingSets ? totalSets! - currentSetIndex! - 1 : 0;
 
   // --- METER-SPECIFIC UI ---
   if (unit === 'm') {
@@ -123,9 +139,19 @@ export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
               </button>
             ))}
           </div>
-          <button onClick={() => { onSave(localVal); onClose(); }} className="w-full py-5 bg-white text-black rounded-[24px] font-black italic uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
-            <Check size={24} strokeWidth={4} /> Spara
-          </button>
+          <div className="grid gap-3" style={{ gridTemplateColumns: hasFollowingSets ? '1fr 1fr' : '1fr' }}>
+            <button onClick={() => { onSave(getFinalValue(localVal)); onClose(); }} className="py-5 bg-white text-black rounded-[24px] font-black italic uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+              <Check size={24} strokeWidth={4} /> Spara
+            </button>
+            {hasFollowingSets && onSaveFollowing && (
+              <button onClick={() => { handleSaveFollowing(); onClose(); }} className="py-5 bg-accent-blue text-white rounded-[24px] font-black italic uppercase text-xs tracking-widest shadow-xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+                <div className="flex items-center gap-2">
+                  <RefreshCw size={16} strokeWidth={3} /> Uppdatera
+                </div>
+                <span className="text-[8px] opacity-80">Kommande {followingSetsCount} set</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -211,9 +237,17 @@ export const NumberPickerModal: React.FC<NumberPickerModalProps> = ({
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-4">
-          <button onClick={onClose} className="py-4 rounded-2xl bg-white/5 text-text-dim font-bold uppercase tracking-widest text-xs active:bg-white/10 transition-colors">Avbryt</button>
-          <button onClick={handleFinalSave} className="py-4 rounded-2xl bg-accent-blue text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-accent-blue/20 active:scale-95 transition-all">Bekräfta</button>
+        <div className="space-y-3">
+          {hasFollowingSets && onSaveFollowing && (
+            <button onClick={handleSaveFollowing} className="w-full py-4 rounded-2xl bg-accent-pink text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-accent-pink/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+              <RefreshCw size={16} strokeWidth={3} />
+              Uppdatera {followingSetsCount} kommande set
+            </button>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <button onClick={onClose} className="py-4 rounded-2xl bg-white/5 text-text-dim font-bold uppercase tracking-widest text-xs active:bg-white/10 transition-colors">Avbryt</button>
+            <button onClick={handleFinalSave} className="py-4 rounded-2xl bg-accent-blue text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-accent-blue/20 active:scale-95 transition-all">Bekräfta</button>
+          </div>
         </div>
       </div>
     </div>

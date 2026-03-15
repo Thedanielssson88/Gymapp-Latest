@@ -10,6 +10,8 @@ interface SetRowProps {
   set: WorkoutSet;
   isCompleted: boolean;
   onUpdate: (updates: Partial<WorkoutSet>) => void;
+  onUpdateFollowing?: (updates: Partial<WorkoutSet>) => void;
+  totalSets?: number;
   trackingType?: TrackingType;
   exData: Exercise;
   userProfile: UserProfile;
@@ -21,6 +23,8 @@ export const SetRow: React.FC<SetRowProps> = ({
   set,
   isCompleted,
   onUpdate,
+  onUpdateFollowing,
+  totalSets,
   trackingType = 'reps_weight',
   exData,
   userProfile,
@@ -205,16 +209,19 @@ export const SetRow: React.FC<SetRowProps> = ({
       )}
 
       {activeModal === 'time' && (
-        <TimePickerModal 
+        <TimePickerModal
           title="Ange Tid"
           totalSeconds={set.duration || 0}
           onSelect={(s) => onUpdate({ duration: s })}
+          onSelectFollowing={onUpdateFollowing ? (s) => onUpdateFollowing({ duration: s }) : undefined}
+          currentSetIndex={setIdx}
+          totalSets={totalSets}
           onClose={() => setActiveModal(null)}
         />
       )}
 
       {activeModal === 'dist' && (
-        <NumberPickerModal 
+        <NumberPickerModal
           title="Ange Distans"
           unit="m"
           value={set.distance || 0}
@@ -224,12 +231,15 @@ export const SetRow: React.FC<SetRowProps> = ({
           max={99999}
           userProfile={userProfile}
           onSave={(v) => { onUpdate({ distance: v }); setActiveModal(null); }}
+          onSaveFollowing={onUpdateFollowing ? (v) => { onUpdateFollowing({ distance: v }); setActiveModal(null); } : undefined}
+          currentSetIndex={setIdx}
+          totalSets={totalSets}
           onClose={() => setActiveModal(null)}
         />
       )}
 
       {activeModal === 'reps' && (
-        <NumberPickerModal 
+        <NumberPickerModal
           title="Ange Reps"
           unit="reps"
           value={set.reps || 0}
@@ -239,12 +249,15 @@ export const SetRow: React.FC<SetRowProps> = ({
           max={999}
           userProfile={userProfile}
           onSave={(v) => { onUpdate({ reps: v }); setActiveModal(null); }}
+          onSaveFollowing={onUpdateFollowing ? (v) => { onUpdateFollowing({ reps: v }); setActiveModal(null); } : undefined}
+          currentSetIndex={setIdx}
+          totalSets={totalSets}
           onClose={() => setActiveModal(null)}
         />
       )}
       
       {activeModal === 'weight' && (
-        <NumberPickerModal 
+        <NumberPickerModal
           title="Ange Vikt"
           unit="kg"
           value={set.weight || 0}
@@ -256,6 +269,9 @@ export const SetRow: React.FC<SetRowProps> = ({
           barWeight={getBaseWeight()}
           availablePlates={availablePlates}
           onSave={(v) => { onUpdate({ weight: v }); setActiveModal(null); }}
+          onSaveFollowing={onUpdateFollowing ? (v) => { onUpdateFollowing({ weight: v }); setActiveModal(null); } : undefined}
+          currentSetIndex={setIdx}
+          totalSets={totalSets}
           onClose={() => setActiveModal(null)}
         />
       )}

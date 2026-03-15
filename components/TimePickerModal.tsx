@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, RefreshCw } from 'lucide-react';
 import { registerBackHandler } from '../utils/backHandler';
 
 interface TimePickerModalProps {
@@ -7,9 +7,12 @@ interface TimePickerModalProps {
   totalSeconds: number;
   onClose: () => void;
   onSelect: (seconds: number) => void;
+  onSelectFollowing?: (seconds: number) => void;
+  currentSetIndex?: number;
+  totalSets?: number;
 }
 
-export const TimePickerModal: React.FC<TimePickerModalProps> = ({ title, totalSeconds, onClose, onSelect }) => {
+export const TimePickerModal: React.FC<TimePickerModalProps> = ({ title, totalSeconds, onClose, onSelect, onSelectFollowing, currentSetIndex, totalSets }) => {
   const [currentTotal, setCurrentTotal] = useState(totalSeconds);
   const [isEditingMins, setIsEditingMins] = useState(false);
   const [manualMinInput, setManualMinInput] = useState("");
@@ -45,6 +48,16 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({ title, totalSe
     onSelect(currentTotal);
     onClose();
   };
+
+  const handleSaveFollowing = () => {
+    if (onSelectFollowing) {
+      onSelectFollowing(currentTotal);
+    }
+    onClose();
+  };
+
+  const hasFollowingSets = currentSetIndex !== undefined && totalSets !== undefined && currentSetIndex < totalSets - 1;
+  const followingSetsCount = hasFollowingSets ? totalSets! - currentSetIndex! - 1 : 0;
 
   return (
     <div className="fixed inset-0 z-[600] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in">
@@ -111,9 +124,17 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({ title, totalSe
           </div>
         </div>
 
-        <button onClick={handleSave} className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase italic tracking-widest active:scale-95 transition-all">
-          Spara Tid
-        </button>
+        <div className="w-full space-y-3">
+          {hasFollowingSets && onSelectFollowing && (
+            <button onClick={handleSaveFollowing} className="w-full py-4 rounded-2xl bg-accent-pink text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-accent-pink/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+              <RefreshCw size={16} strokeWidth={3} />
+              Uppdatera {followingSetsCount} kommande set
+            </button>
+          )}
+          <button onClick={handleSave} className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase italic tracking-widest active:scale-95 transition-all">
+            Spara Tid
+          </button>
+        </div>
       </div>
     </div>
   );

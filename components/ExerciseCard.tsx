@@ -248,6 +248,13 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             set={set}
             isCompleted={set.completed}
             onUpdate={(updates) => onUpdateSet(i, updates)}
+            onUpdateFollowing={(updates) => {
+              // Uppdatera alla sets efter detta set (i+1 till slutet)
+              for (let j = i + 1; j < item.sets.length; j++) {
+                onUpdateSet(j, updates);
+              }
+            }}
+            totalSets={item.sets.length}
             trackingType={effectiveTrackingType}
             exData={exData}
             userProfile={userProfile}
