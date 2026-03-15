@@ -36,15 +36,16 @@ interface WorkoutViewProps {
   plannedActivities: PlannedActivityForLogDisplay[];
   onStartActivity: (activity: ScheduledActivity) => void;
   onStartEmptyWorkout: () => void;
+  onStartHistoricalSession?: (session: WorkoutSession) => void;
   onUpdate: () => void;
   isManualMode?: boolean;
   userMissions: UserMission[];
   onGoToExercise: (exerciseId: string) => void;
 }
 
-export const WorkoutView: React.FC<WorkoutViewProps> = ({ 
-  session, allExercises, userProfile, allZones, history, activeZone, 
-  onZoneChange, onComplete, onCancel, plannedActivities, onStartActivity, onStartEmptyWorkout, onUpdate,
+export const WorkoutView: React.FC<WorkoutViewProps> = ({
+  session, allExercises, userProfile, allZones, history, activeZone,
+  onZoneChange, onComplete, onCancel, plannedActivities, onStartActivity, onStartEmptyWorkout, onStartHistoricalSession, onUpdate,
   userMissions, isManualMode = false, onGoToExercise
 }) => {
   const [localSession, setLocalSession] = useState<WorkoutSession | null>(session);
@@ -549,9 +550,15 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
       locationName: activeZone.name
     };
 
-    storage.setActiveSession(newSession);
-    setLocalSession(newSession);
-  }, [activeZone]);
+    // Use the callback to properly update App.tsx state
+    if (onStartHistoricalSession) {
+      onStartHistoricalSession(newSession);
+    } else {
+      // Fallback to old behavior if callback not provided
+      storage.setActiveSession(newSession);
+      setLocalSession(newSession);
+    }
+  }, [activeZone, onStartHistoricalSession]);
 
   const handleUpdateSessionName = useCallback(async (name: string) => {
     if (localSession) {
