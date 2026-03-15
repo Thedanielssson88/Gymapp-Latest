@@ -338,7 +338,7 @@ const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, on
                         handleDeleteLog(logToDelete.id);
                       }
                     }}
-                    className="p-3 bg-white/5 rounded-xl text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-3 bg-white/5 rounded-xl text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>
