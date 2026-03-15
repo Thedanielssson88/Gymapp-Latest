@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
     "@capacitor/app": "^6.0.0",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0",
@@ -16,7 +17,7 @@
     "@capacitor/haptics": "^6.0.0",
     "@capacitor/share": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
-    "@capgo/capacitor-social-login": "^8.3.2",
+    "@capgo/capacitor-social-login": "^6.0.1",
     "@google/genai": "^1.40.0",
     "@supabase/supabase-js": "^2.99.1",
     "date-fns": "^3.6.0",

@@ -183,32 +183,26 @@ export const recommendExercises = async (
  */
 export const generateExerciseDetailsFromGemini = async (
   exerciseName: string,
-  allExercises: Exercise[]
+  allExercises: Exercise[],
+  customPrompt?: string
 ): Promise<Partial<Exercise>> => {
   try {
     const apiKey = await getApiKey();
     const ai = new GoogleGenAI({ apiKey });
     const exerciseIndex = allExercises.map(e => `ID: ${e.id}, Namn: ${e.name}`).join('\n');
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Fyll i data för övningen: "${exerciseName}"
-      
-      EXISTERANDE BIBLIOTEK:
-      ${exerciseIndex}`,
-      config: {
-        systemInstruction: `Du är en expert på biomekanik och styrketräning. Din uppgift är att fylla i data för en träningsövning i en app.
+
+    const defaultPrompt = `Du är en expert på biomekanik och styrketräning. Din uppgift är att fylla i data för en träningsövning i en app.
 
 INSTRUKTIONER:
 1. BESKRIVNING: Skriv en tydlig steg-för-steg instruktion på SVENSKA. Fokusera på rörelsen ("Sänk stången till bröstet", "Håll ryggen rak").
 2. MUSKLER: Identifiera 'primaryMuscles' (de som gör grovjobbet) och 'secondaryMuscles' (hjälpmuskler).
-3. KATEGORISERING: 
+3. KATEGORISERING:
    - Pattern: Välj ett rörelsemönster.
    - Tier: Tier 1 (Tunga basövningar), Tier 2 (Komplement), Tier 3 (Isolering/Småövningar).
 4. BALANSERING AV POÄNG (KRITISKT):
-   - bodyweightCoefficient: Detta avgör hur mycket av användarens vikt som räknas. 
+   - bodyweightCoefficient: Detta avgör hur mycket av användarens vikt som räknas.
      * 0.0: För alla övningar med externa vikter (Bänkpress, Knäböj med stång).
-     * 0.2 - 0.4: För lätta kroppsviktsövningar på golvet (Ab-wheel, Rygglyft, Situps). 
+     * 0.2 - 0.4: För lätta kroppsviktsövningar på golvet (Ab-wheel, Rygglyft, Situps).
      * 0.6 - 0.7: För medeltunga övningar (Armhävningar, Benböj utan vikt).
      * 1.0: Endast för övningar där man lyfter hela sin vikt (Chins, Pullups, Dips).
    - difficultyMultiplier: Sätt mellan 0.5 (mycket enkelt) och 1.5 (extremt krävande). En tung basövning bör ligga runt 1.0-1.2. Ab-wheel bör vara ca 0.8.
@@ -217,7 +211,16 @@ INSTRUKTIONER:
    - equipmentRequirements: En array av grupper (arrays). Varje inre grupp är ett 'ELLER'-krav. Flera grupper är 'OCH'-krav.
      Exempel 1: Kräver Skivstång OCH Bänk: [["Skivstång"], ["Träningsbänk"]].
      Exempel 2: Kräver Skivstång ELLER Hantlar: [["Skivstång", "Hantlar"]].
-6. ALTERNATIVA ÖVNINGAR: Hitta 3-4 alternativa övningar från det existerande biblioteket som tränar samma primära muskler och har liknande rörelsemönster. Returnera deras exakta ID:n i fältet 'alternativeExIds'.`,
+6. ALTERNATIVA ÖVNINGAR: Hitta 3-4 alternativa övningar från det existerande biblioteket som tränar samma primära muskler och har liknande rörelsemönster. Returnera deras exakta ID:n i fältet 'alternativeExIds'.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Fyll i data för övningen: "${exerciseName}"
+
+      EXISTERANDE BIBLIOTEK:
+      ${exerciseIndex}`,
+      config: {
+        systemInstruction: customPrompt || defaultPrompt,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,

@@ -54,6 +54,8 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [showPromptEditor, setShowPromptEditor] = useState(false);
+  const [editablePrompt, setEditablePrompt] = useState('');
 
   useEffect(() => {
     if (initialExerciseId) {
@@ -187,12 +189,47 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
     }
   };
 
+  const openPromptEditor = async () => {
+    if (selectedExercises.size === 0) return;
+
+    // Hämta sparad prompt från profilen
+    const profile = await storage.getUserProfile();
+    const savedPrompt = (profile as any).admin_exercise_prompt || `Du är en expert på biomekanik och styrketräning. Din uppgift är att fylla i data för en träningsövning i en app.
+
+INSTRUKTIONER:
+1. BESKRIVNING: Skriv en tydlig steg-för-steg instruktion på SVENSKA. Fokusera på rörelsen ("Sänk stången till bröstet", "Håll ryggen rak").
+2. MUSKLER: Identifiera 'primaryMuscles' (de som gör grovjobbet) och 'secondaryMuscles' (hjälpmuskler).
+3. KATEGORISERING:
+   - Pattern: Välj ett rörelsemönster.
+   - Tier: Tier 1 (Tunga basövningar), Tier 2 (Komplement), Tier 3 (Isolering/Småövningar).
+4. BALANSERING AV POÄNG (KRITISKT):
+   - bodyweightCoefficient: Detta avgör hur mycket av användarens vikt som räknas.
+     * 0.0: För alla övningar med externa vikter (Bänkpress, Knäböj med stång).
+     * 0.2 - 0.4: För lätta kroppsviktsövningar på golvet (Ab-wheel, Rygglyft, Situps).
+     * 0.6 - 0.7: För medeltunga övningar (Armhävningar, Benböj utan vikt).
+     * 1.0: Endast för övningar där man lyfter hela sin vikt (Chins, Pullups, Dips).
+   - difficultyMultiplier: Sätt mellan 0.5 (mycket enkelt) och 1.5 (extremt krävande). En tung basövning bör ligga runt 1.0-1.2. Ab-wheel bör vara ca 0.8.
+5. UTRUSTNINGSLOGIK:
+   - equipment: En platt lista på all utrustning som kan användas (för visning).
+   - equipmentRequirements: En array av grupper (arrays). Varje inre grupp är ett 'ELLER'-krav. Flera grupper är 'OCH'-krav.
+     Exempel 1: Kräver Skivstång OCH Bänk: [["Skivstång"], ["Träningsbänk"]].
+     Exempel 2: Kräver Skivstång ELLER Hantlar: [["Skivstång", "Hantlar"]].
+6. ALTERNATIVA ÖVNINGAR: Hitta 3-4 alternativa övningar från det existerande biblioteket som tränar samma primära muskler och har liknande rörelsemönster. Returnera deras exakta ID:n i fältet 'alternativeExIds'.`;
+
+    setEditablePrompt(savedPrompt);
+    setShowPromptEditor(true);
+  };
+
   const handleBulkAIUpdate = async () => {
     if (selectedExercises.size === 0) return;
 
-    if (!confirm(`Är du säker på att du vill uppdatera ${selectedExercises.size} övningar med AI?\n\nDetta tar ca ${selectedExercises.size * 3} sekunder (2 sek delay mellan varje för att undvika rate limits).`)) {
-      return;
-    }
+    // Stäng modal och spara prompten till profilen
+    setShowPromptEditor(false);
+    const profile = await storage.getUserProfile();
+    await storage.setUserProfile({
+      ...profile,
+      admin_exercise_prompt: editablePrompt
+    } as any);
 
     setIsBulkUpdating(true);
     const exercisesToUpdate = exercises.filter(ex => selectedExercises.has(ex.id));
@@ -204,7 +241,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
       const exercise = exercisesToUpdate[i];
       try {
         console.log(`[${i + 1}/${exercisesToUpdate.length}] Uppdaterar ${exercise.name} med AI...`);
-        const aiData = await generateExerciseDetailsFromGemini(exercise.name, exercises);
+        const aiData = await generateExerciseDetailsFromGemini(exercise.name, exercises, editablePrompt);
 
         if (aiData) {
           const updatedExercise = {
@@ -300,7 +337,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
                   <X size={20} />
                 </button>
                 <button
-                  onClick={handleBulkAIUpdate}
+                  onClick={openPromptEditor}
                   disabled={selectedExercises.size === 0 || isBulkUpdating}
                   className={`p-4 rounded-2xl flex items-center gap-2 transition-all ${
                     selectedExercises.size > 0 && !isBulkUpdating
@@ -453,6 +490,53 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
                 }
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Prompt Editor Modal */}
+      {showPromptEditor && (
+        <div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-[#0f0d15] border border-white/10 rounded-3xl max-w-3xl w-full max-h-[80vh] flex flex-col shadow-2xl">
+            <header className="flex justify-between items-center p-6 border-b border-white/5">
+              <div>
+                <h3 className="text-2xl font-black italic uppercase">AI System Prompt</h3>
+                <p className="text-[10px] font-black uppercase text-text-dim tracking-widest mt-1">
+                  Redigera instruktioner för AI ({selectedExercises.size} övningar)
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPromptEditor(false)}
+                className="p-2 bg-white/5 rounded-xl hover:bg-white/10 transition"
+              >
+                <X size={24} />
+              </button>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <textarea
+                value={editablePrompt}
+                onChange={(e) => setEditablePrompt(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-mono text-sm outline-none focus:border-accent-blue min-h-[400px] resize-none"
+                placeholder="Skriv din system-prompt här..."
+              />
+            </div>
+
+            <footer className="p-6 border-t border-white/5 flex gap-3">
+              <button
+                onClick={() => setShowPromptEditor(false)}
+                className="flex-1 py-4 bg-white/5 border border-white/10 text-white rounded-2xl font-black italic uppercase tracking-widest hover:bg-white/10 transition"
+              >
+                Avbryt
+              </button>
+              <button
+                onClick={handleBulkAIUpdate}
+                className="flex-1 py-4 bg-accent-blue text-white rounded-2xl font-black italic uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:bg-accent-blue/90 transition"
+              >
+                <Sparkles size={20} />
+                Kör AI-Uppdatering
+              </button>
+            </footer>
           </div>
         </div>
       )}
