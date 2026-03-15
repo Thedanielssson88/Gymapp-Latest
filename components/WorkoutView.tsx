@@ -573,7 +573,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
 
   if (!localSession) {
     return (
-      <div className="pb-32 space-y-8 animate-in fade-in px-4 pt-8 min-h-screen">
+      <div className="pb-48 space-y-8 animate-in fade-in px-4 pt-8 min-h-screen">
         <section className="text-center py-6 space-y-4">
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-accent-pink/20 blur-3xl rounded-full animate-pulse" />
