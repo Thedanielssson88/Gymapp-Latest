@@ -6,9 +6,9 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer 
 } from 'recharts';
-import { 
-  ChevronLeft, Plus, Calendar, History, 
-  TrendingUp, Scale, Ruler, Check, X 
+import {
+  ChevronLeft, Plus, Calendar, History,
+  TrendingUp, Scale, Ruler, Check, X, Trash2
 } from 'lucide-react';
 
 interface MeasurementsViewProps {
@@ -147,6 +147,13 @@ interface DetailModalProps {
 const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, onClose, onSave }) => {
   const [newValue, setNewValue] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const handleDeleteLog = async (logId: string) => {
+    if (confirm(`Är du säker på att du vill ta bort denna mätning?`)) {
+      await storage.deleteBiometricLog(logId);
+      window.location.reload(); // Reload to refresh data
+    }
+  };
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -294,11 +301,57 @@ const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, on
             </div>
           </div>
         </div>
+
+        {/* HISTORY SECTION */}
+        {chartData.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 px-2">
+              <History size={16} className="text-accent-blue" />
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-text-dim">Historik ({chartData.length})</h4>
+            </div>
+
+            <div className="space-y-2">
+              {[...chartData].reverse().map((entry, idx) => (
+                <div
+                  key={entry.id}
+                  className="bg-[#1a1721] border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-white/10 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center">
+                      <Calendar size={16} className="text-text-dim" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">{entry.value} {field.unit}</p>
+                      <p className="text-[9px] font-bold text-text-dim uppercase tracking-widest">{entry.dateTime}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const logToDelete = history.find((log, logIdx) => {
+                        const dateObj = new Date(log.date);
+                        const displayDate = dateObj.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+                        const displayTime = dateObj.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                        const fullDateTime = `${displayDate} kl ${displayTime}`;
+                        return fullDateTime === entry.dateTime;
+                      });
+                      if (logToDelete) {
+                        handleDeleteLog(logToDelete.id);
+                      }
+                    }}
+                    className="p-3 bg-white/5 rounded-xl text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* FOOTER ACTION */}
       <div className="p-6 bg-[#0f0d15] border-t border-white/5 pb-safe shrink-0">
-        <button 
+        <button
           onClick={() => newValue && onSave(parseFloat(newValue), selectedDate)}
           disabled={!newValue}
           className="w-full py-5 bg-white text-black rounded-3xl font-black italic uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-20 shadow-xl"

@@ -275,6 +275,10 @@ export const storage = {
     await supabase.from('biometric_logs').upsert(log);
   },
 
+  deleteBiometricLog: async (logId: string) => {
+    await supabase.from('biometric_logs').delete().eq('id', logId);
+  },
+
   // --- ZONER ---
   getZones: async (): Promise<Zone[]> => {
     const { data } = await supabase.from('zones').select('*');
