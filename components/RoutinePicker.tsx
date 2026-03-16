@@ -35,7 +35,7 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const workout = await generateWorkoutFromPrompt(prompt, allExercises, activeZone, history);
+      const workout = await generateWorkoutFromPrompt(prompt, allExercises, activeZone);
       onStart(workout, sessionName || `AI Scout: ${prompt}`);
     } catch (e) {
       alert("Kunde inte generera pass. Försök igen.");

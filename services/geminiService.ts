@@ -462,8 +462,7 @@ export const generateNextPhase = async (
 export async function generateWorkoutFromPrompt(
   prompt: string,
   allExercises: Exercise[],
-  activeZone: Zone,
-  history: WorkoutSession[]
+  activeZone: Zone
 ): Promise<PlannedExercise[]> {
   const equipmentList = activeZone.inventory.join(", ");
   const exerciseList = JSON.stringify(allExercises.map(e => ({id: e.id, name: e.name, equipment: e.equipment})));
