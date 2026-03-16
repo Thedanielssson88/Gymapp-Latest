@@ -449,8 +449,19 @@ export const storage = {
       user_id: user.id
     };
 
+    console.log('💾 Saving scheduled activity to database:', {
+      id: activityWithUser.id,
+      recurrenceId: activityWithUser.recurrenceId,
+      date: activityWithUser.date,
+      isCompleted: activityWithUser.isCompleted
+    });
+
     const { error } = await supabase.from('scheduled_activities').upsert(activityWithUser);
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Failed to save scheduled activity:', error);
+      throw error;
+    }
+    console.log('✅ Scheduled activity saved successfully');
   },
   updateScheduledActivity: async (id: string, updates: Partial<ScheduledActivity>) => {
     console.log("Updating scheduled activity:", id, updates);
