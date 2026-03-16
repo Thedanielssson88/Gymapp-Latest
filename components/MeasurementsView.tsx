@@ -133,19 +133,14 @@ export const MeasurementsView: React.FC<MeasurementsViewProps> = ({ profile, onU
           }}
           onDelete={async (logId: string) => {
             try {
-              console.log('🗑️ Deleting biometric log:', logId);
               await storage.deleteBiometricLog(logId);
-              console.log('✅ Deleted from database');
 
+              // Fetch updated logs and update local state
               const logs = await storage.getBiometricLogs();
-              console.log('📊 Fetched updated logs:', logs.length);
-
               setHistory(logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
-              console.log('✅ Updated history state');
 
-              onUpdate();
-              console.log('✅ Called onUpdate()');
-              // Don't close modal - let user see the updated data in real-time
+              // No need to call onUpdate() - we've already updated the local state
+              // Calling onUpdate() triggers a full 11s refreshData which is unnecessary
             } catch (error) {
               console.error('❌ Error deleting biometric log:', error);
               alert('Kunde inte ta bort mätningen. Försök igen.');
