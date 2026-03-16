@@ -51,7 +51,13 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
     totalHistory: history.length,
     dayHistoryCount: dayHistory.length,
     dayHistoryDates: dayHistory.map(h => h.date),
-    allHistoryDates: history.map(h => h.date).slice(0, 10)
+    allHistoryDates: history.map(h => ({ date: h.date, name: h.name }))
+  });
+
+  // Extra debug: Visa varje pass och varför det inte matchas
+  history.forEach(h => {
+    const matches = h.date.startsWith(dateKey);
+    console.log(`  Pass: ${h.name} | Datum: ${h.date} | Matchar ${dateKey}? ${matches}`);
   });
 
   const dayPlanned = plannedActivities.filter(p => {
