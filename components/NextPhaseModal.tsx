@@ -42,13 +42,23 @@ export const NextPhaseModal: React.FC<NextPhaseModalProps> = ({ program, onClose
     }
 
     try {
-      const currentStats = calculatePPLStats(history, allExercises);
+      // AI PROGRAM - Optimering: Senaste 12 veckor eller max 30 pass
+      const weeksToInclude = 12;
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - (weeksToInclude * 7));
+
+      const recentHistory = history
+        .filter(h => new Date(h.date) >= cutoffDate)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 30);
+
+      const currentStats = calculatePPLStats(recentHistory, allExercises);
       const startStats = program.startStats || currentStats;
       const trend = analyzeProgressTrend(startStats, currentStats);
       const rules = PROGRESSION_MATRIX[progressionRate][trend];
 
       const result = await generateNextPhase(
-        program, history, allExercises,
+        program, recentHistory, allExercises,
         { start: startStats, current: currentStats },
         { daysPerWeek, durationMinutes, weeks, progressionRate },
         rules

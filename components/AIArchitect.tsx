@@ -33,14 +33,25 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
     setLoading(true);
     setPlan(null);
     try {
-      const history = await storage.getHistory();
+      const fullHistory = await storage.getHistory();
       const exercises = await storage.getAllExercises();
       const profile = await storage.getUserProfile();
-      const pplStats = calculatePPLStats(history, exercises);
-      
+
+      // AI PROGRAM - Optimering: Senaste 12 veckor eller max 30 pass
+      const weeksToInclude = 12;
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - (weeksToInclude * 7));
+
+      const recentHistory = fullHistory
+        .filter(h => new Date(h.date) >= cutoffDate)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 30); // Max 30 pass även om det är inom 12 veckor
+
+      const pplStats = calculatePPLStats(recentHistory, exercises);
+
       const result = await generateProfessionalPlan(
-        request, history, exercises, profile, pplStats,
-        { daysPerWeek, durationMinutes, durationWeeks: weeksToSchedule, progressionRate } 
+        request, recentHistory, exercises, profile, pplStats,
+        { daysPerWeek, durationMinutes, durationWeeks: weeksToSchedule, progressionRate }
       );
       setPlan(result);
     } catch (error) {
