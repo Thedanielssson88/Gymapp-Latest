@@ -478,11 +478,6 @@ export default function App() {
     setActiveTab('workout');
   };
 
-  const handleStartHistoricalSession = (session: WorkoutSession) => {
-    storage.setActiveSession(session);
-    setCurrentSession(session);
-  };
-
   const handleStartSession = (activity: ScheduledActivity) => {
     setPendingActivity(activity);
     setShowZonePicker(true);
@@ -631,7 +626,7 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'workout':
-        return <WorkoutView key={currentSession?.id || 'no-session'} session={currentSession} allExercises={allExercises} userProfile={user} allZones={zones} history={history} activeZone={activeZone} onZoneChange={(z) => { if (currentSession) { const newSession = {...currentSession, zoneId: z.id}; setCurrentSession(newSession); storage.setActiveSession(newSession); } }} onComplete={handleFinishWorkout} onCancel={handleCancelWorkout} plannedActivities={plannedActivities} onStartActivity={handleStartSession} onStartEmptyWorkout={handleStartEmptyWorkout} onStartHistoricalSession={handleStartHistoricalSession} onUpdate={refreshData} isManualMode={currentSession?.isManual} userMissions={userMissions} onGoToExercise={handleGoToExercise} />;
+        return <WorkoutView key={currentSession?.id || 'no-session'} session={currentSession} allExercises={allExercises} userProfile={user} allZones={zones} history={history} activeZone={activeZone} onZoneChange={(z) => { if (currentSession) { const newSession = {...currentSession, zoneId: z.id}; setCurrentSession(newSession); storage.setActiveSession(newSession); } }} onComplete={handleFinishWorkout} onCancel={handleCancelWorkout} plannedActivities={plannedActivities} onStartActivity={handleStartSession} onStartEmptyWorkout={handleStartEmptyWorkout} onUpdate={refreshData} isManualMode={currentSession?.isManual} userMissions={userMissions} onGoToExercise={handleGoToExercise} />;
       case 'body':
         return (
           <div className="space-y-6 animate-in fade-in px-2 pb-32 min-h-screen pt-[calc(env(safe-area-inset-top)+2rem)]">

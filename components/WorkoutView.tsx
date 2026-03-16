@@ -36,7 +36,6 @@ interface WorkoutViewProps {
   plannedActivities: PlannedActivityForLogDisplay[];
   onStartActivity: (activity: ScheduledActivity) => void;
   onStartEmptyWorkout: () => void;
-  onStartHistoricalSession?: (session: WorkoutSession) => void;
   onUpdate: () => void;
   isManualMode?: boolean;
   userMissions: UserMission[];
@@ -45,7 +44,7 @@ interface WorkoutViewProps {
 
 export const WorkoutView: React.FC<WorkoutViewProps> = ({
   session, allExercises, userProfile, allZones, history, activeZone,
-  onZoneChange, onComplete, onCancel, plannedActivities, onStartActivity, onStartEmptyWorkout, onStartHistoricalSession, onUpdate,
+  onZoneChange, onComplete, onCancel, plannedActivities, onStartActivity, onStartEmptyWorkout, onUpdate,
   userMissions, isManualMode = false, onGoToExercise
 }) => {
   const [localSession, setLocalSession] = useState<WorkoutSession | null>(session);
@@ -553,33 +552,25 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
   const [currentMissedIndex, setCurrentMissedIndex] = useState(0);
 
   const handleStartFromHistory = useCallback((session: WorkoutSession) => {
-    // Create a new active session based on the historical session
-    const newSession: WorkoutSession = {
-      id: generateId(),
-      date: new Date().toISOString(),
-      zoneId: activeZone.id,
-      name: session.name,
+    // Convert historical session to ScheduledActivity to show gym picker
+    const tempActivity: ScheduledActivity = {
+      id: `temp-${generateId()}`,
+      date: new Date().toISOString().split('T')[0],
+      type: 'gym',
+      title: session.name || 'Tidigare pass',
+      isCompleted: false,
       exercises: session.exercises.map(ex => ({
         ...ex,
         sets: ex.sets.map(s => ({
           ...s,
           completed: false
         }))
-      })),
-      isCompleted: false,
-      isManual: false, // Active workout, not manual registration
-      locationName: activeZone.name
+      }))
     };
 
-    // Use the callback to properly update App.tsx state
-    if (onStartHistoricalSession) {
-      onStartHistoricalSession(newSession);
-    } else {
-      // Fallback to old behavior if callback not provided
-      storage.setActiveSession(newSession);
-      setLocalSession(newSession);
-    }
-  }, [activeZone, onStartHistoricalSession]);
+    // Use the same flow as planned activities (shows gym picker)
+    onStartActivity(tempActivity);
+  }, [onStartActivity]);
 
   const handleUpdateSessionName = useCallback(async (name: string) => {
     if (localSession) {
