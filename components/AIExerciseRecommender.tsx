@@ -88,10 +88,37 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
     setCurrentResult(null);
     setCurrentQuery(request);
     try {
-      const result = await recommendExercises(request, allExercises);
+      // Filter exercises based on gym equipment to reduce prompt size (only if activeZone is available)
+      let exercisesToSearch = allExercises;
+
+      if (activeZone && activeZone.equipment && activeZone.equipment.length > 0) {
+        exercisesToSearch = allExercises.filter(ex => {
+          // Safety check: ensure exercise has equipmentRequirements
+          if (!ex.equipmentRequirements || ex.equipmentRequirements.length === 0) {
+            return true; // Include exercises with no requirements
+          }
+
+          // Check if exercise can be performed with available equipment
+          return ex.equipmentRequirements.every(reqGroup => {
+            // Safety check: ensure reqGroup is an array
+            if (!Array.isArray(reqGroup)) return false;
+
+            return reqGroup.some(equipment =>
+              activeZone.equipment.includes(equipment)
+            );
+          });
+        });
+
+        console.log(`🎯 AI Scout: Filtered from ${allExercises.length} to ${exercisesToSearch.length} exercises based on gym equipment`);
+      } else {
+        console.log(`🎯 AI Scout: No gym filter applied (using all ${allExercises.length} exercises)`);
+      }
+
+      const result = await recommendExercises(request, exercisesToSearch);
       setCurrentResult(result);
       saveToHistory(request, result);
     } catch (e) {
+      console.error('AI Scout error:', e);
       alert("Kunde inte hämta förslag. Kontrollera din anslutning.");
     } finally {
       setLoading(false);
