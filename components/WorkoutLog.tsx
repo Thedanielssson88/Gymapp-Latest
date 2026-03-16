@@ -265,14 +265,29 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        {!isTemplate && (
-                          <button
-                            onClick={() => onStartActivity(p as ScheduledActivity)}
-                            className="w-10 h-10 bg-accent-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-accent-blue/20 active:scale-90 transition-transform"
-                          >
-                            <Play size={18} fill="currentColor" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            if (isTemplate) {
+                              // För recurring templates: skapa en konkret aktivitet för idag och starta den
+                              const concreteActivity: ScheduledActivity = {
+                                id: `recurring-start-${Date.now()}`,
+                                date: dKey,
+                                type: p.type,
+                                title: p.title,
+                                isCompleted: false,
+                                exercises: p.exercises || [],
+                                recurrenceId: p.id
+                              };
+                              onStartActivity(concreteActivity);
+                            } else {
+                              // För konkreta planerade pass: starta direkt
+                              onStartActivity(p as ScheduledActivity);
+                            }
+                          }}
+                          className="w-10 h-10 bg-accent-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-accent-blue/20 active:scale-90 transition-transform"
+                        >
+                          <Play size={18} fill="currentColor" />
+                        </button>
                         <button
                           onClick={() => {
                             setCustomMoveDate(isTemplate ? dKey : p.date);
