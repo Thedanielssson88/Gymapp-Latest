@@ -635,8 +635,20 @@ export default function App() {
       };
 
       await storage.addScheduledActivity(skippedActivity);
+      console.log("✅ Skipped activity saved to database:", skippedActivity);
       await refreshData();
       console.log("Recurring instance skippad!");
+
+      // Debug: Check if the skipped activity is now in plannedActivities
+      const allScheduled = await storage.getScheduledActivities();
+      const foundSkipped = allScheduled.find(a => a.id === skippedActivity.id);
+      console.log("🔍 Skipped activity found in database:", foundSkipped ? "YES" : "NO");
+      if (foundSkipped) {
+        console.log("   - ID:", foundSkipped.id);
+        console.log("   - Date:", foundSkipped.date);
+        console.log("   - recurrenceId:", foundSkipped.recurrenceId);
+        console.log("   - isCompleted:", foundSkipped.isCompleted);
+      }
     } catch (error) {
       console.error("Could not skip recurring instance:", error);
       alert("Kunde inte ta bort passet: " + (error as Error).message);

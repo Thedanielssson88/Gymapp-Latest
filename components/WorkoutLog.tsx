@@ -241,6 +241,24 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                             otherP.date === dKey
                             // Vi kollar INTE isCompleted här - även skippade räknas som konkreta instanser
                         );
+
+                        // Debug logging for recurring plans
+                        if (dKey === '2026-03-20' && p.id === 'rec-1773685186182') {
+                            console.log("🔍 DEBUG for 2026-03-20:", {
+                                templateId: p.id,
+                                isScheduledForDay,
+                                hasConcreteInstance,
+                                willShow: isScheduledForDay && !hasConcreteInstance,
+                                allActivitiesForDay: plannedActivities.filter(a =>
+                                    !('isTemplate' in a) && a.date === dKey
+                                ).map(a => ({
+                                    id: a.id,
+                                    recurrenceId: (a as ScheduledActivity).recurrenceId,
+                                    isCompleted: a.isCompleted
+                                }))
+                            });
+                        }
+
                         return isScheduledForDay && !hasConcreteInstance;
                     } else {
                         // Visa bara OFÄRDIGA konkreta planerade pass
