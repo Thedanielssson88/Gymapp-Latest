@@ -159,7 +159,7 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
 
                     <button
                       onClick={() => handleStartPlanned(p)}
-                      className="w-full bg-accent-blue text-black py-3 rounded-xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-accent-blue/20 active:scale-95 transition-all"
+                      className="w-full bg-green-500 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95 transition-all"
                     >
                       <Play size={16} fill="currentColor" /> Starta Pass
                     </button>
