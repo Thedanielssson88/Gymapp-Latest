@@ -419,7 +419,7 @@ export const storage = {
     return data || [];
   },
   saveRoutine: async (routine: WorkoutRoutine) => {
-    const user = await storage.getCurrentUser();
+    const user = getCurrentUser(); // Use local function, not storage.getCurrentUser()
     const routineWithUserId = { ...routine, user_id: user?.id };
     return await supabase.from('workout_routines').upsert(routineWithUserId);
   },
