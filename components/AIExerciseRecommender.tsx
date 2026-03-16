@@ -27,7 +27,7 @@ interface HistoryItem {
     timestamp: number;
 }
 
-export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ onEditExercise, onStartSession, onAddToWorkout, onClose, allExercises, onUpdate, history: fullHistory }) => {
+export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ onEditExercise, onStartSession, onAddToWorkout, onClose, allExercises, onUpdate, history: fullHistory, activeZone }) => {
   const [request, setRequest] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentResult, setCurrentResult] = useState<ExerciseSearchResponse | null>(null);
@@ -85,10 +85,19 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
   const handleSearch = async () => {
     if (!request.trim()) return;
     setLoading(true);
-    setCurrentResult(null); 
+    setCurrentResult(null);
     setCurrentQuery(request);
     try {
-      const result = await recommendExercises(request, allExercises);
+      // AI SCOUT - Gym-filtrering: Filtrera övningar baserat på gymets utrustning
+      const exercisesToUse = activeZone
+        ? allExercises.filter(ex =>
+            ex.equipmentRequirements.every(reqGroup =>
+              reqGroup.some(equipment => activeZone.equipment.includes(equipment))
+            )
+          )
+        : allExercises;
+
+      const result = await recommendExercises(request, exercisesToUse, activeZone?.equipment);
       setCurrentResult(result);
       saveToHistory(request, result);
     } catch (e) {

@@ -78,17 +78,22 @@ Historik: ${exerciseHistory}`,
  */
 export const recommendExercises = async (
   userRequest: string,
-  existingExercises: Exercise[]
+  existingExercises: Exercise[],
+  availableEquipment?: Equipment[]
 ): Promise<ExerciseSearchResponse> => {
   try {
     const apiKey = await getApiKey();
     const ai = new GoogleGenAI({ apiKey });
     const exerciseIndex = existingExercises.map(e => `${e.id}: ${e.name}`).join('\n');
 
+    const equipmentContext = availableEquipment
+      ? `\n      TILLGÄNGLIG UTRUSTNING PÅ GYMMET:\n      ${availableEquipment.join(', ')}\n      (Om användaren inte anger något annat, prioritera övningar som matchar denna utrustning)`
+      : '';
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Användaren vill ha övningsförslag för: "${userRequest}".
-      
+      ${equipmentContext}
       NUVARANDE BIBLIOTEK (ID: Namn):
       ${exerciseIndex}`,
       config: {
