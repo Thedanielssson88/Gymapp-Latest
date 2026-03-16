@@ -495,10 +495,19 @@ export const storage = {
     const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
-    const { error } = await supabase.from('recurring_plans').upsert({
-      ...plan,
+    // Mappa camelCase (TypeScript) till snake_case (Supabase)
+    const dbPlan = {
+      id: plan.id,
+      title: plan.title,
+      type: plan.type,
+      days_of_week: plan.daysOfWeek, // camelCase → snake_case
+      start_date: plan.startDate,     // camelCase → snake_case
+      end_date: plan.endDate,         // camelCase → snake_case
+      exercises: plan.exercises,
       user_id: user.id
-    });
+    };
+
+    const { error } = await supabase.from('recurring_plans').upsert(dbPlan);
 
     if (error) {
       console.error('Error saving recurring plan:', error);
