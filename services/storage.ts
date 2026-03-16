@@ -276,7 +276,11 @@ export const storage = {
   },
 
   deleteBiometricLog: async (logId: string) => {
-    await supabase.from('biometric_logs').delete().eq('id', logId);
+    const { error } = await supabase.from('biometric_logs').delete().eq('id', logId);
+    if (error) {
+      console.error('Error deleting biometric log:', error);
+      throw error;
+    }
   },
 
   // --- ZONER ---
