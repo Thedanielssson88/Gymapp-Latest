@@ -578,6 +578,67 @@ export default function App() {
     }
   };
 
+  const handleMoveRecurringInstance = async (templateId: string, currentDate: string, newDate: string) => {
+    try {
+      console.log("Moving recurring instance:", templateId, currentDate, "→", newDate);
+
+      // Hitta recurring plan template
+      const template = recurringPlans.find(rp => rp.id === templateId);
+      if (!template) {
+        throw new Error("Recurring plan hittades inte");
+      }
+
+      // Skapa en konkret ScheduledActivity på det nya datumet
+      const newActivity: ScheduledActivity = {
+        id: `recurring-instance-${Date.now()}`,
+        date: newDate,
+        type: template.type,
+        title: template.title,
+        isCompleted: false,
+        exercises: template.exercises,
+        recurrenceId: templateId
+      };
+
+      await storage.addScheduledActivity(newActivity);
+      await refreshData();
+      console.log("Recurring instance flyttad!");
+    } catch (error) {
+      console.error("Could not move recurring instance:", error);
+      alert("Kunde inte flytta passet: " + (error as Error).message);
+    }
+  };
+
+  const handleSkipRecurringInstance = async (templateId: string, date: string) => {
+    try {
+      console.log("Skipping recurring instance:", templateId, "på", date);
+
+      // Hitta recurring plan template
+      const template = recurringPlans.find(rp => rp.id === templateId);
+      if (!template) {
+        throw new Error("Recurring plan hittades inte");
+      }
+
+      // Skapa en "skippad" ScheduledActivity för detta datum
+      // Detta gör att mallen inte visas längre för den dagen
+      const skippedActivity: ScheduledActivity = {
+        id: `skipped-${templateId}-${date}`,
+        date: date,
+        type: template.type,
+        title: `[Skippad] ${template.title}`,
+        isCompleted: true, // Markera som "klar" så den inte visas i listan
+        exercises: [],
+        recurrenceId: templateId
+      };
+
+      await storage.addScheduledActivity(skippedActivity);
+      await refreshData();
+      console.log("Recurring instance skippad!");
+    } catch (error) {
+      console.error("Could not skip recurring instance:", error);
+      alert("Kunde inte ta bort passet: " + (error as Error).message);
+    }
+  };
+
   const handleAddMission = async (mission: UserMission) => {
     console.log("handleAddMission called with:", mission);
     try {
@@ -641,7 +702,7 @@ export default function App() {
             {bodySubTab === 'settings' && user && ( <SettingsView userProfile={user} onUpdate={refreshData} /> )}
           </div>
         );
-      case 'log': return <WorkoutLog history={history} plannedActivities={plannedActivities} routines={routines} allExercises={allExercises} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onDeleteHistory={handleDeleteHistory} onMovePlan={handleMovePlan} onStartActivity={handleStartSession} onStartManualWorkout={handleStartManualWorkout} onStartLiveWorkout={handleStartEmptyWorkout} onUpdate={refreshData} />;
+      case 'log': return <WorkoutLog history={history} plannedActivities={plannedActivities} routines={routines} allExercises={allExercises} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onDeleteHistory={handleDeleteHistory} onMovePlan={handleMovePlan} onMoveRecurringInstance={handleMoveRecurringInstance} onSkipRecurringInstance={handleSkipRecurringInstance} onStartActivity={handleStartSession} onStartManualWorkout={handleStartManualWorkout} onStartLiveWorkout={handleStartEmptyWorkout} onUpdate={refreshData} />;
       case 'targets': return <TargetsView userMissions={userMissions} history={history} exercises={allExercises} userProfile={user} biometricLogs={biometricLogs} onAddMission={handleAddMission} onDeleteMission={handleDeleteMission} />;
       case 'library': return ( <ExerciseLibrary allExercises={allExercises} history={history} onUpdate={refreshData} userProfile={user} initialExerciseId={targetExerciseId} onClose={() => setTargetExerciseId(null)} /> );
       case 'gyms': return null; // Platser-fliken borttagen - allt hanteras från "Vart tränar du"

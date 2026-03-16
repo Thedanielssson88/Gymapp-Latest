@@ -79,15 +79,17 @@ interface WorkoutLogProps {
   onDeletePlan: (id: string, isTemplate: boolean) => void;
   onDeleteHistory: (id: string) => void;
   onMovePlan: (id: string, newDate: string) => void;
+  onMoveRecurringInstance: (templateId: string, currentDate: string, newDate: string) => void;
+  onSkipRecurringInstance: (templateId: string, date: string) => void;
   onStartActivity: (activity: ScheduledActivity) => void;
   onStartManualWorkout: (date: string) => void;
   onStartLiveWorkout: () => void;
   onUpdate: () => void;
 }
 
-export const WorkoutLog: React.FC<WorkoutLogProps> = ({ 
+export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   history, plannedActivities, routines, allExercises,
-  onAddPlan, onDeletePlan, onDeleteHistory, onMovePlan, onStartActivity, onStartManualWorkout, onStartLiveWorkout, onUpdate
+  onAddPlan, onDeletePlan, onDeleteHistory, onMovePlan, onMoveRecurringInstance, onSkipRecurringInstance, onStartActivity, onStartManualWorkout, onStartLiveWorkout, onUpdate
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [confirmDelete, setConfirmDelete] = useState<{id: string, isHistory: boolean, isTemplate: boolean} | null>(null);
   
   // State för att flytta pass
-  const [moveModalData, setMoveModalData] = useState<{id: string, title: string, currentDate: string} | null>(null);
+  const [moveModalData, setMoveModalData] = useState<{id: string, title: string, currentDate: string, isTemplate?: boolean} | null>(null);
   const [customMoveDate, setCustomMoveDate] = useState('');
 
   const [planTitle, setPlanTitle] = useState('');
@@ -164,7 +166,13 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
 
   const handleExecuteMove = (targetDate: string) => {
     if (moveModalData) {
-        onMovePlan(moveModalData.id, targetDate);
+        if (moveModalData.isTemplate) {
+            // Flytta enskild instans av recurring plan
+            onMoveRecurringInstance(moveModalData.id, moveModalData.currentDate, targetDate);
+        } else {
+            // Flytta konkret planerad aktivitet
+            onMovePlan(moveModalData.id, targetDate);
+        }
         setMoveModalData(null);
     }
   };
@@ -238,7 +246,73 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                 });
 
                 return (<div key={dKey} className="space-y-3"><div className="flex items-center gap-3 px-2"><div className={`h-[1px] flex-1 ${isToday ? 'bg-accent-pink/30' : 'bg-white/5'}`} /><h4 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isToday ? 'text-accent-pink' : 'text-text-dim'}`}>{day.toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'short' })}</h4><div className={`h-[1px] flex-1 ${isToday ? 'bg-accent-pink/30' : 'bg-white/5'}`} /></div>
-                {dayPlans.map(p => (<div key={p.id} className="bg-accent-blue/5 border border-accent-blue/20 rounded-[28px] p-4 flex justify-between items-center group animate-in zoom-in-95"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-accent-blue/10 rounded-xl flex items-center justify-center text-accent-blue">{'isTemplate' in p ? <Repeat size={18} /> : <CalIcon size={18} />}</div><div><p className="text-xs font-black text-white uppercase italic leading-none mb-1">{p.title}</p><p className="text-[9px] font-bold text-accent-blue/60 uppercase tracking-widest">{'isTemplate' in p ? 'Återkommande' : 'Planerat'} • {p.exercises?.length || 0} övningar</p></div></div><div className="flex items-center gap-1.5">{!('isTemplate' in p) && (<button onClick={() => onStartActivity(p as ScheduledActivity)} className="w-10 h-10 bg-accent-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-accent-blue/20 active:scale-90 transition-transform"><Play size={18} fill="currentColor" /></button>)}{!('isTemplate' in p) && (<button onClick={() => { setCustomMoveDate(p.date); setMoveModalData({ id: p.id, title: p.title, currentDate: p.date }); }} className="p-2.5 text-text-dim hover:text-white transition-colors"><CalendarClock size={18} /></button>)}<button onClick={() => setConfirmDelete({ id: p.id, isHistory: false, isTemplate: 'isTemplate' in p })} className="p-2.5 text-text-dim hover:text-red-500 transition-colors"><Trash2 size={18} /></button></div></div>))}
+                {dayPlans.map(p => {
+                  const isTemplate = 'isTemplate' in p;
+                  return (
+                    <div key={p.id} className="bg-accent-blue/5 border border-accent-blue/20 rounded-[28px] p-4 flex justify-between items-center group animate-in zoom-in-95">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-accent-blue/10 rounded-xl flex items-center justify-center text-accent-blue">
+                          {isTemplate ? <Repeat size={18} /> : <CalIcon size={18} />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-white uppercase italic leading-none mb-1">{p.title}</p>
+                          <p className="text-[9px] font-bold text-accent-blue/60 uppercase tracking-widest">
+                            {isTemplate ? 'Återkommande' : 'Planerat'} • {p.exercises?.length || 0} övningar
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {!isTemplate && (
+                          <button
+                            onClick={() => onStartActivity(p as ScheduledActivity)}
+                            className="w-10 h-10 bg-accent-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-accent-blue/20 active:scale-90 transition-transform"
+                          >
+                            <Play size={18} fill="currentColor" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setCustomMoveDate(isTemplate ? dKey : p.date);
+                            setMoveModalData({
+                              id: p.id,
+                              title: p.title,
+                              currentDate: isTemplate ? dKey : p.date,
+                              isTemplate: isTemplate
+                            });
+                          }}
+                          className="p-2.5 text-text-dim hover:text-white transition-colors"
+                        >
+                          <CalendarClock size={18} />
+                        </button>
+                        {isTemplate ? (
+                          <div className="relative group/delete">
+                            <button
+                              onClick={() => onSkipRecurringInstance(p.id, dKey)}
+                              className="p-2.5 text-text-dim hover:text-red-500 transition-colors"
+                              title="Radera denna instans"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete({ id: p.id, isHistory: false, isTemplate: true })}
+                              className="p-2.5 text-text-dim hover:text-red-500 transition-colors border-l border-white/10"
+                              title="Radera ALLA återkommande"
+                            >
+                              <X size={18} strokeWidth={3} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDelete({ id: p.id, isHistory: false, isTemplate: false })}
+                            className="p-2.5 text-text-dim hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
                 {dayHistory.map(session => {
                   const startTime = new Date(session.date);
                   const endTime = session.duration ? new Date(startTime.getTime() + session.duration * 1000) : null;
