@@ -276,18 +276,28 @@ export const storage = {
   },
 
   deleteBiometricLog: async (logId: string) => {
-    const user = await getCurrentUser();
+    const user = getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
-    const { error } = await supabase
+    console.log('🗑️ Attempting to delete biometric log:', logId, 'for user:', user.id);
+
+    const { data, error } = await supabase
       .from('biometric_logs')
       .delete()
       .eq('id', logId)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .select();
 
     if (error) {
-      console.error('Error deleting biometric log:', error);
+      console.error('❌ Error deleting biometric log:', error);
       throw error;
+    }
+
+    console.log('✅ Delete result:', data);
+
+    if (!data || data.length === 0) {
+      console.warn('⚠️ No rows deleted - log may not exist or user_id mismatch');
+      throw new Error('Could not delete log - it may not exist or you do not have permission');
     }
   },
 
