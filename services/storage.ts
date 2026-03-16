@@ -628,8 +628,33 @@ export const storage = {
     window.dispatchEvent(new Event('storage-update'));
   },
   deleteAIProgram: async (programId: string): Promise<void> => {
-    await supabase.from('ai_programs').delete().eq('id', programId);
-    await supabase.from('scheduled_activities').delete().eq('program_id', programId);
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Radera programmet
+    const { error: programError } = await supabase
+      .from('ai_programs')
+      .delete()
+      .eq('id', programId)
+      .eq('user_id', user.id);
+
+    if (programError) {
+      console.error('Error deleting AI program:', programError);
+      throw programError;
+    }
+
+    // Radera alla tillhörande schemalagda aktiviteter
+    const { error: activitiesError } = await supabase
+      .from('scheduled_activities')
+      .delete()
+      .eq('program_id', programId)
+      .eq('user_id', user.id);
+
+    if (activitiesError) {
+      console.error('Error deleting program activities:', activitiesError);
+      throw activitiesError;
+    }
+
     window.dispatchEvent(new Event('storage-update'));
   }
 };
