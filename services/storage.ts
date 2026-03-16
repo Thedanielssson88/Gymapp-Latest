@@ -426,7 +426,18 @@ export const storage = {
     const { data } = await supabase.from('scheduled_activities').select('*');
     return data || [];
   },
-  addScheduledActivity: async (activity: ScheduledActivity) => await supabase.from('scheduled_activities').upsert(activity),
+  addScheduledActivity: async (activity: ScheduledActivity) => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const activityWithUser = {
+      ...activity,
+      user_id: user.id
+    };
+
+    const { error } = await supabase.from('scheduled_activities').upsert(activityWithUser);
+    if (error) throw error;
+  },
   updateScheduledActivity: async (id: string, updates: Partial<ScheduledActivity>) => {
     console.log("Updating scheduled activity:", id, updates);
     const { data, error } = await supabase
