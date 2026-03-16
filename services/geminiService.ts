@@ -176,10 +176,16 @@ export const recommendExercises = async (
     return JSON.parse(jsonText.trim());
   } catch (error) {
     console.error("Gemini Exercise Error:", error);
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+      availableEquipment,
+      exerciseCount: existingExercises.length
+    });
     if (error instanceof Error && error.message.includes("Ingen API-nyckel hittad")) {
         throw error;
     }
-    throw new Error("Kunde inte hämta förslag från AI.");
+    throw error instanceof Error ? error : new Error("Kunde inte hämta förslag från AI.");
   }
 };
 

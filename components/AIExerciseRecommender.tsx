@@ -101,7 +101,9 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
       setCurrentResult(result);
       saveToHistory(request, result);
     } catch (e) {
-      alert("Kunde inte hämta förslag. Kontrollera din anslutning.");
+      console.error("AI Scout error:", e);
+      const errorMsg = e instanceof Error ? e.message : "Okänt fel";
+      alert(`Kunde inte hämta förslag: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
