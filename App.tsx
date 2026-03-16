@@ -551,12 +551,18 @@ export default function App() {
   };
 
   const handleAddPlan = async (activity: ScheduledActivity, isRecurring: boolean, days?: number[]) => {
+    console.log('🔵 handleAddPlan called:', { activityId: activity.id, recurrenceId: activity.recurrenceId, date: activity.date, isRecurring });
     if (isRecurring && days) {
       const plan: RecurringPlan = { id: `rec-${Date.now()}`, type: activity.type, title: activity.title, daysOfWeek: days, startDate: activity.date, exercises: activity.exercises };
       await storage.addRecurringPlan(plan);
       await storage.generateRecurringActivities();
-    } else { await storage.addScheduledActivity(activity); }
+    } else {
+      console.log('🟢 Adding scheduled activity to database...');
+      await storage.addScheduledActivity(activity);
+      console.log('✅ Scheduled activity added successfully');
+    }
     await refreshData();
+    console.log('🔄 RefreshData completed - recurring instance should now be hidden');
   };
 
   const handleDeletePlan = async (id: string, isTemplate: boolean) => {
