@@ -582,8 +582,10 @@ export default function App() {
     try {
       console.log("Moving recurring instance:", templateId, currentDate, "→", newDate);
 
-      // Hitta recurring plan template
-      const template = recurringPlans.find(rp => rp.id === templateId);
+      // Hämta recurring plans från storage
+      const allRecurringPlans = await storage.getRecurringPlans();
+      const template = allRecurringPlans.find(rp => rp.id === templateId);
+
       if (!template) {
         throw new Error("Recurring plan hittades inte");
       }
@@ -612,8 +614,10 @@ export default function App() {
     try {
       console.log("Skipping recurring instance:", templateId, "på", date);
 
-      // Hitta recurring plan template
-      const template = recurringPlans.find(rp => rp.id === templateId);
+      // Hämta recurring plans från storage
+      const allRecurringPlans = await storage.getRecurringPlans();
+      const template = allRecurringPlans.find(rp => rp.id === templateId);
+
       if (!template) {
         throw new Error("Recurring plan hittades inte");
       }
