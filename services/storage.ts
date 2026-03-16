@@ -491,8 +491,35 @@ export const storage = {
     const { data } = await supabase.from('recurring_plans').select('*');
     return data || [];
   },
-  addRecurringPlan: async (plan: RecurringPlan) => await supabase.from('recurring_plans').upsert(plan),
-  deleteRecurringPlan: async (id: string) => await supabase.from('recurring_plans').delete().eq('id', id),
+  addRecurringPlan: async (plan: RecurringPlan) => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { error } = await supabase.from('recurring_plans').upsert({
+      ...plan,
+      user_id: user.id
+    });
+
+    if (error) {
+      console.error('Error saving recurring plan:', error);
+      throw error;
+    }
+  },
+  deleteRecurringPlan: async (id: string) => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('recurring_plans')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting recurring plan:', error);
+      throw error;
+    }
+  },
   generateRecurringActivities: async () => {
     // Implementera logik för att generera aktiviteter baserat på rullande schema om det behövs
     console.log("generateRecurringActivities: Not fully implemented yet with Supabase");
