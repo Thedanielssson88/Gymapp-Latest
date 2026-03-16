@@ -266,9 +266,9 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                       </div>
                       <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (isTemplate) {
-                              // För recurring templates: skapa en konkret aktivitet för idag och starta den
+                              // För recurring templates: skapa en konkret aktivitet och starta den
                               const concreteActivity: ScheduledActivity = {
                                 id: `recurring-start-${Date.now()}`,
                                 date: dKey,
@@ -278,6 +278,11 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                                 exercises: p.exercises || [],
                                 recurrenceId: p.id
                               };
+                              // Spara aktiviteten först så att mallen döljs
+                              await onAddPlan(concreteActivity, false);
+                              // Uppdatera data för att dölja mallen
+                              await onUpdate();
+                              // Sedan starta passet
                               onStartActivity(concreteActivity);
                             } else {
                               // För konkreta planerade pass: starta direkt
