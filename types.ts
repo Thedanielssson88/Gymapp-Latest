@@ -224,6 +224,7 @@ export interface WorkoutRoutine {
   category?: string;
   isAiGenerated?: boolean;
   programId?: string; // NYTT: Länkar rutinen till ett AI-program
+  user_id?: string; // Required by Supabase RLS
 }
 
 export interface WorkoutSession {

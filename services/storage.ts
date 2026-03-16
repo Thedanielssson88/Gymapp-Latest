@@ -418,7 +418,11 @@ export const storage = {
     const { data } = await supabase.from('workout_routines').select('*');
     return data || [];
   },
-  saveRoutine: async (routine: WorkoutRoutine) => await supabase.from('workout_routines').upsert(routine),
+  saveRoutine: async (routine: WorkoutRoutine) => {
+    const user = await storage.getCurrentUser();
+    const routineWithUserId = { ...routine, user_id: user?.id };
+    return await supabase.from('workout_routines').upsert(routineWithUserId);
+  },
   deleteRoutine: async (id: string) => await supabase.from('workout_routines').delete().eq('id', id),
 
   // Du tillämpar samma mönster för scheduledActivities, recurringPlans, AIPrograms...
