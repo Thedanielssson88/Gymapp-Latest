@@ -268,9 +268,10 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                         <button
                           onClick={async () => {
                             if (isTemplate) {
-                              // För recurring templates: skapa en konkret aktivitet och starta den
+                              // För recurring templates: skapa en konkret aktivitet med unikt ID
+                              const activityId = `recurring-start-${Date.now()}`;
                               const concreteActivity: ScheduledActivity = {
-                                id: `recurring-start-${Date.now()}`,
+                                id: activityId,
                                 date: dKey,
                                 type: p.type,
                                 title: p.title,
@@ -278,11 +279,9 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                                 exercises: p.exercises || [],
                                 recurrenceId: p.id
                               };
-                              // Spara aktiviteten först så att mallen döljs
+                              // Spara aktiviteten först så att mallen döljs OCH så att den finns med sourceActivityId
                               await onAddPlan(concreteActivity, false);
-                              // Uppdatera data för att dölja mallen
-                              await onUpdate();
-                              // Sedan starta passet
+                              // Starta passet med samma aktivitet (samma ID = sourceActivityId kommer matcha)
                               onStartActivity(concreteActivity);
                             } else {
                               // För konkreta planerade pass: starta direkt
