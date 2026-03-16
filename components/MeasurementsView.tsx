@@ -2,14 +2,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { UserProfile, BiometricLog, BodyMeasurements } from '../types';
 import { storage } from '../services/storage';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer 
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
   ChevronLeft, Plus, Calendar, History,
   TrendingUp, Scale, Ruler, Check, X, Trash2
 } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 interface MeasurementsViewProps {
   profile: UserProfile;
@@ -135,7 +136,7 @@ export const MeasurementsView: React.FC<MeasurementsViewProps> = ({ profile, onU
             const logs = await storage.getBiometricLogs();
             setHistory(logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
             onUpdate();
-            setSelectedField(null); // Close modal to refresh with new data
+            // Don't close modal - let user see the updated data in real-time
           }}
         />
       )}
@@ -155,6 +156,7 @@ interface DetailModalProps {
 const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, onClose, onSave, onDelete }) => {
   const [newValue, setNewValue] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [logToDelete, setLogToDelete] = useState<BiometricLog | null>(null);
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -327,18 +329,16 @@ const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, on
                     </div>
                   </div>
                   <button
-                    onClick={async () => {
-                      if (confirm(`Är du säker på att du vill ta bort denna mätning?`)) {
-                        const logToDelete = history.find((log, logIdx) => {
-                          const dateObj = new Date(log.date);
-                          const displayDate = dateObj.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
-                          const displayTime = dateObj.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-                          const fullDateTime = `${displayDate} kl ${displayTime}`;
-                          return fullDateTime === entry.dateTime;
-                        });
-                        if (logToDelete) {
-                          await onDelete(logToDelete.id);
-                        }
+                    onClick={() => {
+                      const log = history.find((log, logIdx) => {
+                        const dateObj = new Date(log.date);
+                        const displayDate = dateObj.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+                        const displayTime = dateObj.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                        const fullDateTime = `${displayDate} kl ${displayTime}`;
+                        return fullDateTime === entry.dateTime;
+                      });
+                      if (log) {
+                        setLogToDelete(log);
                       }
                     }}
                     className="p-3 bg-white/5 rounded-xl text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors"
@@ -362,6 +362,21 @@ const MeasurementDetailModal: React.FC<DetailModalProps> = ({ field, history, on
           <Check size={24} strokeWidth={4} /> Spara Mätning
         </button>
       </div>
+
+      {logToDelete && (
+        <ConfirmModal
+          title="Ta bort mätning?"
+          message={`Är du säker på att du vill ta bort mätningen ${field.key === 'weight' ? logToDelete.weight : logToDelete.measurements?.[field.key as keyof BodyMeasurements]} ${field.unit} från ${new Date(logToDelete.date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}?`}
+          confirmLabel="Ja, ta bort"
+          cancelLabel="Avbryt"
+          isDestructive={true}
+          onConfirm={async () => {
+            await onDelete(logToDelete.id);
+            setLogToDelete(null);
+          }}
+          onCancel={() => setLogToDelete(null)}
+        />
+      )}
     </div>
   );
 };
