@@ -35,7 +35,11 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
     };
   }, [onClose]);
 
-  const dateKey = date.toISOString().split('T')[0];
+  // Använd lokal tid istället för UTC för att matcha hur datum sparas
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateKey = `${year}-${month}-${day}`;
   const dayOfWeekNum = date.getDay();
 
   // Hämta alla pass för denna dag
@@ -43,6 +47,7 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
 
   console.log('🔍 DayOverviewModal Debug:', {
     dateKey,
+    dateObject: date,
     totalHistory: history.length,
     dayHistoryCount: dayHistory.length,
     dayHistoryDates: dayHistory.map(h => h.date),
