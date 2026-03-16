@@ -98,18 +98,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           }
           
           return (
-            <button 
-              key={i} 
-              onClick={() => handleDayClick(day)}
-              disabled={!hasActivity}
+            <button
+              key={i}
+              onClick={() => hasActivity && handleDayClick(day)}
               className={`aspect-square rounded-lg flex flex-col items-center justify-center relative border transition-all ${
                 isCurrentMonthDay ? '' : 'opacity-20'
-              } ${hasActivity ? `${bgClass} ${borderClass} hover:border-accent-pink/50` : ''}`}
+              } ${hasActivity ? `${bgClass} ${borderClass} hover:border-accent-pink/50 cursor-pointer` : 'cursor-default'}`}
             >
               <span className={`text-xs font-bold ${isTodayMarker ? 'text-accent-pink' : 'text-white/80'}`}>
                 {format(day, 'd')}
               </span>
-              
+
               <div className="flex gap-0.5 mt-1.5">
                 {dayHistory.map((_, idx) => <div key={`h-${idx}`} className="w-1.5 h-1.5 rounded-full bg-green-500" title={`${dayHistory.length} pass loggat`}/>)}
                 {dayPlanned.map((_, idx) => <div key={`p-${idx}`} className="w-1.5 h-1.5 rounded-full bg-white/30" title={`${dayPlanned.length} pass planerat`}/>)}
