@@ -33,14 +33,26 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
     setLoading(true);
     setPlan(null);
     try {
-      const history = await storage.getHistory();
+      const fullHistory = await storage.getHistory();
       const exercises = await storage.getAllExercises();
       const profile = await storage.getUserProfile();
-      const pplStats = calculatePPLStats(history, exercises);
-      
+
+      // Optimize: Limit history to last 12 weeks OR 30 sessions (whichever is less)
+      const twelveWeeksAgo = new Date();
+      twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - (12 * 7));
+
+      const recentHistory = fullHistory
+        .filter(h => new Date(h.date) >= twelveWeeksAgo)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 30);
+
+      console.log(`🎯 AI Program: Using ${recentHistory.length} of ${fullHistory.length} sessions (last 12 weeks or max 30 sessions)`);
+
+      const pplStats = calculatePPLStats(fullHistory, exercises); // Use full history for accurate PRs
+
       const result = await generateProfessionalPlan(
-        request, history, exercises, profile, pplStats,
-        { daysPerWeek, durationMinutes, durationWeeks: weeksToSchedule, progressionRate } 
+        request, recentHistory, exercises, profile, pplStats,
+        { daysPerWeek, durationMinutes, durationWeeks: weeksToSchedule, progressionRate }
       );
       setPlan(result);
     } catch (error) {

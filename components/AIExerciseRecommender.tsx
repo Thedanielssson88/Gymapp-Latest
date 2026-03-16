@@ -85,10 +85,23 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
   const handleSearch = async () => {
     if (!request.trim()) return;
     setLoading(true);
-    setCurrentResult(null); 
+    setCurrentResult(null);
     setCurrentQuery(request);
     try {
-      const result = await recommendExercises(request, allExercises);
+      // Filter exercises based on gym equipment to reduce prompt size
+      const gymFilteredExercises = allExercises.filter(ex => {
+        // If no activeZone, include all exercises
+        if (!activeZone) return true;
+
+        // Check if exercise can be performed with available equipment
+        return ex.equipmentRequirements.every(reqGroup =>
+          reqGroup.some(equipment => activeZone.equipment.includes(equipment))
+        );
+      });
+
+      console.log(`🎯 AI Scout: Filtered from ${allExercises.length} to ${gymFilteredExercises.length} exercises based on gym equipment`);
+
+      const result = await recommendExercises(request, gymFilteredExercises);
       setCurrentResult(result);
       saveToHistory(request, result);
     } catch (e) {

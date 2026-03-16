@@ -544,19 +544,37 @@ export const generateMagazineArticle = async (
         const apiKey = await getApiKey();
         const ai = new GoogleGenAI({ apiKey });
 
-        const historySummary = history.map(s => ({
-            date: s.date,
-            name: s.name,
-            rpe: s.rpe,
-            feeling: s.feeling,
-            exerciseCount: s.exercises.length,
-            exercises: s.exercises.map(e => ({ 
-              name: allExercises.find(ex => ex.id === e.exerciseId)?.name,
-              max1RM: Math.max(...e.sets.map(set => calculate1RM(set.weight, set.reps)))
-            }))
-        }));
+        // Optimize: Compress exercise data - only top 3 lifts per session
+        const historySummary = history.map(s => {
+            const exerciseLifts = s.exercises
+                .map(e => ({
+                    name: allExercises.find(ex => ex.id === e.exerciseId)?.name || 'Unknown',
+                    max1RM: Math.max(...e.sets.map(set => calculate1RM(set.weight, set.reps)))
+                }))
+                .filter(e => e.max1RM > 0)
+                .sort((a, b) => b.max1RM - a.max1RM)
+                .slice(0, 3); // Only top 3 lifts to reduce token count
 
-        const biometricsSummary = biometrics.map(b => ({ date: b.date, weight: b.weight }));
+            return {
+                date: s.date,
+                name: s.name,
+                rpe: s.rpe,
+                feeling: s.feeling,
+                exerciseCount: s.exercises.length,
+                topLifts: exerciseLifts // Compressed: top 3 instead of all
+            };
+        });
+
+        // Optimize: Weight trend instead of all individual measurements
+        const biometricsSummary = biometrics.length > 0 ? {
+            count: biometrics.length,
+            start: biometrics[0].weight,
+            end: biometrics[biometrics.length - 1].weight,
+            delta: biometrics[biometrics.length - 1].weight - biometrics[0].weight,
+            allMeasurements: biometrics.map(b => ({ date: b.date, weight: b.weight }))
+        } : null;
+
+        console.log(`🎯 AI Magazine: Compressed ${history.length} sessions, ${biometrics.length} biometric logs`);
         const consistency = analyzeConsistency(history);
         const volume = calculateVolumeByMuscleGroup(history, allExercises);
         
