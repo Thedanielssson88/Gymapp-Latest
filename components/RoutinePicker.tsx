@@ -7,6 +7,7 @@ import { RoutineCreator } from './RoutineCreator';
 import { Plus, Play, ChevronRight, Bookmark, Trash2, Dumbbell, Edit3, X, Check, Search, Filter, Sparkles, Loader2 } from 'lucide-react';
 import { registerBackHandler } from '../utils/backHandler';
 import { generateWorkoutFromPrompt } from '../services/geminiService';
+import { ConfirmModal } from './ConfirmModal';
 
 
 interface RoutinePickerProps {
@@ -25,6 +26,7 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Partial<WorkoutRoutine> | null>(null);
   const [sessionName, setSessionName] = useState("Fri Träning");
+  const [routineToDelete, setRoutineToDelete] = useState<WorkoutRoutine | null>(null);
 
   // Hantera Android Back
   useEffect(() => {
@@ -68,10 +70,9 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
   };
 
   const deleteRoutine = async (id: string) => {
-    if (confirm("Ta bort rutin?")) { 
-      await storage.deleteRoutine(id); 
-      onUpdate(); 
-    }
+    await storage.deleteRoutine(id);
+    onUpdate();
+    setRoutineToDelete(null);
   };
 
   if (editingRoutine) {
@@ -114,6 +115,7 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
   }
 
   return (
+    <>
     <div className="space-y-4 animate-in fade-in pb-20">
 
       {/* Session Name Input */}
@@ -192,10 +194,23 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
             </button>
             <div className="flex flex-col gap-2">
               <button onClick={() => setEditingRoutine(routine)} className="p-4 bg-white/5 rounded-2xl text-text-dim hover:text-white hover:bg-white/10 transition-colors"><Edit3 size={18} /></button>
-              <button onClick={() => deleteRoutine(routine.id)} className="p-4 bg-white/5 rounded-2xl text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors"><Trash2 size={18} /></button>
+              <button onClick={() => setRoutineToDelete(routine)} className="p-4 bg-white/5 rounded-2xl text-text-dim hover:text-red-500 hover:bg-red-500/10 transition-colors"><Trash2 size={18} /></button>
             </div>
           </div>
         ))}
     </div>
+
+    {routineToDelete && (
+      <ConfirmModal
+        title="Ta bort rutin?"
+        message={`Är du säker på att du vill ta bort rutinen "${routineToDelete.name}"? Detta går inte att ångra.`}
+        confirmLabel="Ja, ta bort"
+        cancelLabel="Avbryt"
+        isDestructive={true}
+        onConfirm={() => deleteRoutine(routineToDelete.id)}
+        onCancel={() => setRoutineToDelete(null)}
+      />
+    )}
+    </>
   );
 };
