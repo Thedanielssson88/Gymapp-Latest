@@ -78,22 +78,17 @@ Historik: ${exerciseHistory}`,
  */
 export const recommendExercises = async (
   userRequest: string,
-  existingExercises: Exercise[],
-  availableEquipment?: Equipment[]
+  existingExercises: Exercise[]
 ): Promise<ExerciseSearchResponse> => {
   try {
     const apiKey = await getApiKey();
     const ai = new GoogleGenAI({ apiKey });
     const exerciseIndex = existingExercises.map(e => `${e.id}: ${e.name}`).join('\n');
 
-    const equipmentContext = availableEquipment
-      ? `\n      TILLGÄNGLIG UTRUSTNING PÅ GYMMET:\n      ${availableEquipment.join(', ')}\n      (Om användaren inte anger något annat, prioritera övningar som matchar denna utrustning)`
-      : '';
-
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Användaren vill ha övningsförslag för: "${userRequest}".
-      ${equipmentContext}
+
       NUVARANDE BIBLIOTEK (ID: Namn):
       ${exerciseIndex}`,
       config: {
@@ -176,16 +171,10 @@ export const recommendExercises = async (
     return JSON.parse(jsonText.trim());
   } catch (error) {
     console.error("Gemini Exercise Error:", error);
-    console.error("Error details:", {
-      message: error instanceof Error ? error.message : 'Unknown',
-      stack: error instanceof Error ? error.stack : undefined,
-      availableEquipment,
-      exerciseCount: existingExercises.length
-    });
     if (error instanceof Error && error.message.includes("Ingen API-nyckel hittad")) {
         throw error;
     }
-    throw error instanceof Error ? error : new Error("Kunde inte hämta förslag från AI.");
+    throw new Error("Kunde inte hämta förslag från AI.");
   }
 };
 

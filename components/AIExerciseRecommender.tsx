@@ -27,7 +27,7 @@ interface HistoryItem {
     timestamp: number;
 }
 
-export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ onEditExercise, onStartSession, onAddToWorkout, onClose, allExercises, onUpdate, history: fullHistory, activeZone }) => {
+export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ onEditExercise, onStartSession, onAddToWorkout, onClose, allExercises, onUpdate, history: fullHistory }) => {
   const [request, setRequest] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentResult, setCurrentResult] = useState<ExerciseSearchResponse | null>(null);
@@ -88,22 +88,11 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
     setCurrentResult(null);
     setCurrentQuery(request);
     try {
-      // AI SCOUT - Gym-filtrering: Filtrera övningar baserat på gymets utrustning
-      const exercisesToUse = activeZone
-        ? allExercises.filter(ex =>
-            ex.equipmentRequirements.every(reqGroup =>
-              reqGroup.some(equipment => activeZone.equipment.includes(equipment))
-            )
-          )
-        : allExercises;
-
-      const result = await recommendExercises(request, exercisesToUse, activeZone?.equipment);
+      const result = await recommendExercises(request, allExercises);
       setCurrentResult(result);
       saveToHistory(request, result);
     } catch (e) {
-      console.error("AI Scout error:", e);
-      const errorMsg = e instanceof Error ? e.message : "Okänt fel";
-      alert(`Kunde inte hämta förslag: ${errorMsg}`);
+      alert("Kunde inte hämta förslag. Kontrollera din anslutning.");
     } finally {
       setLoading(false);
     }
