@@ -389,10 +389,13 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
 
       {viewMode === 'calendar' && (
         <div className="px-4 animate-in fade-in">
-          <CalendarView 
-            history={history} 
-            plannedActivities={plannedActivities} 
-            onDayClick={setSelectedItem} 
+          <CalendarView
+            history={history}
+            plannedActivities={plannedActivities}
+            allExercises={allExercises}
+            onDayClick={setSelectedItem}
+            onStartPlanned={onStartActivity}
+            onAddPlan={onAddPlan}
           />
         </div>
       )}
