@@ -276,7 +276,15 @@ export const storage = {
   },
 
   deleteBiometricLog: async (logId: string) => {
-    const { error } = await supabase.from('biometric_logs').delete().eq('id', logId);
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('biometric_logs')
+      .delete()
+      .eq('id', logId)
+      .eq('user_id', user.id);
+
     if (error) {
       console.error('Error deleting biometric log:', error);
       throw error;
