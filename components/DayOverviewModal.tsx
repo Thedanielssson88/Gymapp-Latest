@@ -41,6 +41,14 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
   // Hämta alla pass för denna dag
   const dayHistory = history.filter(h => h.date.startsWith(dateKey));
 
+  console.log('🔍 DayOverviewModal Debug:', {
+    dateKey,
+    totalHistory: history.length,
+    dayHistoryCount: dayHistory.length,
+    dayHistoryDates: dayHistory.map(h => h.date),
+    allHistoryDates: history.map(h => h.date).slice(0, 10)
+  });
+
   const dayPlanned = plannedActivities.filter(p => {
     if ('isTemplate' in p) {
       const rp = p as RecurringPlanForDisplay;
