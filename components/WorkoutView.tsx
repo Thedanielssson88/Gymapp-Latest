@@ -522,6 +522,24 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
     return plansForToday;
   }, [plannedActivities]);
 
+  const missedPlans = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const activePlans = plannedActivities || [];
+
+    // Filter for scheduled activities that are before today and not completed
+    return activePlans
+      .filter(p => !('isTemplate' in p)) // Only ScheduledActivity, not recurring templates
+      .map(p => p as ScheduledActivity)
+      .filter(activity => {
+        const activityDate = new Date(activity.date);
+        activityDate.setHours(0, 0, 0, 0);
+        return activityDate < now && !activity.isCompleted;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Most recent first
+      .slice(0, 10); // Limit to 10 most recent missed
+  }, [plannedActivities]);
+
   const recentSessions = useMemo(() => {
     // Get the 10 most recent completed sessions for carousel
     return [...history]
@@ -531,6 +549,8 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
   }, [history]);
 
   const [currentRecentIndex, setCurrentRecentIndex] = useState(0);
+  const [currentTodayIndex, setCurrentTodayIndex] = useState(0);
+  const [currentMissedIndex, setCurrentMissedIndex] = useState(0);
 
   const handleStartFromHistory = useCallback((session: WorkoutSession) => {
     // Create a new active session based on the historical session
@@ -597,38 +617,180 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
             <div className="flex items-center gap-4"><div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-white"><Play size={24} fill="currentColor" /></div><div className="text-left"><span className="text-[10px] font-black uppercase tracking-widest opacity-60">Snabbstart</span><h3 className="text-xl font-black italic uppercase leading-none">Starta Pass</h3></div></div>
             <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
+          {/* Today's Planned Workouts Carousel */}
           {todaysPlans.length > 0 && (
             <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-2 px-2"><Calendar size={14} className="text-accent-pink" /><h3 className="text-[10px] font-black uppercase text-text-dim tracking-widest">Dagens Planering</h3></div>
-              <div className="grid gap-4">
-                {todaysPlans.map(plan => (
-                  <button key={plan.id} onClick={() => onStartActivity(plan as ScheduledActivity)} className="bg-[#1a1721] border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-pink/20">
-                    <div className="flex justify-between items-center w-full">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-accent-blue/10 rounded-xl flex items-center justify-center text-accent-blue">{'isTemplate' in plan ? <Repeat size={24} /> : <Calendar size={24} />}</div>
-                        <div className="text-left"><h4 className="text-lg font-black italic uppercase text-white leading-tight">{plan.title}</h4><p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">{plan.exercises?.length || 0} övningar • {'isTemplate' in plan ? 'Återkommande' : 'Idag'}</p></div>
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-accent-pink" />
+                  <h3 className="text-[10px] font-black uppercase text-text-dim tracking-widest">Dagens Planering</h3>
+                </div>
+                {todaysPlans.length > 1 && (
+                  <div className="flex items-center gap-1">
+                    {todaysPlans.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`h-1.5 rounded-full transition-all ${
+                          idx === currentTodayIndex
+                            ? 'w-6 bg-accent-pink'
+                            : 'w-1.5 bg-white/20'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <div
+                  className="overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  onScroll={(e) => {
+                    const container = e.currentTarget;
+                    const scrollLeft = container.scrollLeft;
+                    const itemWidth = container.offsetWidth;
+                    const newIndex = Math.round(scrollLeft / itemWidth);
+                    if (newIndex !== currentTodayIndex) {
+                      setCurrentTodayIndex(newIndex);
+                    }
+                  }}
+                >
+                  <div className="flex gap-4 px-4">
+                    {todaysPlans.map(plan => (
+                      <div
+                        key={plan.id}
+                        className="flex-shrink-0 w-[calc(100vw-2rem)] md:w-[400px] snap-center"
+                      >
+                        <button
+                          onClick={() => onStartActivity(plan as ScheduledActivity)}
+                          className="w-full bg-[#1a1721] border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-pink/20"
+                        >
+                          <div className="flex justify-between items-center w-full">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-accent-pink/10 rounded-xl flex items-center justify-center text-accent-pink">
+                                {'isTemplate' in plan ? <Repeat size={24} /> : <Calendar size={24} />}
+                              </div>
+                              <div className="text-left">
+                                <h4 className="text-lg font-black italic uppercase text-white leading-tight">{plan.title}</h4>
+                                <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">
+                                  {plan.exercises?.length || 0} övningar • {'isTemplate' in plan ? 'Återkommande' : 'Idag'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-accent-pink group-hover:text-accent-pink transition-colors">
+                              <Play size={18} fill="currentColor" />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 px-3 py-3 bg-white/5 rounded-2xl border border-white/5">
+                            {(plan.exercises || []).slice(0, 8).map((pe, idx) => {
+                              const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
+                              if (!exName) return null;
+                              return (
+                                <span key={idx} className="text-[9px] bg-black/30 text-text-dim px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
+                                  {exName}
+                                </span>
+                              );
+                            })}
+                            {(plan.exercises?.length || 0) > 8 && (
+                              <span className="text-xs text-text-dim self-center">
+                                +{(plan.exercises?.length || 0) - 8} mer
+                              </span>
+                            )}
+                          </div>
+                        </button>
                       </div>
-                      <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-accent-blue group-hover:text-accent-blue transition-colors"><Play size={18} fill="currentColor" /></div>
-                    </div>
-                    {/* FIX: Replaced truncated text with wrapping pills */}
-                    <div className="flex flex-wrap gap-1.5 px-3 py-3 bg-white/5 rounded-2xl border border-white/5">
-                      {(plan.exercises || []).slice(0, 8).map((pe, idx) => {
-                        const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
-                        if (!exName) return null;
-                        return (
-                          <span key={idx} className="text-[9px] bg-black/30 text-text-dim px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
-                            {exName}
-                          </span>
-                        );
-                      })}
-                      {(plan.exercises?.length || 0) > 8 && (
-                        <span className="text-xs text-text-dim self-center">
-                          +{(plan.exercises?.length || 0) - 8} mer
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Missed Planned Workouts Carousel */}
+          {missedPlans.length > 0 && (
+            <div className="space-y-4 pt-6">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={14} className="text-orange-400" />
+                  <h3 className="text-[10px] font-black uppercase text-text-dim tracking-widest">Missade Pass</h3>
+                </div>
+                {missedPlans.length > 1 && (
+                  <div className="flex items-center gap-1">
+                    {missedPlans.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`h-1.5 rounded-full transition-all ${
+                          idx === currentMissedIndex
+                            ? 'w-6 bg-orange-400'
+                            : 'w-1.5 bg-white/20'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <div
+                  className="overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  onScroll={(e) => {
+                    const container = e.currentTarget;
+                    const scrollLeft = container.scrollLeft;
+                    const itemWidth = container.offsetWidth;
+                    const newIndex = Math.round(scrollLeft / itemWidth);
+                    if (newIndex !== currentMissedIndex) {
+                      setCurrentMissedIndex(newIndex);
+                    }
+                  }}
+                >
+                  <div className="flex gap-4 px-4">
+                    {missedPlans.map(plan => (
+                      <div
+                        key={plan.id}
+                        className="flex-shrink-0 w-[calc(100vw-2rem)] md:w-[400px] snap-center"
+                      >
+                        <button
+                          onClick={() => onStartActivity(plan)}
+                          className="w-full bg-[#1a1721] border border-orange-400/20 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-orange-400/40"
+                        >
+                          <div className="flex justify-between items-center w-full">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-orange-400/10 rounded-xl flex items-center justify-center text-orange-400">
+                                <AlertCircle size={24} />
+                              </div>
+                              <div className="text-left">
+                                <h4 className="text-lg font-black italic uppercase text-white leading-tight">{plan.title}</h4>
+                                <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">
+                                  {plan.exercises?.length || 0} övningar • {new Date(plan.date).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-orange-400 group-hover:text-orange-400 transition-colors">
+                              <Play size={18} fill="currentColor" />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 px-3 py-3 bg-white/5 rounded-2xl border border-white/5">
+                            {(plan.exercises || []).slice(0, 8).map((pe, idx) => {
+                              const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
+                              if (!exName) return null;
+                              return (
+                                <span key={idx} className="text-[9px] bg-black/30 text-text-dim px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
+                                  {exName}
+                                </span>
+                              );
+                            })}
+                            {(plan.exercises?.length || 0) > 8 && (
+                              <span className="text-xs text-text-dim self-center">
+                                +{(plan.exercises?.length || 0) - 8} mer
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
