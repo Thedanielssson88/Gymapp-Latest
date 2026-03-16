@@ -233,14 +233,17 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                     if ('isTemplate' in p) {
                         const isScheduledForDay = p.daysOfWeek?.includes(dayOfWeekNum);
                         if (!isScheduledForDay) return false;
-                        
-                        const hasConcreteInstance = plannedActivities.some((otherP) => 
-                            !('isTemplate' in otherP) && 
-                            (otherP as ScheduledActivity).recurrenceId === p.id && 
+
+                        // Kolla om det finns EN KONKRET instans (även skippade/completed) för denna dag
+                        const hasConcreteInstance = plannedActivities.some((otherP) =>
+                            !('isTemplate' in otherP) &&
+                            (otherP as ScheduledActivity).recurrenceId === p.id &&
                             otherP.date === dKey
+                            // Vi kollar INTE isCompleted här - även skippade räknas som konkreta instanser
                         );
                         return isScheduledForDay && !hasConcreteInstance;
                     } else {
+                        // Visa bara OFÄRDIGA konkreta planerade pass
                         return p.date === dKey && !p.isCompleted;
                     }
                 });
