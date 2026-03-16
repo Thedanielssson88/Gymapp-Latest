@@ -244,7 +244,7 @@ export default function App() {
     setRoutines(r);
     
     const allPlansForDisplay: PlannedActivityForLogDisplay[] = [
-      ...scheduled.filter(s => !s.isCompleted), // Filter out completed activities
+      ...scheduled, // Include ALL scheduled activities (components will filter as needed)
       ...recurring.map(rp => ({
           id: rp.id,
           date: rp.startDate,
