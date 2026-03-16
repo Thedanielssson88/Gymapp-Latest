@@ -489,7 +489,18 @@ export const storage = {
   // Recurring Plans
   getRecurringPlans: async (): Promise<RecurringPlan[]> => {
     const { data } = await supabase.from('recurring_plans').select('*');
-    return data || [];
+    if (!data) return [];
+
+    // Mappa snake_case (Supabase) till camelCase (TypeScript)
+    return data.map(dbPlan => ({
+      id: dbPlan.id,
+      title: dbPlan.title,
+      type: dbPlan.type,
+      daysOfWeek: dbPlan.days_of_week,  // snake_case → camelCase
+      startDate: dbPlan.start_date,      // snake_case → camelCase
+      endDate: dbPlan.end_date,          // snake_case → camelCase
+      exercises: dbPlan.exercises
+    }));
   },
   addRecurringPlan: async (plan: RecurringPlan) => {
     const user = await getCurrentUser();
