@@ -497,15 +497,23 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
     const recurringPlanIdsAlreadyInstanced: Set<string> = new Set();
     const activePlans = plannedActivities || [];
 
+    // First pass: Check for scheduled activities (including completed/skipped ones with recurrenceId)
     activePlans.filter(p => !('isTemplate' in p)).forEach(p => {
-      if ((p as ScheduledActivity).date === dKey) {
-        plansForToday.push(p);
-        if ((p as ScheduledActivity).recurrenceId) {
-          recurringPlanIdsAlreadyInstanced.add((p as ScheduledActivity).recurrenceId!);
+      const scheduledActivity = p as ScheduledActivity;
+      if (scheduledActivity.date === dKey) {
+        // If it has a recurrenceId, mark that recurring plan as "already instanced" for today
+        if (scheduledActivity.recurrenceId) {
+          recurringPlanIdsAlreadyInstanced.add(scheduledActivity.recurrenceId);
+        }
+
+        // Only add to list if NOT completed (hide completed/skipped activities)
+        if (!scheduledActivity.isCompleted) {
+          plansForToday.push(p);
         }
       }
     });
 
+    // Second pass: Add recurring plans that don't have an instance today
     activePlans.filter(p => 'isTemplate' in p).forEach(p => {
       const recurringPlan = p as RecurringPlanForDisplay;
       if (recurringPlan.daysOfWeek?.includes(dayOfWeekNum) && !recurringPlanIdsAlreadyInstanced.has(recurringPlan.id)) {
