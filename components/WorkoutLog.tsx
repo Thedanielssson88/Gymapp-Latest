@@ -1088,7 +1088,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
               <label className="text-xs font-bold text-text-dim uppercase mb-2 block">Välj Gym / Plats</label>
               <div className="grid grid-cols-1 gap-2">
                 {zones.map(zone => {
-                  const isSelected = (selectedZone?.id || activeZone.id) === zone.id;
+                  const isSelected = (selectedZone?.id || activeZone?.id) === zone.id;
                   return (
                     <button
                       key={zone.id}
@@ -1103,7 +1103,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                         <div>
                           <p className="font-black uppercase text-sm">{zone.name}</p>
                           <p className="text-[10px] uppercase tracking-widest mt-1">
-                            {zone.inventory.length} redskap
+                            {zone.inventory?.length || 0} redskap
                           </p>
                         </div>
                         {isSelected && (
