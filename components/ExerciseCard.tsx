@@ -46,6 +46,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   const imageSrc = useExerciseImage(exData);
   const [showMenu, setShowMenu] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   // Long Press State
   // FIX: Changed NodeJS.Timeout to ReturnType<typeof setTimeout> for browser compatibility.
@@ -175,10 +176,30 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start">
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                    <h3 onClick={handleToggleCollapse} className={`text-xl font-black italic uppercase leading-none truncate pr-2 ${allSetsCompleted ? 'text-green-500 cursor-pointer hover:underline' : 'text-white'}`}>
+                <div className="flex items-center gap-2 overflow-hidden relative">
+                    <h3
+                      onClick={(e) => {
+                        if (allSetsCompleted) {
+                          handleToggleCollapse();
+                        } else {
+                          setIsScrolling(!isScrolling);
+                        }
+                      }}
+                      style={isScrolling && !allSetsCompleted ? {
+                        animation: 'scroll-text 3s linear infinite',
+                        whiteSpace: 'nowrap',
+                        paddingRight: '20px'
+                      } : {}}
+                      className={`text-base font-black italic uppercase leading-none pr-2 cursor-pointer ${allSetsCompleted ? 'text-green-500 hover:underline' : 'text-white hover:text-accent-blue'} ${!isScrolling || allSetsCompleted ? 'truncate' : ''}`}
+                    >
                         {exData.name} {allSetsCompleted && <span className="inline-block align-middle ml-1"><ChevronUp size={14}/></span>}
                     </h3>
+                    <style>{`
+                      @keyframes scroll-text {
+                        0% { transform: translateX(0%); }
+                        100% { transform: translateX(-100%); }
+                      }
+                    `}</style>
                     {hasActiveGoal && (
                         <div className="flex items-center gap-1 bg-accent-blue/20 px-2 py-1 rounded-lg text-[9px] text-accent-blue font-bold uppercase shrink-0">
                             <TrendingUp size={12} />
