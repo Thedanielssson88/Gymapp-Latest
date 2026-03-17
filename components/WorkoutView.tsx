@@ -29,7 +29,7 @@ interface WorkoutViewProps {
   userProfile: UserProfile;
   allZones: Zone[];
   history: WorkoutSession[];
-  activeZone: Zone;
+  activeZone?: Zone;
   onZoneChange: (zone: Zone) => void;
   onComplete: (session: WorkoutSession, duration: number) => void;
   onCancel: () => void;
@@ -200,7 +200,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
   };
 
   const handleSwitchZone = (targetZone: Zone) => {
-    if (targetZone.id === activeZone.id) return;
+    if (!activeZone || targetZone.id === activeZone.id) return;
     setLocalSession(prev => {
       if (!prev) return null;
       const newExercises = (prev.exercises || []).map(item => {
@@ -865,7 +865,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                               </div>
                               <div className="text-left">
                                 <h4 className="text-lg font-black italic uppercase text-white leading-tight">
-                                  {session.name || session.locationName || activeZone.name}
+                                  {session.name || session.locationName || activeZone?.name || 'Träningspass'}
                                 </h4>
                                 <p className="text-[9px] text-text-dim font-bold uppercase tracking-widest">
                                   {session.exercises?.length || 0} övningar • {new Date(session.date).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}
@@ -938,7 +938,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
           <button onClick={() => setLocalShowZonePicker(true)} className="w-full py-4 bg-[#1a1721] border border-white/5 rounded-2xl flex items-center justify-between px-6 shadow-sm active:scale-[0.98] transition-all">
             <div className="flex items-center gap-4">
                <div className="p-3 bg-white/5 rounded-xl text-accent-blue border border-white/5"><MapPin size={20} /></div>
-               <div className="text-left"><span className="text-[9px] font-black uppercase tracking-widest text-text-dim block mb-1">Träningsplats</span><span className="text-lg font-black italic uppercase text-white">{activeZone.name}</span></div>
+               <div className="text-left"><span className="text-[9px] font-black uppercase tracking-widest text-text-dim block mb-1">Träningsplats</span><span className="text-lg font-black italic uppercase text-white">{activeZone?.name || 'Läser in...'}</span></div>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5"><span className="text-[10px] font-bold uppercase text-white/60">Byt</span><RefreshCw size={12} className="text-white/60" /></div>
           </button>
@@ -1093,7 +1093,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
         <div className="fixed inset-0 bg-[#0f0d15]/95 backdrop-blur-sm z-[9999] flex flex-col p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] animate-in fade-in duration-200">
            <header className="flex justify-between items-center mb-8"><h3 className="text-2xl font-black italic uppercase text-white">Välj Gym</h3><button onClick={() => setLocalShowZonePicker(false)} className="p-3 bg-white/5 rounded-2xl"><X size={24} className="text-white"/></button></header>
            <div className="flex-1 overflow-y-auto space-y-3">{(allZones || []).map(z => {
-                 const isActive = activeZone.id === z.id;
+                 const isActive = activeZone?.id === z.id;
                  return (<button key={z.id} onClick={() => { handleSwitchZone(z); setLocalShowZonePicker(false); }} className={`w-full p-5 rounded-3xl border text-left flex items-center justify-between transition-all group ${isActive ? 'bg-white text-black border-white' : 'bg-[#1a1721] border-white/5 text-text-dim'}`}><div className="flex items-center gap-4"><div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${isActive ? 'bg-black/10 border-transparent text-black' : 'bg-white/5 border-white/5 text-white'}`}><MapPin size={20} /></div><div><span className="text-lg font-black italic uppercase block leading-none mb-1.5">{z.name}</span><span className={`text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-black/60' : 'text-white/30'}`}>{z.inventory?.length || 0} Redskap</span></div></div>{isActive && <div className="bg-black text-white p-2 rounded-full"><Check size={16} strokeWidth={4} /></div>}</button>);
               })}</div>
         </div>

@@ -94,7 +94,7 @@ interface WorkoutLogProps {
   onStartLiveWorkout: () => void;
   onUpdate: () => void;
   userProfile: UserProfile;
-  activeZone: Zone;
+  activeZone?: Zone;
   zones: Zone[];
 }
 
