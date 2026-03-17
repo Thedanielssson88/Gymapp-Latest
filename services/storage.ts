@@ -527,8 +527,10 @@ export const storage = {
     const { data } = await supabase.from('recurring_plans').select('*');
     if (!data) return [];
 
+    console.log('📥 getRecurringPlans raw data from DB:', data);
+
     // Mappa snake_case (Supabase) till camelCase (TypeScript)
-    return data.map(dbPlan => ({
+    const mapped = data.map(dbPlan => ({
       id: dbPlan.id,
       title: dbPlan.title,
       type: dbPlan.type,
@@ -538,6 +540,9 @@ export const storage = {
       exercises: dbPlan.exercises,
       color: dbPlan.color                // Färg från databasen
     }));
+
+    console.log('✅ getRecurringPlans mapped data:', mapped);
+    return mapped;
   },
   addRecurringPlan: async (plan: RecurringPlan) => {
     const user = await getCurrentUser();

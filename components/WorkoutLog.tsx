@@ -303,13 +303,24 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     setUpdatedPlans(prev => new Map(prev).set(planId, { color: newColor }));
     setShowColorPickerForPlan(null);
 
-    // Gör riktig uppdatering i bakgrunden
-    if (isTemplate) {
-      onUpdateRecurringPlan(planId, { color: newColor });
-    } else {
-      onUpdateScheduledActivity(planId, { color: newColor });
+    // Gör riktig uppdatering i bakgrunden och vänta på att den blir klar
+    try {
+      if (isTemplate) {
+        await onUpdateRecurringPlan(planId, { color: newColor });
+      } else {
+        await onUpdateScheduledActivity(planId, { color: newColor });
+      }
+      // Refresh data från backend EFTER att uppdateringen är klar
+      await onUpdate();
+    } catch (error) {
+      console.error('Failed to update color:', error);
+      // Återställ optimistisk uppdatering om det misslyckades
+      setUpdatedPlans(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(planId);
+        return newMap;
+      });
     }
-    onUpdate(); // Refresh data från backend
   };
 
   const handleSavePlan = () => {
