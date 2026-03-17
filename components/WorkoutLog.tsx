@@ -293,19 +293,26 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   };
 
   const handleUpdatePlanColor = async (planId: string, newColor: string, isTemplate: boolean) => {
+    console.log(`🎨 handleUpdatePlanColor START: planId=${planId}, newColor=${newColor}, isTemplate=${isTemplate}`);
+
     // Optimistisk uppdatering - uppdatera UI direkt
     setUpdatedPlans(prev => new Map(prev).set(planId, { color: newColor }));
     setShowColorPickerForPlan(null);
+    console.log(`✅ Optimistic update set in local state`);
 
     // Gör riktig uppdatering i bakgrunden och vänta på att den blir klar
     try {
+      console.log(`🔵 Calling backend update...`);
       if (isTemplate) {
         await onUpdateRecurringPlan(planId, { color: newColor });
       } else {
         await onUpdateScheduledActivity(planId, { color: newColor });
       }
+      console.log(`✅ Backend update complete, calling onUpdate()...`);
+
       // Refresh data från backend EFTER att uppdateringen är klar
       await onUpdate();
+      console.log(`✅ onUpdate() complete, clearing optimistic state...`);
 
       // Rensa optimistisk uppdatering när backend-data är uppdaterad
       setUpdatedPlans(prev => {
@@ -313,6 +320,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
         newMap.delete(planId);
         return newMap;
       });
+      console.log(`🎨 handleUpdatePlanColor DONE`);
     } catch (error) {
       console.error('Failed to update color:', error);
       // Återställ optimistisk uppdatering om det misslyckades
