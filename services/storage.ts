@@ -810,11 +810,11 @@ export const storage = {
       throw programError;
     }
 
-    // Radera alla tillhörande schemalagda aktiviteter
+    // Radera alla tillhörande schemalagda aktiviteter (ALLA - både completed och non-completed)
     const { error: activitiesError } = await supabase
       .from('scheduled_activities')
       .delete()
-      .eq('program_id', programId)
+      .eq('programId', programId)  // FIX: Använd camelCase, inte snake_case
       .eq('user_id', user.id);
 
     if (activitiesError) {
