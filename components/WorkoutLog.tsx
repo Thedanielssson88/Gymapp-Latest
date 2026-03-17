@@ -18,6 +18,7 @@ import { WorkoutDetailsModal } from './WorkoutDetailsModal';
 import { registerBackHandler } from '../utils/backHandler';
 import { ColorPicker } from './ColorPicker';
 import { getColorByHex } from '../utils/colors';
+import { ExerciseLibrary } from './ExerciseLibrary';
 
 const formatSeconds = (totalSeconds: number) => {
   if (isNaN(totalSeconds) || totalSeconds < 0) return '0:00';
@@ -112,6 +113,11 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [planColor, setPlanColor] = useState('#1a1721'); // Färg för passet
 
+  // State för att skapa eget pass
+  const [showCreateCustom, setShowCreateCustom] = useState(false);
+  const [customExercises, setCustomExercises] = useState<PlannedExercise[]>([]);
+  const [showExerciseLibraryForCustom, setShowExerciseLibraryForCustom] = useState(false);
+
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedItem, setSelectedItem] = useState<WorkoutSession | PlannedActivityForLogDisplay | null>(null);
   
@@ -129,13 +135,13 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
 
   // Blockera scrollning när modal är öppen
   useEffect(() => {
-    if (showPlanModal || showDatePicker || moveModalData) {
+    if (showPlanModal || showDatePicker || moveModalData || showCreateCustom) {
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = 'unset';
       };
     }
-  }, [showPlanModal, showDatePicker, moveModalData]);
+  }, [showPlanModal, showDatePicker, moveModalData, showCreateCustom]);
 
   const weekdays = [ { id: 1, label: 'Mån' }, { id: 2, label: 'Tis' }, { id: 3, label: 'Ons' }, { id: 4, label: 'Tor' }, { id: 5, label: 'Fre' }, { id: 6, label: 'Lör' }, { id: 0, label: 'Sön' } ];
 
@@ -187,6 +193,76 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     setIsRecurring(false);
     setSelectedDays([]);
     setPlanColor('#1a1721');
+  };
+
+  const handleSaveCustomPlan = () => {
+    if (!planTitle.trim()) {
+      alert('Ange ett namn på passet');
+      return;
+    }
+    if (customExercises.length === 0) {
+      alert('Lägg till minst en övning');
+      return;
+    }
+    const activity: ScheduledActivity = {
+      id: `plan-${Date.now()}`,
+      date: planDate,
+      type: 'gym',
+      title: planTitle,
+      isCompleted: false,
+      exercises: customExercises,
+      color: planColor
+    };
+    onAddPlan(activity, isRecurring, selectedDays);
+    setShowCreateCustom(false);
+    setShowPlanModal(false);
+    setPlanTitle('');
+    setCustomExercises([]);
+    setIsRecurring(false);
+    setSelectedDays([]);
+    setPlanColor('#1a1721');
+  };
+
+  const handleAddExerciseToCustom = (ex: Exercise) => {
+    const newPlanned: PlannedExercise = {
+      exerciseId: ex.id,
+      sets: [
+        { reps: 10, weight: 0, completed: false, type: 'normal' },
+        { reps: 10, weight: 0, completed: false, type: 'normal' },
+        { reps: 10, weight: 0, completed: false, type: 'normal' }
+      ],
+      notes: ''
+    };
+    setCustomExercises([...customExercises, newPlanned]);
+  };
+
+  const handleRemoveCustomExercise = (index: number) => {
+    const updated = [...customExercises];
+    updated.splice(index, 1);
+    setCustomExercises(updated);
+  };
+
+  const updateCustomSet = (exIdx: number, setIdx: number, field: keyof WorkoutSet, value: number) => {
+    const updated = [...customExercises];
+    const updatedSets = [...updated[exIdx].sets];
+    updatedSets[setIdx] = { ...updatedSets[setIdx], [field]: value };
+    updated[exIdx] = { ...updated[exIdx], sets: updatedSets };
+    setCustomExercises(updated);
+  };
+
+  const addCustomSet = (exIdx: number) => {
+    const updated = [...customExercises];
+    const lastSet = updated[exIdx].sets[updated[exIdx].sets.length - 1];
+    updated[exIdx].sets.push({ ...lastSet, completed: false });
+    setCustomExercises(updated);
+  };
+
+  const removeCustomSet = (exIdx: number, setIdx: number) => {
+    const updated = [...customExercises];
+    if (updated[exIdx].sets.length > 1) {
+      updated[exIdx].sets.splice(setIdx, 1);
+      setCustomExercises(updated);
+    }
   };
 
   const handleExecuteMove = (targetDate: string) => {
@@ -436,7 +512,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       )}
 
       {showDatePicker && (<div className="fixed inset-0 bg-[#0f0d15]/90 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300"><div className="bg-[#1a1721] border border-white/10 rounded-[40px] p-8 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95"><button onClick={() => setShowDatePicker(false)} className="absolute top-6 right-6 p-2 text-white/30 hover:text-white"><X size={20}/></button><div className="flex flex-col items-center text-center mb-8"><div className="w-16 h-16 bg-accent-blue/10 rounded-2xl flex items-center justify-center text-accent-blue mb-4"><CalendarPlus size={32} /></div><h3 className="text-xl font-black italic uppercase text-white tracking-tighter">Välj Datum</h3><p className="text-xs text-text-dim mt-1">När utfördes träningen?</p></div><input type="date" value={manualDate} max={new Date().toISOString().split('T')[0]} onChange={(e) => setManualDate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white font-black text-center outline-none mb-8 focus:border-accent-blue" /><button onClick={handleStartManual} className="w-full py-5 bg-accent-blue text-white rounded-[24px] font-black italic text-lg uppercase tracking-widest shadow-lg active:scale-95 transition-all">Logga detta datum</button></div></div>)}
-      {showPlanModal && (<div className="fixed inset-0 z-[105] bg-[#0f0d15] flex items-center justify-center p-4 animate-in fade-in duration-200 overflow-hidden"><div className="absolute inset-0" onClick={() => setShowPlanModal(false)} /><div className="relative bg-[#1a1721] w-full max-w-sm rounded-[40px] border border-white/10 p-8 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}><div className="flex justify-between items-center mb-6"><h3 className="text-2xl font-black italic uppercase text-white tracking-tighter">Planera</h3><button onClick={() => setShowPlanModal(false)} className="p-2 bg-white/5 rounded-full text-text-dim hover:text-white transition-colors"><X size={20} /></button></div><div className="space-y-5"><div className="space-y-2"><label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Välj Rutin</label><select value={selectedRoutineId} onChange={e => setSelectedRoutineId(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-blue/50"><option value="">-- Eget pass --</option>{routines.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>{!selectedRoutineId && (<div className="space-y-2"><label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Namn på passet</label><input placeholder="t.ex. Morgonlöpning..." value={planTitle} onChange={e => setPlanTitle(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-blue/50" /></div>)}<ColorPicker selectedColor={planColor} onSelectColor={setPlanColor} /><div className="flex items-center justify-between bg-black/20 p-4 rounded-2xl border border-white/5"><div className="flex items-center gap-3"><Repeat size={18} className={isRecurring ? "text-accent-blue" : "text-text-dim"} /><span className="text-xs font-black uppercase text-white tracking-widest">Återkommande</span></div><button onClick={() => setIsRecurring(!isRecurring)} className={`w-12 h-6 rounded-full transition-colors relative ${isRecurring ? 'bg-accent-blue' : 'bg-white/10'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isRecurring ? 'right-1' : 'left-1'}`} /></button></div>{isRecurring ? (<div className="flex justify-between gap-1">{weekdays.map(day => (<button key={day.id} onClick={() => toggleDay(day.id)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${selectedDays.includes(day.id) ? 'bg-accent-blue border-accent-blue text-white' : 'bg-black/40 border-white/5 text-text-dim'}`}>{day.label}</button>))}</div>) : (<div className="space-y-2"><label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Datum</label><input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none" /></div>)}<button onClick={handleSavePlan} className="w-full py-5 bg-white text-black rounded-3xl font-black italic uppercase tracking-widest shadow-xl active:scale-95 transition-transform mt-2">Spara Plan</button></div></div></div>)}
+      {showPlanModal && (<div className="fixed inset-0 z-[105] bg-[#0f0d15] flex items-center justify-center p-4 animate-in fade-in duration-200 overflow-hidden"><div className="absolute inset-0" onClick={() => setShowPlanModal(false)} /><div className="relative bg-[#1a1721] w-full max-w-sm rounded-[40px] border border-white/10 p-8 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}><div className="flex justify-between items-center mb-6"><h3 className="text-2xl font-black italic uppercase text-white tracking-tighter">Planera</h3><button onClick={() => setShowPlanModal(false)} className="p-2 bg-white/5 rounded-full text-text-dim hover:text-white transition-colors"><X size={20} /></button></div><div className="space-y-5"><div className="space-y-2"><label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Välj Rutin</label><select value={selectedRoutineId} onChange={e => setSelectedRoutineId(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-blue/50"><option value="">-- Välj rutin --</option>{routines.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div><div className="relative"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div><div className="relative flex justify-center text-[10px] font-black uppercase"><span className="bg-[#1a1721] px-2 text-text-dim">Eller</span></div></div><button onClick={() => { setShowPlanModal(false); setShowCreateCustom(true); }} className="w-full py-4 bg-accent-pink/10 border border-accent-pink/30 text-accent-pink rounded-2xl font-black uppercase flex items-center justify-center gap-2 active:scale-95 transition-all"><Plus size={20} /> Skapa nytt pass</button>{selectedRoutineId && (<div className="space-y-2"><label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Namn (valfritt)</label><input placeholder="Skriv över rutinens namn..." value={planTitle} onChange={e => setPlanTitle(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none focus:border-accent-blue/50" /></div>)}<ColorPicker selectedColor={planColor} onSelectColor={setPlanColor} /><div className="flex items-center justify-between bg-black/20 p-4 rounded-2xl border border-white/5"><div className="flex items-center gap-3"><Repeat size={18} className={isRecurring ? "text-accent-blue" : "text-text-dim"} /><span className="text-xs font-black uppercase text-white tracking-widest">Återkommande</span></div><button onClick={() => setIsRecurring(!isRecurring)} className={`w-12 h-6 rounded-full transition-colors relative ${isRecurring ? 'bg-accent-blue' : 'bg-white/10'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isRecurring ? 'right-1' : 'left-1'}`} /></button></div>{isRecurring ? (<div className="flex justify-between gap-1">{weekdays.map(day => (<button key={day.id} onClick={() => toggleDay(day.id)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${selectedDays.includes(day.id) ? 'bg-accent-blue border-accent-blue text-white' : 'bg-black/40 border-white/5 text-text-dim'}`}>{day.label}</button>))}</div>) : (<div className="space-y-2"><label className="text-[10px] font-black uppercase text-text-dim ml-2 tracking-widest">Datum</label><input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none" /></div>)}{selectedRoutineId && (<button onClick={handleSavePlan} className="w-full py-5 bg-white text-black rounded-3xl font-black italic uppercase tracking-widest shadow-xl active:scale-95 transition-transform mt-2">Spara Plan</button>)}</div></div></div>)}
 
       {moveModalData && (
         <div className="fixed inset-0 z-[200] bg-[#0f0d15]/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
@@ -495,6 +571,84 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                     </div>
                 </div>
             </div>
+        </div>
+      )}
+
+      {showCreateCustom && !showExerciseLibraryForCustom && (
+        <div className="fixed inset-0 z-[110] bg-[#0f0d15] flex flex-col animate-in slide-in-from-bottom duration-300 overflow-hidden">
+          <div className="p-4 pt-[calc(env(safe-area-inset-top)+1rem)] border-b border-white/10 flex justify-between items-center bg-[#1a1721] sticky top-0 z-10">
+            <div>
+              <h3 className="text-xl font-black italic uppercase text-white">Skapa Pass</h3>
+              <p className="text-[10px] text-text-dim uppercase tracking-widest">Bygg ditt pass</p>
+            </div>
+            <button onClick={() => { setShowCreateCustom(false); setCustomExercises([]); }} className="p-2 bg-white/5 rounded-full"><X size={20}/></button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div>
+              <label className="text-xs font-bold text-text-dim uppercase mb-2 block">Namn på passet</label>
+              <input
+                type="text"
+                placeholder="T.ex. Push Day"
+                value={planTitle}
+                onChange={e => setPlanTitle(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white font-bold outline-none focus:border-accent-pink"
+              />
+            </div>
+
+            <div className="space-y-4">
+              {customExercises.map((item, exIdx) => {
+                const exData = allExercises.find(e => e.id === item.exerciseId);
+                if (!exData) return null;
+
+                return (
+                  <div key={`${item.exerciseId}-${exIdx}`} className="bg-[#1a1721] border border-white/5 rounded-2xl p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="min-w-0">
+                        <h4 className="text-lg font-black italic uppercase text-white truncate">{exData.name}</h4>
+                        {exData.englishName && <p className="text-xs text-white/40 italic truncate">{exData.englishName}</p>}
+                      </div>
+                      <button onClick={() => handleRemoveCustomExercise(exIdx)} className="text-text-dim hover:text-red-500 shrink-0"><Trash2 size={16} /></button>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-10 gap-2 text-[9px] font-black uppercase text-text-dim mb-1 px-2">
+                        <span className="col-span-1 text-center">Set</span>
+                        <span className="col-span-4 text-center">KG</span>
+                        <span className="col-span-4 text-center">Reps</span>
+                        <span className="col-span-1"></span>
+                      </div>
+                      {item.sets.map((set, setIdx) => (
+                        <div key={setIdx} className="grid grid-cols-10 gap-2 items-center">
+                          <div className="col-span-1 flex justify-center"><span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-xs font-bold text-text-dim">{setIdx + 1}</span></div>
+                          <div className="col-span-4"><input type="number" onFocus={(e) => e.target.select()} value={set.weight || ''} onChange={(e) => updateCustomSet(exIdx, setIdx, 'weight', Number(e.target.value))} placeholder="0" className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-center text-white font-bold text-sm outline-none focus:border-accent-blue" /></div>
+                          <div className="col-span-4"><input type="number" onFocus={(e) => e.target.select()} value={set.reps || ''} onChange={(e) => updateCustomSet(exIdx, setIdx, 'reps', Number(e.target.value))} placeholder="0" className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-center text-white font-bold text-sm outline-none focus:border-accent-blue" /></div>
+                          <div className="col-span-1 flex justify-center"><button onClick={() => removeCustomSet(exIdx, setIdx)} className="text-white/20 hover:text-red-500"><X size={14} /></button></div>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => addCustomSet(exIdx)} className="w-full mt-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-text-dim uppercase tracking-widest flex items-center justify-center gap-2"><Plus size={14} /> Lägg till Set</button>
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={() => setShowExerciseLibraryForCustom(true)} className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center gap-2 text-text-dim hover:text-white hover:border-white/30 transition-all"><Plus size={20} /> <span className="font-bold uppercase tracking-widest text-xs">Lägg till övning</span></button>
+          </div>
+
+          <div className="p-4 bg-[#1a1721] border-t border-white/10 sticky bottom-0">
+            <button onClick={handleSaveCustomPlan} className="w-full py-4 bg-accent-pink text-white rounded-2xl font-black italic uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95"><Save size={20} /> Spara Pass</button>
+          </div>
+        </div>
+      )}
+
+      {showExerciseLibraryForCustom && (
+        <div className="fixed inset-0 z-[120] bg-[#0f0d15]">
+          <ExerciseLibrary
+            allExercises={allExercises}
+            history={history}
+            onSelect={(ex) => { handleAddExerciseToCustom(ex); setShowExerciseLibraryForCustom(false); }}
+            onClose={() => setShowExerciseLibraryForCustom(false)}
+            onUpdate={onUpdate}
+          />
         </div>
       )}
 
