@@ -666,12 +666,12 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                       >
                         <button
                           onClick={() => onStartActivity(plan as ScheduledActivity)}
-                          style={{ backgroundColor: planColor }}
-                          className="w-full border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-pink/20"
+                          style={hasPlanColor ? { borderColor: planColor, borderWidth: '2px' } : {}}
+                          className={`w-full bg-[#1a1721] rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl ${hasPlanColor ? '' : 'border border-white/5 hover:border-accent-pink/20'}`}
                         >
                           <div className="flex justify-between items-center w-full">
                             <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hasPlanColor ? 'bg-black/20 text-white' : 'bg-accent-pink/10 text-accent-pink'}`}>
+                              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-accent-pink/10 text-accent-pink">
                                 {'isTemplate' in plan ? <Repeat size={24} /> : <Calendar size={24} />}
                               </div>
                               <div className="text-left">
@@ -681,22 +681,22 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                                 </p>
                               </div>
                             </div>
-                            <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${hasPlanColor ? 'border-white/20 text-white group-hover:border-white' : 'border-white/10 text-text-dim group-hover:border-accent-pink group-hover:text-accent-pink'}`}>
+                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-accent-pink group-hover:text-accent-pink transition-colors">
                               <Play size={18} fill="currentColor" />
                             </div>
                           </div>
-                          <div className={`flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border ${hasPlanColor ? 'bg-black/20 border-black/30' : 'bg-white/5 border-white/5'}`}>
+                          <div className="flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border bg-white/5 border-white/5">
                             {(plan.exercises || []).slice(0, 8).map((pe, idx) => {
                               const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
                               if (!exName) return null;
                               return (
-                                <span key={idx} className={`text-[9px] px-2 py-1 rounded-md border whitespace-nowrap ${hasPlanColor ? 'bg-black/30 text-white/80 border-black/40' : 'bg-black/30 text-text-dim border-white/5'}`}>
+                                <span key={idx} className="text-[9px] px-2 py-1 rounded-md border bg-black/30 text-text-dim border-white/5 whitespace-nowrap">
                                   {exName}
                                 </span>
                               );
                             })}
                             {(plan.exercises?.length || 0) > 8 && (
-                              <span className={`text-xs self-center ${hasPlanColor ? 'text-white/60' : 'text-text-dim'}`}>
+                              <span className="text-xs text-text-dim self-center">
                                 +{(plan.exercises?.length || 0) - 8} mer
                               </span>
                             )}
@@ -761,12 +761,12 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                       >
                         <button
                           onClick={() => onStartActivity(plan)}
-                          style={{ backgroundColor: missedColor }}
-                          className="w-full border border-orange-400/20 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-orange-400/40"
+                          style={hasMissedColor ? { borderColor: missedColor, borderWidth: '2px' } : {}}
+                          className={`w-full bg-[#1a1721] rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl ${hasMissedColor ? '' : 'border border-orange-400/20 hover:border-orange-400/40'}`}
                         >
                           <div className="flex justify-between items-center w-full">
                             <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hasMissedColor ? 'bg-black/20 text-white' : 'bg-orange-400/10 text-orange-400'}`}>
+                              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-orange-400/10 text-orange-400">
                                 <AlertCircle size={24} />
                               </div>
                               <div className="text-left">
@@ -776,22 +776,22 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                                 </p>
                               </div>
                             </div>
-                            <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${hasMissedColor ? 'border-white/20 text-white group-hover:border-white' : 'border-white/10 text-text-dim group-hover:border-orange-400 group-hover:text-orange-400'}`}>
+                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-orange-400 group-hover:text-orange-400 transition-colors">
                               <Play size={18} fill="currentColor" />
                             </div>
                           </div>
-                          <div className={`flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border ${hasMissedColor ? 'bg-black/20 border-black/30' : 'bg-white/5 border-white/5'}`}>
+                          <div className="flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border bg-white/5 border-white/5">
                             {(plan.exercises || []).slice(0, 8).map((pe, idx) => {
                               const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
                               if (!exName) return null;
                               return (
-                                <span key={idx} className={`text-[9px] px-2 py-1 rounded-md border whitespace-nowrap ${hasMissedColor ? 'bg-black/30 text-white/80 border-black/40' : 'bg-black/30 text-text-dim border-white/5'}`}>
+                                <span key={idx} className="text-[9px] px-2 py-1 rounded-md border bg-black/30 text-text-dim border-white/5 whitespace-nowrap">
                                   {exName}
                                 </span>
                               );
                             })}
                             {(plan.exercises?.length || 0) > 8 && (
-                              <span className={`text-xs self-center ${hasMissedColor ? 'text-white/60' : 'text-text-dim'}`}>
+                              <span className="text-xs text-text-dim self-center">
                                 +{(plan.exercises?.length || 0) - 8} mer
                               </span>
                             )}
@@ -855,12 +855,12 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                       >
                         <button
                           onClick={() => handleStartFromHistory(session)}
-                          style={{ backgroundColor: sessionColor }}
-                          className="w-full border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-blue/20"
+                          style={hasSessionColor ? { borderColor: sessionColor, borderWidth: '2px' } : {}}
+                          className={`w-full bg-[#1a1721] rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl ${hasSessionColor ? '' : 'border border-white/5 hover:border-accent-blue/20'}`}
                         >
                           <div className="flex justify-between items-center w-full">
                             <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hasSessionColor ? 'bg-black/20 text-white' : 'bg-green-500/10 text-green-500'}`}>
+                              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-green-500/10 text-green-500">
                                 <History size={24} />
                               </div>
                               <div className="text-left">
@@ -872,22 +872,22 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                                 </p>
                               </div>
                             </div>
-                            <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${hasSessionColor ? 'border-white/20 text-white group-hover:border-white' : 'border-white/10 text-text-dim group-hover:border-accent-blue group-hover:text-accent-blue'}`}>
+                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-accent-blue group-hover:text-accent-blue transition-colors">
                               <Play size={18} fill="currentColor" />
                             </div>
                           </div>
-                          <div className={`flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border ${hasSessionColor ? 'bg-black/20 border-black/30' : 'bg-white/5 border-white/5'}`}>
+                          <div className="flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border bg-white/5 border-white/5">
                             {(session.exercises || []).slice(0, 8).map((pe, peIdx) => {
                               const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
                               if (!exName) return null;
                               return (
-                                <span key={peIdx} className={`text-[9px] px-2 py-1 rounded-md border whitespace-nowrap ${hasSessionColor ? 'bg-black/30 text-white/80 border-black/40' : 'bg-black/30 text-text-dim border-white/5'}`}>
+                                <span key={peIdx} className="text-[9px] px-2 py-1 rounded-md border bg-black/30 text-text-dim border-white/5 whitespace-nowrap">
                                   {exName}
                                 </span>
                               );
                             })}
                             {(session.exercises?.length || 0) > 8 && (
-                              <span className={`text-xs self-center ${hasSessionColor ? 'text-white/60' : 'text-text-dim'}`}>
+                              <span className="text-xs text-text-dim self-center">
                                 +{(session.exercises?.length || 0) - 8} mer
                               </span>
                             )}
