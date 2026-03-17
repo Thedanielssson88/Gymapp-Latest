@@ -666,7 +666,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                       >
                         <button
                           onClick={() => onStartActivity(plan as ScheduledActivity)}
-                          style={hasPlanColor ? { borderColor: planColor, borderWidth: '2px' } : {}}
+                          style={hasPlanColor ? { border: `2px solid ${planColor}` } : {}}
                           className={`w-full bg-[#1a1721] rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl ${hasPlanColor ? '' : 'border border-white/5 hover:border-accent-pink/20'}`}
                         >
                           <div className="flex justify-between items-center w-full">
@@ -761,7 +761,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                       >
                         <button
                           onClick={() => onStartActivity(plan)}
-                          style={hasMissedColor ? { borderColor: missedColor, borderWidth: '2px' } : {}}
+                          style={hasMissedColor ? { border: `2px solid ${missedColor}` } : {}}
                           className={`w-full bg-[#1a1721] rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl ${hasMissedColor ? '' : 'border border-orange-400/20 hover:border-orange-400/40'}`}
                         >
                           <div className="flex justify-between items-center w-full">
@@ -855,7 +855,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                       >
                         <button
                           onClick={() => handleStartFromHistory(session)}
-                          style={hasSessionColor ? { borderColor: sessionColor, borderWidth: '2px' } : {}}
+                          style={hasSessionColor ? { border: `2px solid ${sessionColor}` } : {}}
                           className={`w-full bg-[#1a1721] rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl ${hasSessionColor ? '' : 'border border-white/5 hover:border-accent-blue/20'}`}
                         >
                           <div className="flex justify-between items-center w-full">
