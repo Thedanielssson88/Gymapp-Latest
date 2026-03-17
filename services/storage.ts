@@ -326,7 +326,18 @@ export const storage = {
 
     // Map snake_case from DB to camelCase for TypeScript
     return data.map(session => ({
-      ...session,
+      id: session.id,
+      date: session.date,
+      name: session.name,
+      zoneId: session.zone_id,
+      locationName: session.location_name,
+      exercises: session.exercises,
+      isCompleted: session.is_completed,
+      isManual: session.is_manual,
+      duration: session.duration,
+      rpe: session.rpe,
+      feeling: session.feeling,
+      sourceActivityId: session.source_activity_id,
       sourceActivityColor: session.source_activity_color
     }));
   },
