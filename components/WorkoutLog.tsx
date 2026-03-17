@@ -557,41 +557,60 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                   const isExpanded = expandedPlanId === p.id;
                   const isSwiping = swipeState?.id === p.id;
                   const swipeX = isSwiping ? swipeState.x : 0;
+                  const showRightIcon = isSwiping && swipeX > 20;
+                  const showLeftIcon = isSwiping && swipeX < -20;
 
                   return (
-                    <div
-                      key={p.id}
-                      onMouseDown={(e) => {
-                        handleSwipeStart(e, p.id);
-                        handlePlanPressStart(p.id);
-                      }}
-                      onMouseMove={handleSwipeMove}
-                      onMouseUp={() => {
-                        handlePlanPressEnd();
-                        handleSwipeEnd(p, dKey);
-                      }}
-                      onMouseLeave={() => {
-                        handlePlanPressEnd();
-                        setSwipeState(null);
-                        setSwipeStartX(null);
-                      }}
-                      onTouchStart={(e) => {
-                        handleSwipeStart(e, p.id);
-                        handlePlanPressStart(p.id);
-                      }}
-                      onTouchMove={handleSwipeMove}
-                      onTouchEnd={() => {
-                        handlePlanPressEnd();
-                        handleSwipeEnd(p, dKey);
-                      }}
-                      className="rounded-[28px] p-4 group animate-in zoom-in-95 border transition-all"
-                      style={{
-                        backgroundColor: cardBg,
-                        borderColor: isBrightColor ? 'transparent' : 'rgba(255,255,255,0.1)',
-                        transform: `translateX(${swipeX}px)`,
-                        transition: isSwiping && Math.abs(swipeX) < 80 ? 'none' : 'transform 0.2s ease-out'
-                      }}
-                    >
+                    <div key={p.id} className="relative">
+                      {/* Bakgrundsikoner */}
+                      {showRightIcon && (
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-0">
+                          <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <Play size={24} fill="white" className="text-white" />
+                          </div>
+                        </div>
+                      )}
+                      {showLeftIcon && (
+                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none z-0">
+                          <div className="w-12 h-12 bg-accent-blue rounded-xl flex items-center justify-center shadow-lg">
+                            <CalendarClock size={24} className="text-white" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Själva kortet */}
+                      <div
+                        onMouseDown={(e) => {
+                          handleSwipeStart(e, p.id);
+                          handlePlanPressStart(p.id);
+                        }}
+                        onMouseMove={handleSwipeMove}
+                        onMouseUp={() => {
+                          handlePlanPressEnd();
+                          handleSwipeEnd(p, dKey);
+                        }}
+                        onMouseLeave={() => {
+                          handlePlanPressEnd();
+                          setSwipeState(null);
+                          setSwipeStartX(null);
+                        }}
+                        onTouchStart={(e) => {
+                          handleSwipeStart(e, p.id);
+                          handlePlanPressStart(p.id);
+                        }}
+                        onTouchMove={handleSwipeMove}
+                        onTouchEnd={() => {
+                          handlePlanPressEnd();
+                          handleSwipeEnd(p, dKey);
+                        }}
+                        className="rounded-[28px] p-4 group animate-in zoom-in-95 border transition-all relative z-10"
+                        style={{
+                          backgroundColor: cardBg,
+                          borderColor: isBrightColor ? 'transparent' : 'rgba(255,255,255,0.1)',
+                          transform: `translateX(${swipeX}px)`,
+                          transition: isSwiping && Math.abs(swipeX) < 80 ? 'none' : 'transform 0.2s ease-out'
+                        }}
+                      >
                       {/* Normal view */}
                       {!isExpanded && (
                         <div className="flex justify-between items-center">
@@ -735,6 +754,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                           </div>
                         </div>
                       )}
+                      </div>
                     </div>
                   );
                 })}
