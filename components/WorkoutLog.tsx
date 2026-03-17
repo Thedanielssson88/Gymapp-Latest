@@ -122,7 +122,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [planColor, setPlanColor] = useState('#1a1721'); // Färg för passet
-  const [selectedZone, setSelectedZone] = useState<Zone>(activeZone); // Vald zone för passet
+  const [selectedZone, setSelectedZone] = useState<Zone | null>(null); // Vald zone för passet
 
   // State för att skapa eget pass
   const [showCreateCustom, setShowCreateCustom] = useState(false);
@@ -867,7 +867,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                                 setPlanColor(p.color || '#1a1721');
                                 setPlanDate(isTemplate ? dKey : p.date);
                                 setIsRecurring(isTemplate);
-                                setSelectedZone(activeZone); // Använd activeZone som default
+                                setSelectedZone(null); // Reset to null (will use activeZone as fallback)
                                 if (isTemplate) {
                                   setSelectedDays((p as RecurringPlanForDisplay).daysOfWeek);
                                 }
@@ -1068,7 +1068,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
               }
               setEditingPlanId(null);
               setEditingIsTemplate(false);
-              setSelectedZone(activeZone); // Återställ till activeZone
+              setSelectedZone(null); // Reset to null
             }} className="p-2 bg-white/5 rounded-full"><X size={20}/></button>
           </div>
 
@@ -1087,31 +1087,34 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
             <div>
               <label className="text-xs font-bold text-text-dim uppercase mb-2 block">Välj Gym / Plats</label>
               <div className="grid grid-cols-1 gap-2">
-                {zones.map(zone => (
-                  <button
-                    key={zone.id}
-                    onClick={() => setSelectedZone(zone)}
-                    className={`p-4 rounded-2xl border-2 transition-all text-left ${
-                      selectedZone.id === zone.id
-                        ? 'bg-accent-blue/10 border-accent-blue text-white'
-                        : 'bg-white/5 border-white/10 text-text-dim hover:border-white/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-black uppercase text-sm">{zone.name}</p>
-                        <p className="text-[10px] uppercase tracking-widest mt-1">
-                          {zone.inventory.length} redskap
-                        </p>
-                      </div>
-                      {selectedZone.id === zone.id && (
-                        <div className="w-6 h-6 rounded-full bg-accent-blue flex items-center justify-center">
-                          <CheckCircle2 size={16} className="text-white" />
+                {zones.map(zone => {
+                  const isSelected = (selectedZone?.id || activeZone.id) === zone.id;
+                  return (
+                    <button
+                      key={zone.id}
+                      onClick={() => setSelectedZone(zone)}
+                      className={`p-4 rounded-2xl border-2 transition-all text-left ${
+                        isSelected
+                          ? 'bg-accent-blue/10 border-accent-blue text-white'
+                          : 'bg-white/5 border-white/10 text-text-dim hover:border-white/30'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-black uppercase text-sm">{zone.name}</p>
+                          <p className="text-[10px] uppercase tracking-widest mt-1">
+                            {zone.inventory.length} redskap
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                        {isSelected && (
+                          <div className="w-6 h-6 rounded-full bg-accent-blue flex items-center justify-center">
+                            <CheckCircle2 size={16} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1188,7 +1191,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       {showGeneratorForCustom && (
         <div className="fixed inset-0 z-[120] bg-[#0f0d15]">
           <WorkoutGenerator
-            activeZone={selectedZone}
+            activeZone={selectedZone || activeZone}
             allExercises={allExercises}
             userProfile={userProfile}
             history={history}
@@ -1205,7 +1208,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
               onClose={() => setShowAIScoutForCustom(false)}
               allExercises={allExercises}
               history={history}
-              activeZone={selectedZone}
+              activeZone={selectedZone || activeZone}
               onUpdate={onUpdate}
               onAddToWorkout={handleAddFromAIScout}
             />
