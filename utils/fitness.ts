@@ -205,6 +205,9 @@ export const generateWorkoutSession = (
 
   // 1. Filtrera fram möjliga övningar
   let candidates = allExercises.filter(ex => {
+    // Filtrera bort bannade övningar
+    if (ex.userRating === 'banned') return false;
+
     const hasEquipment = hasRequiredEquipment(ex, zone.inventory);
     if (!hasEquipment) return false;
 
@@ -291,8 +294,12 @@ export const generateWorkoutSession = (
         const recencyPenaltyA = recentCountA * 20; // -20 poäng per gång
         const recencyPenaltyB = recentCountB * 20;
 
-        const finalScoreA = (recoveryScoreA * (scoreA / 10)) - recencyPenaltyA;
-        const finalScoreB = (recoveryScoreB * (scoreB / 10)) - recencyPenaltyB;
+        // User Rating Bonus/Penalty
+        const ratingBonusA = a.userRating === 'up' ? 30 : a.userRating === 'down' ? -30 : 0;
+        const ratingBonusB = b.userRating === 'up' ? 30 : b.userRating === 'down' ? -30 : 0;
+
+        const finalScoreA = (recoveryScoreA * (scoreA / 10)) - recencyPenaltyA + ratingBonusA;
+        const finalScoreB = (recoveryScoreB * (scoreB / 10)) - recencyPenaltyB + ratingBonusB;
 
         return finalScoreB - finalScoreA;
       });

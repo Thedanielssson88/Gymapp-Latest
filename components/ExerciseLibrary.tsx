@@ -10,7 +10,7 @@ import { generateExerciseDetailsFromGemini } from '../services/geminiService';
 import { calculate1RM } from '../utils/fitness';
 import { EquipmentBuilder } from './EquipmentBuilder';
 import { registerBackHandler } from '../utils/backHandler';
-import { Plus, Search, Edit3, Trash2, X, Dumbbell, Save, Activity, Layers, Scale, Link as LinkIcon, Check, ArrowRightLeft, Filter, ChevronDown, Zap, Loader2, TrendingUp, Trophy, Clock, SortAsc, ChevronRight, ThumbsUp, ThumbsDown, Heart, Sparkles, Shield } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, X, Dumbbell, Save, Activity, Layers, Scale, Link as LinkIcon, Check, ArrowRightLeft, Filter, ChevronDown, Zap, Loader2, TrendingUp, Trophy, Clock, SortAsc, ChevronRight, ThumbsUp, ThumbsDown, Heart, Sparkles, Shield, Ban } from 'lucide-react';
 
 interface ExerciseLibraryProps {
   allExercises: Exercise[];
@@ -439,6 +439,8 @@ INSTRUKTIONER:
                 ? 'bg-green-500/10 border-green-500/30'
                 : ex.userRating === 'down'
                 ? 'bg-red-500/10 border-red-500/30'
+                : ex.userRating === 'banned'
+                ? 'bg-gray-500/10 border-gray-500/30 opacity-50'
                 : getLastUsed(ex.id) > 0 && sortBy === 'recent'
                 ? 'bg-[#1a1721] border-accent-pink/20'
                 : 'bg-[#1a1721] border-white/5 hover:border-white/10'
@@ -458,7 +460,7 @@ INSTRUKTIONER:
               )}
               <ExerciseImage exercise={ex} />
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-black italic uppercase text-white">{ex.name}</h3>
+                <h3 className={`text-base font-black italic uppercase ${ex.userRating === 'banned' ? 'text-gray-500' : 'text-white'}`}>{ex.name}</h3>
                 <p className="text-[10px] text-text-dim uppercase tracking-widest truncate mt-1">
                   {ex.primaryMuscles?.join(', ') || ex.pattern}
                 </p>
@@ -497,6 +499,17 @@ INSTRUKTIONER:
                   }`}
                 >
                   <ThumbsDown size={14} fill={ex.userRating === 'down' ? "currentColor" : "none"}/>
+                </button>
+                <button
+                  onClick={() => {
+                    handleRate(ex, 'banned');
+                    setShowRating(false);
+                  }}
+                  className={`p-2 rounded-xl transition-all ${
+                    ex.userRating === 'banned' ? 'bg-gray-500/20 text-gray-500' : 'bg-white/10 text-text-dim'
+                  }`}
+                >
+                  <Ban size={14} fill={ex.userRating === 'banned' ? "currentColor" : "none"}/>
                 </button>
               </div>
             )}

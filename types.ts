@@ -148,7 +148,7 @@ export interface Exercise {
   alternativeExIds?: string[];
   userModified?: boolean;
   score?: number;
-  userRating?: 'up' | 'down' | null;
+  userRating?: 'up' | 'down' | 'banned' | null;
   lastUpdated?: string; // ISO timestamp when exercise was last updated
 }
 
