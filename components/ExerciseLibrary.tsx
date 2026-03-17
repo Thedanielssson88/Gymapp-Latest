@@ -129,7 +129,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
           else if (activeFilterTab === 'equipment') matchesFilter = ex.equipment?.includes(selectedFilterValue as Equipment);
           else if (activeFilterTab === 'pattern') matchesFilter = ex.pattern === selectedFilterValue;
       }
-      if (isSelectorMode && activeZone) {
+      if (isSelectorMode && activeZone && activeZone.inventory) {
           const hasRequiredEquipment = (ex: Exercise, zoneInventory: Equipment[]): boolean => {
             if (!ex.equipmentRequirements || ex.equipmentRequirements.length === 0) return ex.equipment.every(eq => zoneInventory.includes(eq));
             return ex.equipmentRequirements.every(group => group.some(item => zoneInventory.includes(item)));

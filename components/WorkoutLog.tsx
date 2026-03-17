@@ -1184,6 +1184,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
             onSelect={(ex) => { handleAddExerciseToCustom(ex); setShowExerciseLibraryForCustom(false); }}
             onClose={() => setShowExerciseLibraryForCustom(false)}
             onUpdate={onUpdate}
+            activeZone={selectedZone || activeZone}
+            userProfile={userProfile}
           />
         </div>
       )}
