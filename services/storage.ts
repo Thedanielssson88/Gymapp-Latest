@@ -596,7 +596,14 @@ export const storage = {
       throw error;
     }
 
-    console.log("Successfully updated recurring plan:", data);
+    console.log("✅ Successfully updated recurring plan - RETURNED DATA:", data);
+
+    if (data && data.length > 0) {
+      console.log("✅ Updated plan color in DB:", data[0].color);
+    } else {
+      console.warn("⚠️ UPDATE returned 0 rows - plan may not exist or user_id mismatch!");
+    }
+
     return data;
   },
   deleteRecurringPlan: async (id: string) => {
