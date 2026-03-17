@@ -482,7 +482,7 @@ export async function generateWorkoutFromPrompt(
     const ai = new GoogleGenAI({ apiKey });
     
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-exp-1206',
       contents: contents,
       config: {
         systemInstruction: systemInstruction,
