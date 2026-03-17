@@ -168,11 +168,18 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       .filter(p => !deletedPlanIds.has(p.id)) // Filtrera bort raderade
       .map(p => {
         const updates = updatedPlans.get(p.id);
-        // Använd bara optimistiska uppdateringar om backend-data saknar värdet
-        // (t.ex. färg är null/undefined medan vi har en temporär färg)
-        if (updates && updates.color && !p.color) {
+        if (!updates) return p;
+
+        // För datum (flytt): använd alltid optimistisk uppdatering
+        if (updates.date) {
           return { ...p, ...updates };
         }
+
+        // För färg: använd bara optimistiska uppdateringar om backend-data saknar värdet
+        if (updates.color && !p.color) {
+          return { ...p, ...updates };
+        }
+
         // Annars använd backend-data (den är source of truth)
         return p;
       });
@@ -463,16 +470,44 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     }
   };
 
-  const handleExecuteMove = (targetDate: string) => {
-    if (moveModalData) {
-        if (moveModalData.isTemplate) {
-            // Flytta enskild instans av recurring plan
-            onMoveRecurringInstance(moveModalData.id, moveModalData.currentDate, targetDate);
-        } else {
-            // Flytta konkret planerad aktivitet
-            onMovePlan(moveModalData.id, targetDate);
-        }
-        setMoveModalData(null);
+  const handleExecuteMove = async (targetDate: string) => {
+    if (!moveModalData) return;
+
+    // Optimistisk uppdatering - uppdatera lokalt och stäng modal direkt
+    setUpdatedPlans(prev => {
+      const newMap = new Map(prev);
+      newMap.set(moveModalData.id, { date: targetDate });
+      return newMap;
+    });
+
+    // Stäng modal direkt
+    setMoveModalData(null);
+
+    // Utför backend-operationen i bakgrunden
+    try {
+      if (moveModalData.isTemplate) {
+        // Flytta enskild instans av recurring plan
+        await onMoveRecurringInstance(moveModalData.id, moveModalData.currentDate, targetDate);
+      } else {
+        // Flytta konkret planerad aktivitet
+        await onMovePlan(moveModalData.id, targetDate);
+      }
+      await onUpdate();
+
+      // Rensa optimistisk uppdatering efter backend är klar
+      setUpdatedPlans(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(moveModalData.id);
+        return newMap;
+      });
+    } catch (error) {
+      console.error('Failed to move plan:', error);
+      // Återställ optimistisk uppdatering om det misslyckades
+      setUpdatedPlans(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(moveModalData.id);
+        return newMap;
+      });
     }
   };
 
