@@ -198,6 +198,11 @@ export const generateWorkoutSession = (
   const recoveryStatus = calculateMuscleRecovery(history, allExercises, userProfile);
   const injuries = userProfile.injuries || [];
 
+  // FIX #3: Kolla vilka övningar användes senast för variation
+  const recentExerciseIds = history
+    .slice(0, 3) // Senaste 3 passen
+    .flatMap(s => s.exercises.map(ex => ex.exerciseId));
+
   // 1. Filtrera fram möjliga övningar
   let candidates = allExercises.filter(ex => {
     const hasEquipment = hasRequiredEquipment(ex, zone.inventory);
@@ -210,10 +215,18 @@ export const generateWorkoutSession = (
     const hitsTarget = allMuscles.some(m => targetMuscles.includes(m));
     if (!hitsTarget) return false;
 
-    // Skadeskydd
+    // FIX #1: Förbättrad skadelogik
     const impactsInjuredMuscle = primaryMuscles.some(m => injuries.includes(m));
     if (impactsInjuredMuscle) {
-      return ex.pattern === MovementPattern.REHAB;
+      // Kolla om användaren VALDE att träna den skadade muskeln
+      const userSelectedInjuredMuscle = targetMuscles.some(m => injuries.includes(m));
+      if (userSelectedInjuredMuscle) {
+        // Om användaren explicit valde skadad muskel → bara REHAB tillåts
+        return ex.pattern === MovementPattern.REHAB;
+      } else {
+        // Om användaren INTE valde skadad muskel → skippa övningar som träffar skada
+        return false;
+      }
     }
 
     return true;
@@ -239,22 +252,61 @@ export const generateWorkoutSession = (
     }
 
     if (pool.length > 0) {
-      // Sortera poolen baserat på återhämtning och övningspoäng
+      // FIX #2 & #3: Sortera baserat på recovery, score OCH variation
       pool.sort((a, b) => {
         const scoreA = a.score || 5;
         const scoreB = b.score || 5;
-        const recoveryScoreA = (recoveryStatus[a.primaryMuscles[0]] || 100);
-        const recoveryScoreB = (recoveryStatus[b.primaryMuscles[0]] || 100);
-        
-        const finalScoreA = recoveryScoreA * (scoreA / 10);
-        const finalScoreB = recoveryScoreB * (scoreB / 10);
-        
+
+        // FIX #2: Om användaren VALDE en muskel → ignorera recovery för den
+        const isExplicitlySelectedA = a.primaryMuscles.some(m => targetMuscles.includes(m));
+        const isExplicitlySelectedB = b.primaryMuscles.some(m => targetMuscles.includes(m));
+
+        const recoveryScoreA = isExplicitlySelectedA ? 100 : (recoveryStatus[a.primaryMuscles[0]] || 100);
+        const recoveryScoreB = isExplicitlySelectedB ? 100 : (recoveryStatus[b.primaryMuscles[0]] || 100);
+
+        // FIX #3: Straff för övningar som användes nyligen
+        const recentCountA = recentExerciseIds.filter(id => id === a.id).length;
+        const recentCountB = recentExerciseIds.filter(id => id === b.id).length;
+        const recencyPenaltyA = recentCountA * 20; // -20 poäng per gång
+        const recencyPenaltyB = recentCountB * 20;
+
+        const finalScoreA = (recoveryScoreA * (scoreA / 10)) - recencyPenaltyA;
+        const finalScoreB = (recoveryScoreB * (scoreB / 10)) - recencyPenaltyB;
+
         return finalScoreB - finalScoreA;
       });
 
       const chosen = pool[0];
       const volume = getTargetVolume(userProfile.goal, chosen.tier, userProfile.biologicalSex);
-      const weight = suggestWeight(chosen.id, history, volume.reps);
+
+      // FIX #4: Progressive overload - kolla senaste prestationen
+      const lastPerformance = history
+        .flatMap(s => s.exercises)
+        .filter(ex => ex.exerciseId === chosen.id)
+        .sort((a, b) => {
+          const dateA = history.find(s => s.exercises.includes(a))?.date || '';
+          const dateB = history.find(s => s.exercises.includes(b))?.date || '';
+          return dateB.localeCompare(dateA);
+        })[0];
+
+      let weight = suggestWeight(chosen.id, history, volume.reps);
+
+      if (lastPerformance && lastPerformance.sets.length > 0) {
+        const lastWeight = lastPerformance.sets[0]?.weight || 0;
+        const completedAllSets = lastPerformance.sets.every(s => s.completed);
+        const averageReps = lastPerformance.sets.reduce((sum, s) => sum + (s.reps || 0), 0) / lastPerformance.sets.length;
+
+        if (completedAllSets && averageReps >= volume.reps) {
+          // Om du klarade alla reps senast → öka vikten
+          weight = Math.max(weight, lastWeight + 2.5);
+        } else if (completedAllSets && averageReps >= volume.reps * 0.8) {
+          // Om du klarade minst 80% av reps → behåll vikten
+          weight = Math.max(weight, lastWeight);
+        } else {
+          // Om du missade många reps → minska vikten
+          weight = Math.max(weight, lastWeight - 2.5);
+        }
+      }
 
       plannedExercises.push({
         exerciseId: chosen.id,
