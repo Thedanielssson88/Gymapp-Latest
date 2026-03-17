@@ -129,6 +129,10 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [planPressTimer, setPlanPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [showColorPickerForPlan, setShowColorPickerForPlan] = useState<string | null>(null);
 
+  // Optimistiska uppdateringar
+  const [deletedPlanIds, setDeletedPlanIds] = useState<Set<string>>(new Set());
+  const [updatedPlans, setUpdatedPlans] = useState<Map<string, Partial<PlannedActivityForLogDisplay>>>(new Map());
+
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedItem, setSelectedItem] = useState<WorkoutSession | PlannedActivityForLogDisplay | null>(null);
   
@@ -153,6 +157,22 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       };
     }
   }, [showPlanModal, showDatePicker, moveModalData, showCreateCustom]);
+
+  // Applicera optimistiska uppdateringar på planned activities
+  const optimisticPlannedActivities = useMemo(() => {
+    return plannedActivities
+      .filter(p => !deletedPlanIds.has(p.id)) // Filtrera bort raderade
+      .map(p => {
+        const updates = updatedPlans.get(p.id);
+        return updates ? { ...p, ...updates } : p; // Applicera uppdateringar
+      });
+  }, [plannedActivities, deletedPlanIds, updatedPlans]);
+
+  // Rensa optimistiska uppdateringar när data uppdateras från backend
+  useEffect(() => {
+    setDeletedPlanIds(new Set());
+    setUpdatedPlans(new Map());
+  }, [plannedActivities]);
 
   const weekdays = [ { id: 1, label: 'Mån' }, { id: 2, label: 'Tis' }, { id: 3, label: 'Ons' }, { id: 4, label: 'Tor' }, { id: 5, label: 'Fre' }, { id: 6, label: 'Lör' }, { id: 0, label: 'Sön' } ];
 
@@ -202,15 +222,17 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   };
 
   const handleUpdatePlanColor = async (planId: string, newColor: string, isTemplate: boolean) => {
+    // Optimistisk uppdatering - uppdatera UI direkt
+    setUpdatedPlans(prev => new Map(prev).set(planId, { color: newColor }));
+    setShowColorPickerForPlan(null);
+
+    // Gör riktig uppdatering i bakgrunden
     if (isTemplate) {
-      // Update recurring plan color
       onUpdateRecurringPlan(planId, { color: newColor });
     } else {
-      // Update scheduled activity color
       onUpdateScheduledActivity(planId, { color: newColor });
     }
-    setShowColorPickerForPlan(null);
-    onUpdate(); // Refresh data
+    onUpdate(); // Refresh data från backend
   };
 
   const handleSavePlan = () => {
@@ -362,7 +384,23 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     }
   };
 
-  const handleConfirmDelete = () => { if (confirmDelete) { if (confirmDelete.isHistory) { onDeleteHistory(confirmDelete.id); } else { onDeletePlan(confirmDelete.id, confirmDelete.isTemplate); } setConfirmDelete(null); } };
+  const handleConfirmDelete = () => {
+    if (confirmDelete) {
+      if (!confirmDelete.isHistory) {
+        // Optimistisk uppdatering - ta bort från UI direkt
+        setDeletedPlanIds(prev => new Set(prev).add(confirmDelete.id));
+      }
+
+      // Gör riktig borttagning i bakgrunden
+      if (confirmDelete.isHistory) {
+        onDeleteHistory(confirmDelete.id);
+      } else {
+        onDeletePlan(confirmDelete.id, confirmDelete.isTemplate);
+      }
+
+      setConfirmDelete(null);
+    }
+  };
   const handleStartManual = () => { onStartManualWorkout(manualDate); setShowDatePicker(false); };
 
   const isHistoryItem = (item: any): item is WorkoutSession => 'zoneId' in item;
@@ -414,13 +452,13 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                 const dayOfWeekNum = day.getDay();
                 const dayHistory = history.filter(h => h.date.startsWith(dKey));
                 
-                const dayPlans = plannedActivities.filter(p => {
+                const dayPlans = optimisticPlannedActivities.filter(p => {
                     if ('isTemplate' in p) {
                         const isScheduledForDay = p.daysOfWeek?.includes(dayOfWeekNum);
                         if (!isScheduledForDay) return false;
 
                         // Kolla om det finns EN KONKRET instans (även skippade/completed) för denna dag
-                        const hasConcreteInstance = plannedActivities.some((otherP) =>
+                        const hasConcreteInstance = optimisticPlannedActivities.some((otherP) =>
                             !('isTemplate' in otherP) &&
                             (otherP as ScheduledActivity).recurrenceId === p.id &&
                             otherP.date === dKey
@@ -656,7 +694,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
         <div className="px-4 animate-in fade-in">
           <CalendarView
             history={history}
-            plannedActivities={plannedActivities}
+            plannedActivities={optimisticPlannedActivities}
             allExercises={allExercises}
             onDayClick={setSelectedItem}
             onStartPlanned={onStartActivity}
@@ -838,9 +876,9 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
               </button>
             </div>
             <ColorPicker
-              selectedColor={plannedActivities.find(p => p.id === showColorPickerForPlan)?.color || '#1a1721'}
+              selectedColor={optimisticPlannedActivities.find(p => p.id === showColorPickerForPlan)?.color || '#1a1721'}
               onSelectColor={(newColor) => {
-                const plan = plannedActivities.find(p => p.id === showColorPickerForPlan);
+                const plan = optimisticPlannedActivities.find(p => p.id === showColorPickerForPlan);
                 if (plan) {
                   const isTemplate = 'isTemplate' in plan;
                   handleUpdatePlanColor(showColorPickerForPlan, newColor, isTemplate);
