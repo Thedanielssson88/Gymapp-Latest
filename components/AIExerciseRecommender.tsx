@@ -91,7 +91,7 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
       // Filter exercises based on gym equipment to reduce prompt size (only if activeZone is available)
       let exercisesToSearch = allExercises;
 
-      if (activeZone && activeZone.equipment && activeZone.equipment.length > 0) {
+      if (activeZone && activeZone.inventory && activeZone.inventory.length > 0) {
         exercisesToSearch = allExercises.filter(ex => {
           // Safety check: ensure exercise has equipmentRequirements
           if (!ex.equipmentRequirements || ex.equipmentRequirements.length === 0) {
@@ -104,7 +104,7 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
             if (!Array.isArray(reqGroup)) return false;
 
             return reqGroup.some(equipment =>
-              activeZone.equipment.includes(equipment)
+              activeZone.inventory.includes(equipment)
             );
           });
         });

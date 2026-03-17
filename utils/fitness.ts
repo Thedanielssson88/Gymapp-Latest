@@ -253,16 +253,37 @@ export const generateWorkoutSession = (
 
     if (pool.length > 0) {
       // FIX #2 & #3: Sortera baserat på recovery, score OCH variation
+      const isSingleMuscleSelection = targetMuscles.length === 1;
+
       pool.sort((a, b) => {
         const scoreA = a.score || 5;
         const scoreB = b.score || 5;
 
-        // FIX #2: Om användaren VALDE en muskel → ignorera recovery för den
+        // FIX #2: KORREKT recovery-logik
         const isExplicitlySelectedA = a.primaryMuscles.some(m => targetMuscles.includes(m));
         const isExplicitlySelectedB = b.primaryMuscles.some(m => targetMuscles.includes(m));
 
-        const recoveryScoreA = isExplicitlySelectedA ? 100 : (recoveryStatus[a.primaryMuscles[0]] || 100);
-        const recoveryScoreB = isExplicitlySelectedB ? 100 : (recoveryStatus[b.primaryMuscles[0]] || 100);
+        let recoveryScoreA: number;
+        let recoveryScoreB: number;
+
+        if (isSingleMuscleSelection && isExplicitlySelectedA) {
+          // EN muskel vald OCH träffar den → ignorera recovery (träna IDAG)
+          recoveryScoreA = 100;
+        } else if (isExplicitlySelectedA) {
+          // FLERA muskler valda OCH träffar någon → använd recovery (smart fördelning)
+          recoveryScoreA = recoveryStatus[a.primaryMuscles[0]] || 100;
+        } else {
+          // Träffar INTE vald muskel → använd recovery
+          recoveryScoreA = recoveryStatus[a.primaryMuscles[0]] || 100;
+        }
+
+        if (isSingleMuscleSelection && isExplicitlySelectedB) {
+          recoveryScoreB = 100;
+        } else if (isExplicitlySelectedB) {
+          recoveryScoreB = recoveryStatus[b.primaryMuscles[0]] || 100;
+        } else {
+          recoveryScoreB = recoveryStatus[b.primaryMuscles[0]] || 100;
+        }
 
         // FIX #3: Straff för övningar som användes nyligen
         const recentCountA = recentExerciseIds.filter(id => id === a.id).length;
@@ -296,15 +317,54 @@ export const generateWorkoutSession = (
         const completedAllSets = lastPerformance.sets.every(s => s.completed);
         const averageReps = lastPerformance.sets.reduce((sum, s) => sum + (s.reps || 0), 0) / lastPerformance.sets.length;
 
+        // FIX #4: Procentbaserad progressive overload baserat på kön, tier och vikt
+        const baseRates: Record<string, number> = {
+          'Man': 0.025,      // 2.5% för män
+          'Kvinna': 0.02,    // 2.0% för kvinnor
+          'Annan': 0.02      // 2.0% för andra
+        };
+
+        const tierModifiers: Record<ExerciseTier, number> = {
+          'tier_1': 1.0,     // Tunga sammansatta övningar
+          'tier_2': 0.8,     // Medium övningar
+          'tier_3': 0.6      // Isoleringsövningar
+        };
+
+        const baseRate = baseRates[userProfile.biologicalSex || 'Annan'] || 0.02;
+        const tierMod = tierModifiers[chosen.tier] || 0.8;
+        const finalRate = baseRate * tierMod;
+
         if (completedAllSets && averageReps >= volume.reps) {
-          // Om du klarade alla reps senast → öka vikten
-          weight = Math.max(weight, lastWeight + 2.5);
+          // Om du klarade alla reps senast → öka vikten procentuellt
+          let newWeight = lastWeight * (1 + finalRate);
+
+          // Smart avrundning baserat på viktintervall
+          if (newWeight < 10) {
+            newWeight = Math.ceil(newWeight / 0.5) * 0.5;  // Avrunda till närmaste 0.5kg
+          } else if (newWeight < 50) {
+            newWeight = Math.ceil(newWeight / 1) * 1;      // Avrunda till närmaste 1kg
+          } else {
+            newWeight = Math.ceil(newWeight / 2.5) * 2.5;  // Avrunda till närmaste 2.5kg
+          }
+
+          weight = Math.max(weight, newWeight);
         } else if (completedAllSets && averageReps >= volume.reps * 0.8) {
           // Om du klarade minst 80% av reps → behåll vikten
           weight = Math.max(weight, lastWeight);
         } else {
-          // Om du missade många reps → minska vikten
-          weight = Math.max(weight, lastWeight - 2.5);
+          // Om du missade många reps → minska vikten procentuellt
+          let newWeight = lastWeight * (1 - finalRate * 0.5);  // Halv minskning jämfört med ökning
+
+          // Smart avrundning vid minskning
+          if (newWeight < 10) {
+            newWeight = Math.floor(newWeight / 0.5) * 0.5;
+          } else if (newWeight < 50) {
+            newWeight = Math.floor(newWeight / 1) * 1;
+          } else {
+            newWeight = Math.floor(newWeight / 2.5) * 2.5;
+          }
+
+          weight = Math.max(weight, newWeight);
         }
       }
 

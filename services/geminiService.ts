@@ -83,10 +83,13 @@ export const recommendExercises = async (
   try {
     const apiKey = await getApiKey();
     const ai = new GoogleGenAI({ apiKey });
+
+    // Skicka ALLA övningar (ID + Namn)
+    // Använd gemini-2.0-flash-exp som har större context window (1M tokens)
     const exerciseIndex = existingExercises.map(e => `${e.id}: ${e.name}`).join('\n');
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash-exp',
       contents: `Användaren vill ha övningsförslag för: "${userRequest}".
 
       NUVARANDE BIBLIOTEK (ID: Namn):
