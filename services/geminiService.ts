@@ -84,15 +84,14 @@ export const recommendExercises = async (
     const apiKey = await getApiKey();
     const ai = new GoogleGenAI({ apiKey });
 
-    // Komprimera övningslistan för att minska prompt-storlek
-    // Format: "id1:namn1,id2:namn2,..." istället för nyrad per övning
-    const exerciseIndex = existingExercises.map(e => `${e.id}:${e.name}`).join(',');
+    // Skicka övningar som vanlig lista
+    const exerciseIndex = existingExercises.map(e => `${e.id}: ${e.name}`).join('\n');
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Användaren vill ha övningsförslag för: "${userRequest}".
 
-      NUVARANDE BIBLIOTEK (komma-separerad lista: id:namn):
+      NUVARANDE BIBLIOTEK (ID: Namn):
       ${exerciseIndex}`,
       config: {
         systemInstruction: `Du är en expertcoach. 
