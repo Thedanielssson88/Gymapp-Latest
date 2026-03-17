@@ -19,6 +19,7 @@ import { registerBackHandler } from '../utils/backHandler';
 import { ColorPicker } from './ColorPicker';
 import { getColorByHex } from '../utils/colors';
 import { ExerciseLibrary } from './ExerciseLibrary';
+import { storage } from '../services/storage';
 
 const formatSeconds = (totalSeconds: number) => {
   if (isNaN(totalSeconds) || totalSeconds < 0) return '0:00';
