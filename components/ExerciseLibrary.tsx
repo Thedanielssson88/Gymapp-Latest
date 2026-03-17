@@ -402,7 +402,7 @@ INSTRUKTIONER:
                 setEditingExercise(ex);
               }
             }}
-            className={`p-4 rounded-[28px] border flex items-center justify-between group animate-in fade-in slide-in-from-bottom-2 transition-colors cursor-pointer ${
+            className={`p-4 rounded-[28px] border flex flex-col group animate-in fade-in slide-in-from-bottom-2 transition-colors cursor-pointer ${
               isMultiSelectMode && isUpdatedToday
                 ? 'bg-green-500/20 border-green-500/50'
                 : isMultiSelectMode && selectedExercises.has(ex.id)
@@ -414,7 +414,7 @@ INSTRUKTIONER:
                 : 'bg-[#1a1721] border-white/5 hover:border-white/10'
             }`}
           >
-            <div className="flex items-center gap-4 overflow-hidden flex-1">
+            <div className="flex items-center gap-4 overflow-hidden flex-1 w-full">
               {isMultiSelectMode && (
                 <div
                   className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
@@ -428,7 +428,7 @@ INSTRUKTIONER:
               )}
               <ExerciseImage exercise={ex} />
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-black italic uppercase truncate text-white">{ex.name}</h3>
+                <h3 className="text-base font-black italic uppercase text-white">{ex.name}</h3>
                 <p className="text-[10px] text-text-dim uppercase tracking-widest truncate mt-1">
                   {ex.primaryMuscles?.join(', ') || ex.pattern}
                 </p>
@@ -438,32 +438,31 @@ INSTRUKTIONER:
                   </p>
                 )}
               </div>
-            </div>
-            {!isMultiSelectMode && (
-              isSelectorMode && onSelect ? (
+              {!isMultiSelectMode && isSelectorMode && onSelect && (
                 <div className="p-3 bg-accent-pink rounded-xl text-white active:scale-90 transition-transform">
                   <Plus size={18} />
                 </div>
-              ) : (
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleRate(ex, 'up')}
-                    className={`p-3 rounded-xl transition-all ${
-                      ex.userRating === 'up' ? 'bg-green-500/20 text-green-500' : 'bg-white/10 text-text-dim'
-                    }`}
-                  >
-                    <ThumbsUp size={16} fill={ex.userRating === 'up' ? "currentColor" : "none"}/>
-                  </button>
-                  <button
-                    onClick={() => handleRate(ex, 'down')}
-                    className={`p-3 rounded-xl transition-all ${
-                      ex.userRating === 'down' ? 'bg-red-500/20 text-red-500' : 'bg-white/10 text-text-dim'
-                    }`}
-                  >
-                    <ThumbsDown size={16} fill={ex.userRating === 'down' ? "currentColor" : "none"}/>
-                  </button>
-                </div>
-              )
+              )}
+            </div>
+            {!isMultiSelectMode && !isSelectorMode && (
+              <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => handleRate(ex, 'up')}
+                  className={`p-2 rounded-xl transition-all ${
+                    ex.userRating === 'up' ? 'bg-green-500/20 text-green-500' : 'bg-white/10 text-text-dim'
+                  }`}
+                >
+                  <ThumbsUp size={14} fill={ex.userRating === 'up' ? "currentColor" : "none"}/>
+                </button>
+                <button
+                  onClick={() => handleRate(ex, 'down')}
+                  className={`p-2 rounded-xl transition-all ${
+                    ex.userRating === 'down' ? 'bg-red-500/20 text-red-500' : 'bg-white/10 text-text-dim'
+                  }`}
+                >
+                  <ThumbsDown size={14} fill={ex.userRating === 'down' ? "currentColor" : "none"}/>
+                </button>
+              </div>
             )}
           </div>
         );
