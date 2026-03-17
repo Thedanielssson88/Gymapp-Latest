@@ -357,7 +357,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({ zone, onClose, onSave, 
 
             {localZone.inventory.includes(Equipment.DUMBBELL) && (
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-dim">Minsta hantel (kg)</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-dim">Hantel (kg)</label>
                 <input
                   type="number"
                   value={localZone.dumbbellWeight ?? 1}
