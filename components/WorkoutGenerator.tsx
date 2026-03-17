@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { MuscleGroup, Zone, Exercise, UserProfile, WorkoutSession, PlannedExercise } from '../types';
+import React, { useState, useEffect } from 'react';
+import { MuscleGroup, Zone, Exercise, UserProfile, WorkoutSession, PlannedExercise, MovementPattern, Equipment } from '../types';
 import { ALL_MUSCLE_GROUPS } from '../utils/recovery';
 import { generateWorkoutSession } from '../utils/fitness';
-import { X, Zap, Dumbbell, Layers, ArrowRight, Sparkles } from 'lucide-react';
+import { X, Zap, Dumbbell, Layers, ArrowRight, Sparkles, Activity, Wrench } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from './Toast';
 
@@ -48,6 +48,8 @@ const SPLITS: { name: string; label: string; muscles: MuscleGroup[] }[] = [
   }
 ];
 
+const LOCALSTORAGE_KEY_PATTERNS = 'smartpt_selected_patterns';
+
 export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
   activeZone, allExercises, userProfile, history, onGenerate, onClose
 }) => {
@@ -57,9 +59,54 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
   const [showNoExercisesModal, setShowNoExercisesModal] = useState(false);
   const { showToast, ToastComponent } = useToast();
 
+  // Movement Patterns - ladda från localStorage per gym
+  const [selectedPatterns, setSelectedPatterns] = useState<MovementPattern[]>(() => {
+    try {
+      const stored = localStorage.getItem(LOCALSTORAGE_KEY_PATTERNS);
+      if (stored) {
+        const data = JSON.parse(stored);
+        // Returnera sparade patterns för detta gym, annars alla patterns
+        if (data[activeZone.id]) {
+          return data[activeZone.id];
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load patterns from localStorage:', e);
+    }
+    // Default: alla patterns är valda första gången
+    return Object.values(MovementPattern);
+  });
+
+  // Equipment - ladda alltid från gymmet
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment[]>(activeZone.inventory || []);
+
+  // Spara selectedPatterns till localStorage när de ändras
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LOCALSTORAGE_KEY_PATTERNS);
+      const data = stored ? JSON.parse(stored) : {};
+      data[activeZone.id] = selectedPatterns;
+      localStorage.setItem(LOCALSTORAGE_KEY_PATTERNS, JSON.stringify(data));
+    } catch (e) {
+      console.error('Failed to save patterns to localStorage:', e);
+    }
+  }, [selectedPatterns, activeZone.id]);
+
   const toggleMuscle = (m: MuscleGroup) => {
-    setSelectedMuscles(prev => 
+    setSelectedMuscles(prev =>
       prev.includes(m) ? prev.filter(i => i !== m) : [...prev, m]
+    );
+  };
+
+  const togglePattern = (p: MovementPattern) => {
+    setSelectedPatterns(prev =>
+      prev.includes(p) ? prev.filter(i => i !== p) : [...prev, p]
+    );
+  };
+
+  const toggleEquipment = (e: Equipment) => {
+    setSelectedEquipment(prev =>
+      prev.includes(e) ? prev.filter(i => i !== e) : [...prev, e]
     );
   };
 
@@ -69,15 +116,47 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
       return;
     }
 
+    if (selectedPatterns.length === 0) {
+      showToast("Välj minst ett rörelsemönster", "warning");
+      return;
+    }
+
+    if (selectedEquipment.length === 0) {
+      showToast("Välj minst en typ av utrustning", "warning");
+      return;
+    }
+
     setIsGenerating(true);
-    
+
     // Kort fördröjning för att visa laddningseffekt
     setTimeout(() => {
+      // Filtrera övningar baserat på valda patterns och equipment
+      const filteredExercises = allExercises.filter(ex => {
+        // Kolla att övningen använder valda patterns
+        if (!selectedPatterns.includes(ex.pattern)) {
+          return false;
+        }
+
+        // Kolla att övningen använder vald equipment
+        const hasSelectedEquipment = ex.equipment.some(eq => selectedEquipment.includes(eq));
+        if (!hasSelectedEquipment) {
+          return false;
+        }
+
+        return true;
+      });
+
+      // Skapa ett temporärt Zone-objekt med filtrerad inventory
+      const filteredZone: Zone = {
+        ...activeZone,
+        inventory: selectedEquipment
+      };
+
       const generated = generateWorkoutSession(
-        selectedMuscles, 
-        activeZone, 
-        allExercises, 
-        userProfile, 
+        selectedMuscles,
+        filteredZone,
+        filteredExercises,
+        userProfile,
         history,
         exerciseCount
       );
@@ -158,7 +237,54 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
           </div>
         </section>
 
-        {/* 3. MUSKELGRUPPER (LISTA) */}
+        {/* 3. RÖRELSEMÖNSTER (MOVEMENT PATTERNS) */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <Activity size={16} className="text-purple-500" />
+            <h3 className="text-xs font-black uppercase text-white tracking-widest">Rörelsemönster ({selectedPatterns.length}/{Object.values(MovementPattern).length})</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.values(MovementPattern).map(p => (
+              <button
+                key={p}
+                onClick={() => togglePattern(p)}
+                className={`p-3 rounded-xl border text-left transition-all text-[10px] font-bold uppercase ${
+                  selectedPatterns.includes(p)
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                    : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 4. UTRUSTNING (EQUIPMENT) */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <Wrench size={16} className="text-orange-500" />
+            <h3 className="text-xs font-black uppercase text-white tracking-widest">Utrustning ({selectedEquipment.length}/{activeZone.inventory?.length || 0})</h3>
+          </div>
+          <p className="text-[9px] text-text-dim uppercase font-bold px-1">Gröna = Tillgängliga på {activeZone.name}</p>
+          <div className="grid grid-cols-2 gap-2">
+            {activeZone.inventory?.map(eq => (
+              <button
+                key={eq}
+                onClick={() => toggleEquipment(eq)}
+                className={`p-3 rounded-xl border text-left transition-all text-[10px] font-bold uppercase ${
+                  selectedEquipment.includes(eq)
+                    ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                    : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
+                }`}
+              >
+                {eq}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 5. MUSKELGRUPPER (LISTA) */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 px-1">
             <Zap size={16} className="text-yellow-500" />
