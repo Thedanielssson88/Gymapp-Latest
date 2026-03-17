@@ -390,18 +390,44 @@ INSTRUKTIONER:
             ? new Date(ex.lastUpdated).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' })
             : 'Aldrig uppdaterad';
 
+          const [showRating, setShowRating] = React.useState(false);
+          const [pressTimer, setPressTimer] = React.useState<ReturnType<typeof setTimeout> | null>(null);
+
+          const handlePressStart = () => {
+            const timer = setTimeout(() => {
+              setShowRating(true);
+            }, 500); // 500ms long press
+            setPressTimer(timer);
+          };
+
+          const handlePressEnd = () => {
+            if (pressTimer) {
+              clearTimeout(pressTimer);
+              setPressTimer(null);
+            }
+          };
+
+          const handleClick = () => {
+            if (showRating) {
+              setShowRating(false);
+            } else if (isMultiSelectMode) {
+              toggleExerciseSelection(ex.id);
+            } else if (isSelectorMode && onSelect) {
+              onSelect(ex);
+            } else {
+              setEditingExercise(ex);
+            }
+          };
+
           return (
           <div
             key={ex.id}
-            onClick={() => {
-              if (isMultiSelectMode) {
-                toggleExerciseSelection(ex.id);
-              } else if (isSelectorMode && onSelect) {
-                onSelect(ex);
-              } else {
-                setEditingExercise(ex);
-              }
-            }}
+            onMouseDown={handlePressStart}
+            onMouseUp={handlePressEnd}
+            onMouseLeave={handlePressEnd}
+            onTouchStart={handlePressStart}
+            onTouchEnd={handlePressEnd}
+            onClick={handleClick}
             className={`p-4 rounded-[28px] border flex flex-col group animate-in fade-in slide-in-from-bottom-2 transition-colors cursor-pointer ${
               isMultiSelectMode && isUpdatedToday
                 ? 'bg-green-500/20 border-green-500/50'
@@ -409,6 +435,10 @@ INSTRUKTIONER:
                 ? 'border-accent-blue bg-accent-blue/10'
                 : isMultiSelectMode
                 ? 'bg-[#1a1721] border-white/5 hover:border-white/10'
+                : ex.userRating === 'up'
+                ? 'bg-green-500/10 border-green-500/30'
+                : ex.userRating === 'down'
+                ? 'bg-red-500/10 border-red-500/30'
                 : getLastUsed(ex.id) > 0 && sortBy === 'recent'
                 ? 'bg-[#1a1721] border-accent-pink/20'
                 : 'bg-[#1a1721] border-white/5 hover:border-white/10'
@@ -444,10 +474,13 @@ INSTRUKTIONER:
                 </div>
               )}
             </div>
-            {!isMultiSelectMode && !isSelectorMode && (
-              <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+            {!isMultiSelectMode && !isSelectorMode && showRating && (
+              <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-white/5 animate-in fade-in slide-in-from-bottom-1" onClick={(e) => e.stopPropagation()}>
                 <button
-                  onClick={() => handleRate(ex, 'up')}
+                  onClick={() => {
+                    handleRate(ex, 'up');
+                    setShowRating(false);
+                  }}
                   className={`p-2 rounded-xl transition-all ${
                     ex.userRating === 'up' ? 'bg-green-500/20 text-green-500' : 'bg-white/10 text-text-dim'
                   }`}
@@ -455,7 +488,10 @@ INSTRUKTIONER:
                   <ThumbsUp size={14} fill={ex.userRating === 'up' ? "currentColor" : "none"}/>
                 </button>
                 <button
-                  onClick={() => handleRate(ex, 'down')}
+                  onClick={() => {
+                    handleRate(ex, 'down');
+                    setShowRating(false);
+                  }}
                   className={`p-2 rounded-xl transition-all ${
                     ex.userRating === 'down' ? 'bg-red-500/20 text-red-500' : 'bg-white/10 text-text-dim'
                   }`}
