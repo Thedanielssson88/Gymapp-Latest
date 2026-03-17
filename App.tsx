@@ -564,14 +564,11 @@ export default function App() {
 
   const handleDeleteHistory = async (sessionId: string) => {
     try {
-      // Hitta om det fanns ett kopplat planerat pass
-      const session = history.find(s => s.id === sessionId);
-      const linkedActivity = plannedActivities.find(a => a.linkedSessionId === sessionId);
-
-      // Om det är kopplat till ett AI-program, markera som cancelled
-      if (linkedActivity?.programId) {
-        await storage.updateScheduledActivity(linkedActivity.id, { isCancelled: true });
-      }
+      // TODO: När is_cancelled kolumnen är tillagd i DB, återaktivera AI-program logik
+      // const linkedActivity = plannedActivities.find(a => a.linkedSessionId === sessionId);
+      // if (linkedActivity?.programId) {
+      //   await storage.updateScheduledActivity(linkedActivity.id, { isCancelled: true });
+      // }
 
       await storage.deleteWorkoutFromHistory(sessionId);
       setHistory(prev => prev.filter(s => s.id !== sessionId));
@@ -606,15 +603,13 @@ export default function App() {
       if (isTemplate) {
         await storage.deleteRecurringPlan(id);
       } else {
-        // Kolla om det är ett AI-program pass
-        const activity = plannedActivities.find(a => a.id === id);
-        if (activity?.programId) {
-          // Markera som cancelled istället för att radera
-          await storage.updateScheduledActivity(id, { isCancelled: true });
-        } else {
-          // Vanligt planerat pass - radera som vanligt
-          await storage.deleteScheduledActivity(id);
-        }
+        // TODO: När is_cancelled kolumnen är tillagd i DB, återaktivera AI-program logik
+        // const activity = plannedActivities.find(a => a.id === id);
+        // if (activity?.programId) {
+        //   await storage.updateScheduledActivity(id, { isCancelled: true });
+        // } else {
+        await storage.deleteScheduledActivity(id);
+        // }
       }
       await refreshData();
     } catch (error) { console.error("Could not delete workout:", error); }
