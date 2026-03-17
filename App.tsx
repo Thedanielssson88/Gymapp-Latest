@@ -427,6 +427,20 @@ export default function App() {
       const historySession = { ...session, isCompleted: true, duration, locationName: activeZone.name };
       await storage.saveToHistory(historySession);
 
+      // Optimistic update: Update local state immediately without waiting for refreshData
+      setHistory(prev => {
+        const existingIndex = prev.findIndex(s => s.id === historySession.id);
+        if (existingIndex >= 0) {
+          // Update existing session
+          const updated = [...prev];
+          updated[existingIndex] = historySession;
+          return updated;
+        } else {
+          // Add new session
+          return [...prev, historySession];
+        }
+      });
+
       if (session.sourceActivityId) {
         // Update scheduled activity in Supabase (not local db)
         await storage.updateScheduledActivity(session.sourceActivityId, {
@@ -438,7 +452,7 @@ export default function App() {
 
       storage.setActiveSession(null);
       setCurrentSession(null);
-      
+
       if (user?.settings?.googleDriveLinked && user?.settings?.autoSyncMode === 'after_workout') {
         const syncToCloud = async (isRetry = false) => {
           try {
@@ -465,7 +479,7 @@ export default function App() {
         syncToCloud();
       }
 
-      await refreshData(); 
+      await refreshData();
       navigateToTab('log');
     } catch (error) {
       console.error("Failed to save workout session:", error);
