@@ -209,20 +209,10 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
 
   const toggleDay = (dayId: number) => { setSelectedDays(prev => prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId]); };
 
-  // Long-press handlers för planerade pass
-  const handlePlanPressStart = (planId: string) => {
-    const timer = setTimeout(() => {
-      setExpandedPlanId(planId);
-      setPlanPressTimer(null);
-    }, 600); // 600ms long-press
-    setPlanPressTimer(timer);
-  };
-
-  const handlePlanPressEnd = () => {
-    if (planPressTimer) {
-      clearTimeout(planPressTimer);
-      setPlanPressTimer(null);
-    }
+  // Click handler för planerade pass - expanderar vid klick (om ingen swipe)
+  const handlePlanClick = (planId: string) => {
+    // Expandera eller kollapsa
+    setExpandedPlanId(expandedPlanId === planId ? null : planId);
   };
 
   // Swipe handlers
@@ -246,10 +236,16 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   };
 
   const handleSwipeEnd = async (p: PlannedActivityForLogDisplay, dKey: string) => {
-    if (!swipeState || Math.abs(swipeState.x) < 80) {
-      // Återställ om swipe var för kort
+    if (!swipeState) {
+      return;
+    }
+
+    // Om swipe var för kort (< 80px) = det var ett klick, inte en swipe
+    if (Math.abs(swipeState.x) < 80) {
       setSwipeState(null);
       setSwipeStartX(null);
+      // Klick → expandera/kollapsa
+      handlePlanClick(p.id);
       return;
     }
 
@@ -634,25 +630,20 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                       <div
                         onMouseDown={(e) => {
                           handleSwipeStart(e, p.id);
-                          handlePlanPressStart(p.id);
                         }}
                         onMouseMove={handleSwipeMove}
                         onMouseUp={() => {
-                          handlePlanPressEnd();
                           handleSwipeEnd(p, dKey);
                         }}
                         onMouseLeave={() => {
-                          handlePlanPressEnd();
                           setSwipeState(null);
                           setSwipeStartX(null);
                         }}
                         onTouchStart={(e) => {
                           handleSwipeStart(e, p.id);
-                          handlePlanPressStart(p.id);
                         }}
                         onTouchMove={handleSwipeMove}
                         onTouchEnd={() => {
-                          handlePlanPressEnd();
                           handleSwipeEnd(p, dKey);
                         }}
                         className="rounded-[28px] p-4 group animate-in zoom-in-95 border transition-all relative z-10"
@@ -773,7 +764,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                           </div>
 
                           {/* Action buttons */}
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 mb-4">
                             <button
                               onClick={() => setShowColorPickerForPlan(p.id)}
                               className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
@@ -804,6 +795,24 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                               Ändra Pass
                             </button>
                           </div>
+
+                          {/* Exercise List */}
+                          {p.exercises && p.exercises.length > 0 && (
+                            <div className="bg-black/20 rounded-2xl p-3 border border-white/5">
+                              <p className="text-[9px] font-black uppercase text-text-dim mb-2 tracking-widest">Övningar i passet:</p>
+                              <div className="space-y-1.5">
+                                {p.exercises.map((ex, idx) => {
+                                  const exData = allExercises.find(e => e.id === ex.exerciseId);
+                                  return (
+                                    <div key={idx} className="flex items-center justify-between text-xs">
+                                      <span className="text-white font-bold truncate">{exData?.name || 'Övning'}</span>
+                                      <span className="text-text-dim font-bold text-[10px]">{ex.sets.length} set</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       </div>
