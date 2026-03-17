@@ -227,6 +227,7 @@ export interface PlannedExercise {
   notes?: string;
   supersetId?: string; // Ett unikt ID som delas av övningar i samma superset
   trackingTypeOverride?: TrackingType;
+  color?: string; // Färgkod för övningen (hex: #FF5733)
 }
 
 export interface WorkoutRoutine {
