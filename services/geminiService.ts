@@ -271,35 +271,15 @@ export const generateProfessionalPlan = async (
   try {
     const apiKey = await getApiKey();
     const ai = new GoogleGenAI({ apiKey });
-
+    
     const { daysPerWeek, durationMinutes, durationWeeks, progressionRate } = preferences;
     const exerciseIndex = availableExercises.map(e => `ID: ${e.id}, Namn: ${e.name}, Utrustning: [${e.equipment.join(', ')}]`).join('\n');
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Könsanpassad progression
-    const gender = currentProfile?.gender || 'Annat';
-    const getProgressionValues = (rate: ProgressionRate) => {
-      if (gender === 'Man') {
-        if (rate === 'conservative') return { upper: '0.5-1kg', lower: '1-2kg', desc: 'Minimal ökning. Fokus på teknik/rehab.' };
-        if (rate === 'normal') return { upper: '2.5kg', lower: '5kg', desc: 'Standard linjär progression.' };
-        return { upper: '3-5kg', lower: '7.5kg', desc: 'Maximal ökning. Utnyttja "newbie gains" eller tuff periodisering.' };
-      } else if (gender === 'Kvinna') {
-        if (rate === 'conservative') return { upper: '0.5kg', lower: '1kg', desc: 'Minimal ökning. Fokus på teknik/rehab.' };
-        if (rate === 'normal') return { upper: '1.5kg', lower: '3kg', desc: 'Standard linjär progression anpassad för kvinnor.' };
-        return { upper: '2-3kg', lower: '5kg', desc: 'Maximal ökning. Utnyttja "newbie gains" eller tuff periodisering.' };
-      } else {
-        if (rate === 'conservative') return { upper: '0.5-1kg', lower: '1-2kg', desc: 'Minimal ökning. Fokus på teknik/rehab.' };
-        if (rate === 'normal') return { upper: '2kg', lower: '4kg', desc: 'Standard linjär progression.' };
-        return { upper: '2.5-4kg', lower: '6kg', desc: 'Maximal ökning. Utnyttja "newbie gains" eller tuff periodisering.' };
-      }
-    };
-
-    const progression = getProgressionValues(progressionRate);
-
     const contents = `
       Du är en expert-PT och träningsfysiolog. Skapa ett detaljerat träningsprogram.
-
+      
       CURRENT CONTEXT:
       - Today's Date: ${today}
 
@@ -314,14 +294,15 @@ export const generateProfessionalPlan = async (
       ${exerciseIndex}
 
       MÅL: "${userRequest}"
-      ANVÄNDARPROFIL: Kön: ${gender}
       TIDSPERSPEKTIV: ${durationWeeks} veckor, ${daysPerWeek} pass/vecka, ${durationMinutes} min/pass.
       NUVARANDE STYRKA (Uppskattat 1RM): ${JSON.stringify(pplStats)}
       ÖKNINGSTAKT VALD AV ANVÄNDAREN: ${progressionRate.toUpperCase()}.
 
-      INSTRUKTIONER FÖR VIKTER OCH PROGRESSION (ANPASSAT FÖR ${gender.toUpperCase()}):
+      INSTRUKTIONER FÖR VIKTER OCH PROGRESSION:
       Basera progressionen på den valda ökningstakten:
-      - ${progressionRate}: ${progression.desc} (+${progression.upper}/vecka för överkropp, +${progression.lower}/vecka för ben).
+      - conservative: Minimal ökning. Fokus på teknik/rehab. (+0.5-1kg/vecka).
+      - normal: Standard linjär progression. (+2.5kg/vecka för överkropp, +5kg/vecka för ben).
+      - aggressive: Utmana användaren. Utnyttja "newbie gains" eller tuff periodisering. Öka snabbare om det är fysiologiskt möjligt (t.ex. +2.5kg per pass istället för per vecka för en nybörjare).
       
       VIKTIGT - REALISM:
       1. För SMART GOALS, använd NUVARANDE STYRKA för att sätta ett realistiskt 'startValue'.
@@ -397,7 +378,6 @@ export const generateNextPhase = async (
   currentProgram: AIProgram,
   programHistory: WorkoutSession[],
   availableExercises: Exercise[],
-  currentProfile: UserProfile,
   pplStats: { start: any; current: any },
   preferences: {
     daysPerWeek: number;
@@ -413,42 +393,18 @@ export const generateNextPhase = async (
     const { daysPerWeek, durationMinutes, weeks, progressionRate } = preferences;
     const exerciseIndex = availableExercises.map(e => `ID: ${e.id}, Namn: ${e.name}, Utrustning: [${e.equipment.join(', ')}]`).join('\n');
 
-    // Könsanpassad progression
-    const gender = currentProfile?.gender || 'Annat';
-    const getProgressionValues = (rate: ProgressionRate) => {
-      if (gender === 'Man') {
-        if (rate === 'conservative') return { upper: '0.5-1kg', lower: '1-2kg', desc: 'Minimal ökning. Fokus på teknik/rehab.' };
-        if (rate === 'normal') return { upper: '2.5kg', lower: '5kg', desc: 'Standard linjär progression.' };
-        return { upper: '3-5kg', lower: '7.5kg', desc: 'Maximal ökning. Utnyttja "newbie gains" eller tuff periodisering.' };
-      } else if (gender === 'Kvinna') {
-        if (rate === 'conservative') return { upper: '0.5kg', lower: '1kg', desc: 'Minimal ökning. Fokus på teknik/rehab.' };
-        if (rate === 'normal') return { upper: '1.5kg', lower: '3kg', desc: 'Standard linjär progression anpassad för kvinnor.' };
-        return { upper: '2-3kg', lower: '5kg', desc: 'Maximal ökning. Utnyttja "newbie gains" eller tuff periodisering.' };
-      } else {
-        if (rate === 'conservative') return { upper: '0.5-1kg', lower: '1-2kg', desc: 'Minimal ökning. Fokus på teknik/rehab.' };
-        if (rate === 'normal') return { upper: '2kg', lower: '4kg', desc: 'Standard linjär progression.' };
-        return { upper: '2.5-4kg', lower: '6kg', desc: 'Maximal ökning. Utnyttja "newbie gains" eller tuff periodisering.' };
-      }
-    };
-
-    const progression = getProgressionValues(progressionRate);
-
     const contents = `
       Skapa nästa fas (Fas ${ (currentProgram.phaseNumber || 1) + 1}) för programmet "${currentProgram.name}".
-
+      
       VIKTIGT: Använd ENDAST övningar från listan nedan. Svara med det exakta ID:t för varje övning.
       TILLGÄNGLIGA ÖVNINGAR:
       ${exerciseIndex}
 
       LÅNGSIKTIGT MÅL: "${currentProgram.longTermGoalDescription}"
-      ANVÄNDARPROFIL: Kön: ${gender}
       TIDSPERSPEKTIV: ${weeks} veckor, ${daysPerWeek} pass/vecka, ${durationMinutes} min/pass.
       FÖREGÅENDE FAS START-1RM: ${JSON.stringify(pplStats.start)}
       NUVARANDE 1RM: ${JSON.stringify(pplStats.current)}
       ÖKNINGSTAKT VALD AV ANVÄNDAREN: ${progressionRate.toUpperCase()}.
-
-      INSTRUKTIONER FÖR VIKTER OCH PROGRESSION (ANPASSAT FÖR ${gender.toUpperCase()}):
-      - ${progressionRate}: ${progression.desc} (+${progression.upper}/vecka för överkropp, +${progression.lower}/vecka för ben).
       COACHENS AUTOMATISKA ANALYS: "${rules.feedback}"
       
       UPPGIFT:

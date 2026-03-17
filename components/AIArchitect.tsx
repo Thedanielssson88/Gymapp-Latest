@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, Send, Loader2, Save, Calendar, Repeat, Clock, Dumbbell } from 'lucide-react';
 import { generateProfessionalPlan } from '../services/geminiService';
 import { storage } from '../services/storage';
-import { UserMission, ScheduledActivity, PlannedExercise, SetType, Exercise, AIProgram, AIPlanResponse, ProgressionRate, UserProfile } from '../types';
+import { UserMission, ScheduledActivity, PlannedExercise, SetType, Exercise, AIProgram, AIPlanResponse, ProgressionRate } from '../types';
 import { calculatePPLStats, suggestWeightForReps } from '../utils/progression';
 import { calculate1RM, getLastPerformance } from '../utils/fitness';
 import { ColorPicker } from './ColorPicker';
@@ -206,8 +206,8 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
             <button
               onClick={() => setProgressionRate('conservative')}
               className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${
-                progressionRate === 'conservative'
-                  ? 'bg-green-500/20 border-green-500 text-green-500'
+                progressionRate === 'conservative' 
+                  ? 'bg-green-500/20 border-green-500 text-green-500' 
                   : 'bg-white/5 border-transparent text-text-dim grayscale'
               }`}
             >
@@ -217,8 +217,8 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
             <button
               onClick={() => setProgressionRate('normal')}
               className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${
-                progressionRate === 'normal'
-                  ? 'bg-accent-blue/20 border-accent-blue text-accent-blue'
+                progressionRate === 'normal' 
+                  ? 'bg-accent-blue/20 border-accent-blue text-accent-blue' 
                   : 'bg-white/5 border-transparent text-text-dim grayscale'
               }`}
             >
@@ -228,8 +228,8 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
             <button
               onClick={() => setProgressionRate('aggressive')}
               className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${
-                progressionRate === 'aggressive'
-                  ? 'bg-accent-pink/20 border-accent-pink text-accent-pink'
+                progressionRate === 'aggressive' 
+                  ? 'bg-accent-pink/20 border-accent-pink text-accent-pink' 
                   : 'bg-white/5 border-transparent text-text-dim grayscale'
               }`}
             >

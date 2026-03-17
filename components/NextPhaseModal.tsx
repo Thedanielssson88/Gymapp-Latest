@@ -42,9 +42,6 @@ export const NextPhaseModal: React.FC<NextPhaseModalProps> = ({ program, onClose
     }
 
     try {
-      // Hämta användarprofil för könsanpassad progression
-      const userProfile = await storage.getUserProfile();
-
       // AI PROGRAM - Optimering: Senaste 12 veckor eller max 30 pass
       const weeksToInclude = 12;
       const cutoffDate = new Date();
@@ -61,7 +58,7 @@ export const NextPhaseModal: React.FC<NextPhaseModalProps> = ({ program, onClose
       const rules = PROGRESSION_MATRIX[progressionRate][trend];
 
       const result = await generateNextPhase(
-        program, recentHistory, allExercises, userProfile,
+        program, recentHistory, allExercises,
         { start: startStats, current: currentStats },
         { daysPerWeek, durationMinutes, weeks, progressionRate },
         rules
