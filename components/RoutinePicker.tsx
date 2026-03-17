@@ -77,12 +77,15 @@ export const RoutinePicker: React.FC<RoutinePickerProps> = ({ onStart, activeZon
 
   if (editingRoutine) {
     return (
-      <RoutineCreator 
+      <RoutineCreator
         allExercises={allExercises}
         initialRoutine={editingRoutine}
         onSave={saveRoutine}
         onCancel={() => setEditingRoutine(null)}
         history={history}
+        userProfile={userProfile}
+        activeZone={activeZone}
+        onUpdate={onUpdate}
       />
     );
   }

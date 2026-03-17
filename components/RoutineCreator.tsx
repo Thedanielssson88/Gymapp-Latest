@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Exercise, WorkoutRoutine, PlannedExercise, WorkoutSet, WorkoutSession } from '../types';
+import { Exercise, WorkoutRoutine, PlannedExercise, WorkoutSet, WorkoutSession, UserProfile, Zone } from '../types';
 import { ExerciseLibrary } from './ExerciseLibrary';
-import { Save, Plus, Trash2, X } from 'lucide-react';
+import { WorkoutGenerator } from './WorkoutGenerator';
+import { AIExerciseRecommender } from './AIExerciseRecommender';
+import { Save, Plus, Trash2, X, Sparkles, Shield } from 'lucide-react';
 
 interface RoutineCreatorProps {
   allExercises: Exercise[];
@@ -10,14 +12,19 @@ interface RoutineCreatorProps {
   onSave: (routine: WorkoutRoutine) => void;
   onCancel: () => void;
   initialRoutine?: Partial<WorkoutRoutine>;
+  userProfile: UserProfile;
+  activeZone: Zone;
+  onUpdate: () => void;
 }
 
-export const RoutineCreator: React.FC<RoutineCreatorProps> = ({ 
-  allExercises, history, onSave, onCancel, initialRoutine 
+export const RoutineCreator: React.FC<RoutineCreatorProps> = ({
+  allExercises, history, onSave, onCancel, initialRoutine, userProfile, activeZone, onUpdate
 }) => {
   const [routineName, setRoutineName] = useState(initialRoutine?.name || '');
   const [plannedExercises, setPlannedExercises] = useState<PlannedExercise[]>(initialRoutine?.exercises || []);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [showAIScout, setShowAIScout] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -82,16 +89,66 @@ export const RoutineCreator: React.FC<RoutineCreatorProps> = ({
     onSave(newRoutine);
   };
 
+  const handleGenerateResults = (generated: PlannedExercise[]) => {
+    setPlannedExercises(prev => [...prev, ...generated]);
+    setShowGenerator(false);
+  };
+
+  const handleAddFromAIScout = (exercise: Exercise) => {
+    const newPlanned: PlannedExercise = {
+      exerciseId: exercise.id,
+      sets: [
+        { reps: 10, weight: 0, completed: false, type: 'normal' },
+        { reps: 10, weight: 0, completed: false, type: 'normal' },
+        { reps: 10, weight: 0, completed: false, type: 'normal' }
+      ],
+      notes: ''
+    };
+    setPlannedExercises(prev => [...prev, newPlanned]);
+  };
+
   if (showLibrary) {
     return (
       <div className="fixed inset-0 z-[300] bg-[#0f0d15]">
-        <ExerciseLibrary 
-          allExercises={allExercises} 
+        <ExerciseLibrary
+          allExercises={allExercises}
           history={history}
-          onSelect={handleAddExercise} 
+          onSelect={handleAddExercise}
           onClose={() => setShowLibrary(false)}
           onUpdate={() => {}}
         />
+      </div>
+    );
+  }
+
+  if (showGenerator) {
+    return (
+      <div className="fixed inset-0 z-[300] bg-[#0f0d15]">
+        <WorkoutGenerator
+          activeZone={activeZone}
+          allExercises={allExercises}
+          userProfile={userProfile}
+          history={history}
+          onGenerate={handleGenerateResults}
+          onClose={() => setShowGenerator(false)}
+        />
+      </div>
+    );
+  }
+
+  if (showAIScout) {
+    return (
+      <div className="fixed inset-0 z-[300] bg-[#0f0d15] flex flex-col">
+        <div style={{ paddingTop: 'env(safe-area-inset-top)' }} className="flex-1 flex flex-col overflow-hidden">
+          <AIExerciseRecommender
+            onClose={() => setShowAIScout(false)}
+            allExercises={allExercises}
+            history={history}
+            activeZone={activeZone}
+            onUpdate={onUpdate}
+            onAddToWorkout={handleAddFromAIScout}
+          />
+        </div>
       </div>
     );
   }
@@ -153,7 +210,19 @@ export const RoutineCreator: React.FC<RoutineCreatorProps> = ({
             );
           })}
         </div>
+
         <button onClick={() => setShowLibrary(true)} className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center gap-2 text-text-dim hover:text-white hover:border-white/30 transition-all"><Plus size={20} /> <span className="font-bold uppercase tracking-widest text-xs">Lägg till övning</span></button>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => setShowGenerator(true)} className="py-10 bg-accent-blue/5 border-2 border-dashed border-accent-blue/10 rounded-[40px] flex flex-col items-center justify-center gap-3 text-accent-blue hover:bg-accent-blue/10 transition-all active:scale-95">
+            <Sparkles size={24} />
+            <span className="font-black uppercase tracking-widest text-[8px] italic">Smart PT</span>
+          </button>
+          <button onClick={() => setShowAIScout(true)} className="py-10 border-2 border-dashed border-purple-500/10 rounded-[40px] flex flex-col items-center justify-center gap-3 text-purple-400 hover:border-purple-500/30 active:scale-95">
+            <Shield size={24} />
+            <span className="font-black uppercase tracking-widest text-[8px] italic">AI Scout</span>
+          </button>
+        </div>
       </div>
       <div className="p-4 bg-[#1a1721] border-t border-white/10 sticky bottom-0">
         <button onClick={handleSave} className="w-full py-4 bg-accent-blue text-white rounded-2xl font-black italic uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-lg"><Save size={20} /> Spara Rutin</button>

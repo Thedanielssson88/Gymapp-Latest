@@ -1,14 +1,14 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  WorkoutSession, ScheduledActivity, ActivityType, 
-  WorkoutRoutine, Exercise, TrackingType, RecurringPlanForDisplay, PlannedActivityForLogDisplay, WorkoutSet 
+import {
+  WorkoutSession, ScheduledActivity, ActivityType,
+  WorkoutRoutine, Exercise, TrackingType, RecurringPlanForDisplay, PlannedActivityForLogDisplay, WorkoutSet, UserProfile, Zone, PlannedExercise
 } from '../types';
 import {
   Calendar as CalIcon, ChevronLeft, ChevronRight, CheckCircle2,
   Circle, Plus, Dumbbell, History, Repeat, Trash2, X,
   Clock, ChevronDown, ChevronUp, MapPin, TrendingUp, Timer,
-  MessageSquare, Activity, Zap, Trophy, CalendarClock, Play, CalendarPlus, List, Calendar as CalendarIcon, ArrowRight, Edit3, Save
+  MessageSquare, Activity, Zap, Trophy, CalendarClock, Play, CalendarPlus, List, Calendar as CalendarIcon, ArrowRight, Edit3, Save, Sparkles, Shield
 } from 'lucide-react';
 import { calculate1RM } from '../utils/fitness';
 import { ConfirmModal } from './ConfirmModal';
@@ -19,6 +19,8 @@ import { registerBackHandler } from '../utils/backHandler';
 import { ColorPicker } from './ColorPicker';
 import { getColorByHex } from '../utils/colors';
 import { ExerciseLibrary } from './ExerciseLibrary';
+import { WorkoutGenerator } from './WorkoutGenerator';
+import { AIExerciseRecommender } from './AIExerciseRecommender';
 import { storage } from '../services/storage';
 
 const formatSeconds = (totalSeconds: number) => {
@@ -91,13 +93,15 @@ interface WorkoutLogProps {
   onStartManualWorkout: (date: string) => void;
   onStartLiveWorkout: () => void;
   onUpdate: () => void;
+  userProfile: UserProfile;
+  activeZone: Zone;
 }
 
 export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   history, plannedActivities, routines, allExercises,
   onAddPlan, onDeletePlan, onDeleteHistory, onMovePlan, onMoveRecurringInstance, onSkipRecurringInstance,
   onUpdateScheduledActivity, onUpdateRecurringPlan,
-  onStartActivity, onStartManualWorkout, onStartLiveWorkout, onUpdate
+  onStartActivity, onStartManualWorkout, onStartLiveWorkout, onUpdate, userProfile, activeZone
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -122,6 +126,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [showCreateCustom, setShowCreateCustom] = useState(false);
   const [customExercises, setCustomExercises] = useState<PlannedExercise[]>([]);
   const [showExerciseLibraryForCustom, setShowExerciseLibraryForCustom] = useState(false);
+  const [showGeneratorForCustom, setShowGeneratorForCustom] = useState(false);
+  const [showAIScoutForCustom, setShowAIScoutForCustom] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null); // ID på pass som redigeras
   const [editingIsTemplate, setEditingIsTemplate] = useState(false); // Om det är recurring eller scheduled
 
@@ -145,16 +151,19 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [selectedItem, setSelectedItem] = useState<WorkoutSession | PlannedActivityForLogDisplay | null>(null);
   
   useEffect(() => {
-    if (selectedItem || showDatePicker || showPlanModal || confirmDelete || moveModalData) {
+    if (selectedItem || showDatePicker || showPlanModal || confirmDelete || moveModalData || showExerciseLibraryForCustom || showGeneratorForCustom || showAIScoutForCustom) {
       return registerBackHandler(() => {
         setSelectedItem(null);
         setShowDatePicker(false);
         setShowPlanModal(false);
         setConfirmDelete(null);
         setMoveModalData(null);
+        setShowExerciseLibraryForCustom(false);
+        setShowGeneratorForCustom(false);
+        setShowAIScoutForCustom(false);
       });
     }
-  }, [selectedItem, showDatePicker, showPlanModal, confirmDelete, moveModalData]);
+  }, [selectedItem, showDatePicker, showPlanModal, confirmDelete, moveModalData, showExerciseLibraryForCustom, showGeneratorForCustom, showAIScoutForCustom]);
 
   // Blockera scrollning när modal är öppen
   useEffect(() => {
@@ -459,6 +468,15 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       notes: ''
     };
     setCustomExercises([...customExercises, newPlanned]);
+  };
+
+  const handleGenerateForCustom = (generated: PlannedExercise[]) => {
+    setCustomExercises([...customExercises, ...generated]);
+    setShowGeneratorForCustom(false);
+  };
+
+  const handleAddFromAIScout = (exercise: Exercise) => {
+    handleAddExerciseToCustom(exercise);
   };
 
   const handleRemoveCustomExercise = (index: number) => {
@@ -1094,7 +1112,19 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                 );
               })}
             </div>
+
             <button onClick={() => setShowExerciseLibraryForCustom(true)} className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center gap-2 text-text-dim hover:text-white hover:border-white/30 transition-all"><Plus size={20} /> <span className="font-bold uppercase tracking-widest text-xs">Lägg till övning</span></button>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setShowGeneratorForCustom(true)} className="py-10 bg-accent-blue/5 border-2 border-dashed border-accent-blue/10 rounded-[40px] flex flex-col items-center justify-center gap-3 text-accent-blue hover:bg-accent-blue/10 transition-all active:scale-95">
+                <Sparkles size={24} />
+                <span className="font-black uppercase tracking-widest text-[8px] italic">Smart PT</span>
+              </button>
+              <button onClick={() => setShowAIScoutForCustom(true)} className="py-10 border-2 border-dashed border-purple-500/10 rounded-[40px] flex flex-col items-center justify-center gap-3 text-purple-400 hover:border-purple-500/30 active:scale-95">
+                <Shield size={24} />
+                <span className="font-black uppercase tracking-widest text-[8px] italic">AI Scout</span>
+              </button>
+            </div>
           </div>
 
           <div className="p-4 bg-[#1a1721] border-t border-white/10 sticky bottom-0">
@@ -1114,6 +1144,34 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
             onClose={() => setShowExerciseLibraryForCustom(false)}
             onUpdate={onUpdate}
           />
+        </div>
+      )}
+
+      {showGeneratorForCustom && (
+        <div className="fixed inset-0 z-[120] bg-[#0f0d15]">
+          <WorkoutGenerator
+            activeZone={activeZone}
+            allExercises={allExercises}
+            userProfile={userProfile}
+            history={history}
+            onGenerate={handleGenerateForCustom}
+            onClose={() => setShowGeneratorForCustom(false)}
+          />
+        </div>
+      )}
+
+      {showAIScoutForCustom && (
+        <div className="fixed inset-0 z-[120] bg-[#0f0d15] flex flex-col">
+          <div style={{ paddingTop: 'env(safe-area-inset-top)' }} className="flex-1 flex flex-col overflow-hidden">
+            <AIExerciseRecommender
+              onClose={() => setShowAIScoutForCustom(false)}
+              allExercises={allExercises}
+              history={history}
+              activeZone={activeZone}
+              onUpdate={onUpdate}
+              onAddToWorkout={handleAddFromAIScout}
+            />
+          </div>
         </div>
       )}
 
