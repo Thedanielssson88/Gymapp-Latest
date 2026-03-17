@@ -354,7 +354,14 @@ export const storage = {
       source_activity_id: session.sourceActivityId,
       source_activity_color: session.sourceActivityColor
     };
-    await supabase.from('workout_history').upsert(completedSession);
+
+    console.log('💾 Attempting to save to workout_history:', completedSession);
+    const { error } = await supabase.from('workout_history').upsert(completedSession);
+    if (error) {
+      console.error('❌ Failed to save workout to history:', error);
+      throw error;
+    }
+    console.log('✅ Successfully saved workout to history');
   },
   deleteWorkoutFromHistory: async (sessionId: string) => {
     await supabase.from('workout_history').delete().eq('id', sessionId);
