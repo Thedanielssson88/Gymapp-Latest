@@ -129,6 +129,9 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [planPressTimer, setPlanPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [showColorPickerForPlan, setShowColorPickerForPlan] = useState<string | null>(null);
 
+  // State för att ändra färg på genomfört pass
+  const [showColorPickerForHistory, setShowColorPickerForHistory] = useState<string | null>(null);
+
   // State för swipe-funktionalitet
   const [swipeState, setSwipeState] = useState<{ id: string; x: number; direction: 'left' | 'right' | null } | null>(null);
   const [swipeStartX, setSwipeStartX] = useState<number | null>(null);
@@ -331,6 +334,16 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
         newMap.delete(planId);
         return newMap;
       });
+    }
+  };
+
+  const handleUpdateHistoryColor = async (sessionId: string, newColor: string) => {
+    try {
+      await storage.updateWorkoutHistory(sessionId, { sourceActivityColor: newColor });
+      setShowColorPickerForHistory(null);
+      await onUpdate();
+    } catch (error) {
+      console.error('Failed to update history color:', error);
     }
   };
 
@@ -896,7 +909,16 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                             </div>
                           )}
                           <div className="py-4 space-y-6">{session.exercises.map((ex, idx) => {const exData = allExercises.find(e => e.id === ex.exerciseId); return (<div key={idx} className="space-y-3"><div className="flex justify-between items-baseline gap-4"><span className="text-xs font-black uppercase italic text-accent-pink tracking-tight shrink-0">{exData?.name || 'Övning'}</span>{ex.notes && (<div className="flex items-center gap-1.5 opacity-60 min-w-0 text-right"><MessageSquare size={10} className="text-text-dim shrink-0" /><span className="text-[9px] font-bold text-text-dim italic truncate">{ex.notes}</span></div>)}</div><div className="space-y-1.5">{ex.sets.filter(s => s.completed).map((set, sIdx) => (<LogSetRow key={sIdx} set={set} type={ex.trackingTypeOverride || exData?.trackingType} isPR={checkIsPR(ex.exerciseId, set.weight, set.reps, session.date)} />))}</div></div>);})}{' '}</div>
-                          <div className="pt-2 border-t border-white/5"><button onClick={(e) => { e.stopPropagation(); setConfirmDelete({id: session.id, isHistory: true, isTemplate: false}); }} className="w-full py-3 text-red-500/50 hover:text-red-500 text-[9px] font-black uppercase tracking-[0.2em] transition-colors">Radera Pass Permanent</button></div>
+                          <div className="pt-2 border-t border-white/5 space-y-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setShowColorPickerForHistory(session.id); }}
+                              className="w-full py-3 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                            >
+                              <div className="w-4 h-4 rounded-full border-2 border-white" style={{ backgroundColor: session.sourceActivityColor || '#1a1721' }} />
+                              Ändra Färg
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDelete({id: session.id, isHistory: true, isTemplate: false}); }} className="w-full py-3 text-red-500/50 hover:text-red-500 text-[9px] font-black uppercase tracking-[0.2em] transition-colors">Radera Pass Permanent</button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1100,6 +1122,27 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                 if (plan) {
                   const isTemplate = 'isTemplate' in plan;
                   handleUpdatePlanColor(showColorPickerForPlan, newColor, isTemplate);
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {showColorPickerForHistory && (
+        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1a1721] rounded-[40px] border border-white/10 p-8 w-full max-w-sm shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black italic uppercase text-white">Ändra Kant-Färg</h3>
+              <button onClick={() => setShowColorPickerForHistory(null)} className="p-2 bg-white/5 rounded-xl hover:bg-white/10">
+                <X size={20} />
+              </button>
+            </div>
+            <ColorPicker
+              selectedColor={history.find(s => s.id === showColorPickerForHistory)?.sourceActivityColor || '#1a1721'}
+              onSelectColor={(newColor) => {
+                if (showColorPickerForHistory) {
+                  handleUpdateHistoryColor(showColorPickerForHistory, newColor);
                 }
               }}
             />

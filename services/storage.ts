@@ -350,6 +350,24 @@ export const storage = {
   deleteWorkoutFromHistory: async (sessionId: string) => {
     await supabase.from('workout_history').delete().eq('id', sessionId);
   },
+  updateWorkoutHistory: async (sessionId: string, updates: Partial<WorkoutSession>) => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Map camelCase to snake_case for DB
+    const dbUpdates: any = {};
+    if (updates.sourceActivityColor !== undefined) {
+      dbUpdates.source_activity_color = updates.sourceActivityColor;
+    }
+
+    const { error } = await supabase
+      .from('workout_history')
+      .update(dbUpdates)
+      .eq('id', sessionId)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+  },
 
   // --- ACTIVE SESSION (Kan ligga kvar i LocalStorage för säkerhets skull vid krascher) ---
   getActiveSession: async (): Promise<WorkoutSession | undefined> => {
