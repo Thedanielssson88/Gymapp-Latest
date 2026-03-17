@@ -579,6 +579,13 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                         const isScheduledForDay = p.daysOfWeek?.includes(dayOfWeekNum);
                         if (!isScheduledForDay) return false;
 
+                        // Kolla att dagen är >= startDate (visa bara från startdatum och framåt)
+                        const planStart = new Date(p.date); // p.date är startDate för recurring plans
+                        planStart.setHours(0, 0, 0, 0);
+                        const currentDay = new Date(day);
+                        currentDay.setHours(0, 0, 0, 0);
+                        if (currentDay < planStart) return false;
+
                         // Kolla om det finns EN KONKRET instans (även skippade/completed) för denna dag
                         const hasConcreteInstance = optimisticPlannedActivities.some((otherP) =>
                             !('isTemplate' in otherP) &&

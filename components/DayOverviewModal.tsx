@@ -50,6 +50,13 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
       const rp = p as RecurringPlanForDisplay;
       if (!rp.daysOfWeek?.includes(dayOfWeekNum)) return false;
 
+      // Kolla att dagen är >= startDate (visa bara från startdatum och framåt)
+      const planStart = new Date(rp.startDate);
+      planStart.setHours(0, 0, 0, 0);
+      const currentDay = new Date(date);
+      currentDay.setHours(0, 0, 0, 0);
+      if (currentDay < planStart) return false;
+
       const hasConcrete = plannedActivities.some(
         (otherP) =>
           !('isTemplate' in otherP) &&
