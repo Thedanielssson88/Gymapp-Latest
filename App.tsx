@@ -512,16 +512,17 @@ export default function App() {
             return { ...ex, sets: ex.sets.map(s => ({ ...s, reps: targetReps, weight: suggestedWeight > 0 ? suggestedWeight : (s.weight || 0), completed: false })) };
         });
     }
-    const newSess: WorkoutSession = { 
-      id: 'w-' + Date.now(), 
+    const newSess: WorkoutSession = {
+      id: 'w-' + Date.now(),
       date: new Date().toISOString(),
-      name: pendingActivity.title, 
-      zoneId: zone.id, 
+      name: pendingActivity.title,
+      zoneId: zone.id,
       locationName: zone.name,
-      exercises: finalExercises, 
-      isCompleted: false, 
+      exercises: finalExercises,
+      isCompleted: false,
       isManual: false,
-      sourceActivityId: pendingActivity.id 
+      sourceActivityId: pendingActivity.id,
+      sourceActivityColor: pendingActivity.color // Spara färgen från det planerade passet
     };
     storage.setActiveSession(newSess);
     setCurrentSession(newSess);

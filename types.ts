@@ -253,6 +253,7 @@ export interface WorkoutSession {
   feeling?: string;
   isManual?: boolean;
   sourceActivityId?: string; // FIX: Länkar tillbaka till den planerade aktiviteten
+  sourceActivityColor?: string; // Färgen från det planerade passet
 }
 
 export interface BiometricLog {

@@ -815,8 +815,11 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                   const endTime = session.duration ? new Date(startTime.getTime() + session.duration * 1000) : null;
                   const timeString = startTime.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
 
+                  // Om sessionen kom från ett planerat pass med färg, visa färgad kant
+                  const borderStyle = session.sourceActivityColor ? `2px solid ${session.sourceActivityColor}` : undefined;
+
                   return (
-                    <div key={session.id} className="bg-[#1a1721] rounded-[32px] border border-white/5 overflow-hidden transition-all shadow-xl">
+                    <div key={session.id} className={`bg-[#1a1721] rounded-[32px] overflow-hidden transition-all shadow-xl ${!session.sourceActivityColor ? 'border border-white/5' : ''}`} style={borderStyle ? { border: borderStyle } : {}}>
                       <div onClick={() => setExpandedId(expandedId === session.id ? null : session.id)} className="p-5 flex justify-between items-center cursor-pointer active:bg-white/5">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500">
