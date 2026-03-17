@@ -85,11 +85,11 @@ export const recommendExercises = async (
     const ai = new GoogleGenAI({ apiKey });
 
     // Skicka ALLA övningar (ID + Namn)
-    // Använd gemini-exp-1206 som har större context window
+    // Använd gemini-3-flash-preview (stabil modell)
     const exerciseIndex = existingExercises.map(e => `${e.id}: ${e.name}`).join('\n');
 
     const response = await ai.models.generateContent({
-      model: 'gemini-exp-1206',
+      model: 'gemini-3-flash-preview',
       contents: `Användaren vill ha övningsförslag för: "${userRequest}".
 
       NUVARANDE BIBLIOTEK (ID: Namn):
@@ -482,7 +482,7 @@ export async function generateWorkoutFromPrompt(
     const ai = new GoogleGenAI({ apiKey });
     
     const response = await ai.models.generateContent({
-      model: 'gemini-exp-1206',
+      model: 'gemini-3-flash-preview',
       contents: contents,
       config: {
         systemInstruction: systemInstruction,
