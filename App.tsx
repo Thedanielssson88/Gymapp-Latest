@@ -607,7 +607,7 @@ export default function App() {
         await storage.deleteRecurringPlan(id);
       } else {
         // Kolla om det är ett AI-program pass
-        const activity = scheduledActivities.find(a => a.id === id);
+        const activity = plannedActivities.find(a => a.id === id);
         if (activity?.programId) {
           // Markera som cancelled istället för att radera
           await storage.updateScheduledActivity(id, { isCancelled: true });
@@ -617,7 +617,7 @@ export default function App() {
         }
       }
       await refreshData();
-    } catch (error) { console.error("Could not delete plan:", error); }
+    } catch (error) { console.error("Could not delete workout:", error); }
   };
 
   const handleMovePlan = async (id: string, newDate: string) => {
