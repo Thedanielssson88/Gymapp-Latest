@@ -38,6 +38,10 @@ const EQUIPMENT_CATEGORIES = [
       Equipment.HACK_SQUAT,
       Equipment.LEG_EXTENSION,
       Equipment.LEG_CURL,
+      Equipment.LYING_LEG_CURL,
+      Equipment.SEATED_LEG_CURL,
+      Equipment.LEG_ADDUCTION,
+      Equipment.LEG_ABDUCTION,
       Equipment.CALF_RAISE,
       Equipment.SMITH_MACHINE
     ]
@@ -49,19 +53,47 @@ const EQUIPMENT_CATEGORIES = [
       Equipment.CABLES,
       Equipment.LAT_PULLDOWN,
       Equipment.SEATED_ROW,
+      Equipment.CHEST_SUPPORTED_ROW,
+      Equipment.T_BAR_ROW,
       Equipment.CHEST_PRESS,
       Equipment.SHOULDER_PRESS,
+      Equipment.LATERAL_RAISE_MACHINE,
       Equipment.PEC_DECK,
+      Equipment.BICEP_CURL_MACHINE,
+      Equipment.TRICEP_EXTENSION_MACHINE,
       Equipment.ASSISTED_MACHINE
     ]
   },
   {
-    title: "Funktionellt & Övrigt",
-    description: "Gummiband, TRX och annat.",
+    title: "Funktionellt & Kondition",
+    description: "Cardio, explosiv träning och konditionsredskap.",
+    items: [
+      Equipment.SKI_ERG,
+      Equipment.ROWER,
+      Equipment.ASSAULT_BIKE,
+      Equipment.BIKE_ERG,
+      Equipment.TREADMILL,
+      Equipment.SLED,
+      Equipment.TECHNOGYM_SKILLMILL,
+      Equipment.BATTLE_ROPES,
+      Equipment.PLYO_BOX,
+      Equipment.LANDMINE
+    ]
+  },
+  {
+    title: "Tillbehör & Övrigt",
+    description: "Gummiband, TRX och diverse redskap.",
     items: [
       Equipment.BANDS,
       Equipment.TRX,
       Equipment.MEDICINE_BALL,
+      Equipment.SANDBAG,
+      Equipment.BOSU_BALL,
+      Equipment.FOAM_ROLLER,
+      Equipment.ROPE,
+      Equipment.JUMP_ROPE,
+      Equipment.HARNESS,
+      Equipment.AB_WHEEL,
       Equipment.MACHINES // Fallback för gamla/övriga maskiner
     ]
   }
@@ -300,7 +332,45 @@ const LocationEditor: React.FC<LocationEditorProps> = ({ zone, onClose, onSave, 
             })}
           </div>
         </div>
-        
+
+        {/* VIKTINSTÄLLNINGAR FÖR SKIVSTÅNG & HANTLAR */}
+        {(localZone.inventory.includes(Equipment.BARBELL) || localZone.inventory.includes(Equipment.DUMBBELL)) && (
+          <div className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-4">
+            <label className="text-sm font-black uppercase italic text-white flex items-center gap-2">
+              <Scale size={18} className="text-accent-green" /> Vikter på redskap
+            </label>
+            <p className="text-[10px] text-text-dim uppercase font-bold">Dessa vikter används vid viktberäkningar istället för inställningar</p>
+
+            {localZone.inventory.includes(Equipment.BARBELL) && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-dim">Skivstång (kg)</label>
+                <input
+                  type="number"
+                  value={localZone.barbellWeight ?? 20}
+                  onChange={e => setLocalZone({...localZone, barbellWeight: Number(e.target.value)})}
+                  className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-lg font-bold text-white outline-none focus:border-accent-green"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+            )}
+
+            {localZone.inventory.includes(Equipment.DUMBBELL) && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-dim">Minsta hantel (kg)</label>
+                <input
+                  type="number"
+                  value={localZone.dumbbellWeight ?? 1}
+                  onChange={e => setLocalZone({...localZone, dumbbellWeight: Number(e.target.value)})}
+                  className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-lg font-bold text-white outline-none focus:border-accent-green"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* SNABBVAL */}
         <div className="space-y-2">
            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-dim">Snabbval</label>

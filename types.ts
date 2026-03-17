@@ -204,6 +204,8 @@ export interface Zone {
   inventory: Equipment[];
   icon: string;
   availablePlates?: number[];
+  barbellWeight?: number; // Vikt på skivstång (kg)
+  dumbbellWeight?: number; // Minsta hantel-vikt (kg)
 }
 
 export type SetType = 'normal' | 'warmup' | 'drop' | 'failure';

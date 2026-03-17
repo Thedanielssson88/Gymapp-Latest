@@ -259,6 +259,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             exData={exData}
             userProfile={userProfile}
             availablePlates={activeZone?.availablePlates}
+            barbellWeight={activeZone?.barbellWeight}
+            dumbbellWeight={activeZone?.dumbbellWeight}
           />
         ))}
         <button onClick={onAddSet} className="w-full py-3 mt-2 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-dim hover:text-white transition-all active:scale-95 border border-dashed border-white/10 group">

@@ -16,6 +16,8 @@ interface SetRowProps {
   exData: Exercise;
   userProfile: UserProfile;
   availablePlates?: number[];
+  barbellWeight?: number;
+  dumbbellWeight?: number;
 }
 
 export const SetRow: React.FC<SetRowProps> = ({
@@ -28,7 +30,9 @@ export const SetRow: React.FC<SetRowProps> = ({
   trackingType = 'reps_weight',
   exData,
   userProfile,
-  availablePlates
+  availablePlates,
+  barbellWeight,
+  dumbbellWeight
 }) => {
   const [activeModal, setActiveModal] = useState<'reps' | 'weight' | 'dist' | 'time' | null>(null);
   const [showActiveTimer, setShowActiveTimer] = useState(false);
@@ -136,8 +140,13 @@ export const SetRow: React.FC<SetRowProps> = ({
   };
 
   const getBaseWeight = () => {
-    if (isDumbbellExercise) return userProfile.settings?.dumbbellBaseWeight ?? 2;
-    if (isBarbellExercise) return userProfile.settings?.barbellWeight ?? 20;
+    // Använd viktinställningar från aktivt gym om tillgängligt, annars från profil
+    if (isDumbbellExercise) {
+      return dumbbellWeight ?? userProfile.settings?.dumbbellBaseWeight ?? 2;
+    }
+    if (isBarbellExercise) {
+      return barbellWeight ?? userProfile.settings?.barbellWeight ?? 20;
+    }
     return 0;
   };
 
