@@ -655,18 +655,23 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                   }}
                 >
                   <div className="flex gap-4 px-4">
-                    {todaysPlans.map(plan => (
+                    {todaysPlans.map(plan => {
+                      const planColor = plan.color || '#1a1721';
+                      const hasPlanColor = plan.color && plan.color !== '#1a1721' && plan.color !== '#000000';
+
+                      return (
                       <div
                         key={plan.id}
                         className="flex-shrink-0 w-[calc(100vw-2rem)] md:w-[400px] snap-center"
                       >
                         <button
                           onClick={() => onStartActivity(plan as ScheduledActivity)}
-                          className="w-full bg-[#1a1721] border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-pink/20"
+                          style={{ backgroundColor: planColor }}
+                          className="w-full border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-pink/20"
                         >
                           <div className="flex justify-between items-center w-full">
                             <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-accent-pink/10 rounded-xl flex items-center justify-center text-accent-pink">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hasPlanColor ? 'bg-black/20 text-white' : 'bg-accent-pink/10 text-accent-pink'}`}>
                                 {'isTemplate' in plan ? <Repeat size={24} /> : <Calendar size={24} />}
                               </div>
                               <div className="text-left">
@@ -676,29 +681,30 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                                 </p>
                               </div>
                             </div>
-                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-accent-pink group-hover:text-accent-pink transition-colors">
+                            <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${hasPlanColor ? 'border-white/20 text-white group-hover:border-white' : 'border-white/10 text-text-dim group-hover:border-accent-pink group-hover:text-accent-pink'}`}>
                               <Play size={18} fill="currentColor" />
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 px-3 py-3 bg-white/5 rounded-2xl border border-white/5">
+                          <div className={`flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border ${hasPlanColor ? 'bg-black/20 border-black/30' : 'bg-white/5 border-white/5'}`}>
                             {(plan.exercises || []).slice(0, 8).map((pe, idx) => {
                               const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
                               if (!exName) return null;
                               return (
-                                <span key={idx} className="text-[9px] bg-black/30 text-text-dim px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
+                                <span key={idx} className={`text-[9px] px-2 py-1 rounded-md border whitespace-nowrap ${hasPlanColor ? 'bg-black/30 text-white/80 border-black/40' : 'bg-black/30 text-text-dim border-white/5'}`}>
                                   {exName}
                                 </span>
                               );
                             })}
                             {(plan.exercises?.length || 0) > 8 && (
-                              <span className="text-xs text-text-dim self-center">
+                              <span className={`text-xs self-center ${hasPlanColor ? 'text-white/60' : 'text-text-dim'}`}>
                                 +{(plan.exercises?.length || 0) - 8} mer
                               </span>
                             )}
                           </div>
                         </button>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               </div>
@@ -744,18 +750,23 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                   }}
                 >
                   <div className="flex gap-4 px-4">
-                    {missedPlans.map(plan => (
+                    {missedPlans.map(plan => {
+                      const missedColor = plan.color || '#1a1721';
+                      const hasMissedColor = plan.color && plan.color !== '#1a1721' && plan.color !== '#000000';
+
+                      return (
                       <div
                         key={plan.id}
                         className="flex-shrink-0 w-[calc(100vw-2rem)] md:w-[400px] snap-center"
                       >
                         <button
                           onClick={() => onStartActivity(plan)}
-                          className="w-full bg-[#1a1721] border border-orange-400/20 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-orange-400/40"
+                          style={{ backgroundColor: missedColor }}
+                          className="w-full border border-orange-400/20 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-orange-400/40"
                         >
                           <div className="flex justify-between items-center w-full">
                             <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-orange-400/10 rounded-xl flex items-center justify-center text-orange-400">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hasMissedColor ? 'bg-black/20 text-white' : 'bg-orange-400/10 text-orange-400'}`}>
                                 <AlertCircle size={24} />
                               </div>
                               <div className="text-left">
@@ -765,29 +776,30 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                                 </p>
                               </div>
                             </div>
-                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-orange-400 group-hover:text-orange-400 transition-colors">
+                            <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${hasMissedColor ? 'border-white/20 text-white group-hover:border-white' : 'border-white/10 text-text-dim group-hover:border-orange-400 group-hover:text-orange-400'}`}>
                               <Play size={18} fill="currentColor" />
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 px-3 py-3 bg-white/5 rounded-2xl border border-white/5">
+                          <div className={`flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border ${hasMissedColor ? 'bg-black/20 border-black/30' : 'bg-white/5 border-white/5'}`}>
                             {(plan.exercises || []).slice(0, 8).map((pe, idx) => {
                               const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
                               if (!exName) return null;
                               return (
-                                <span key={idx} className="text-[9px] bg-black/30 text-text-dim px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
+                                <span key={idx} className={`text-[9px] px-2 py-1 rounded-md border whitespace-nowrap ${hasMissedColor ? 'bg-black/30 text-white/80 border-black/40' : 'bg-black/30 text-text-dim border-white/5'}`}>
                                   {exName}
                                 </span>
                               );
                             })}
                             {(plan.exercises?.length || 0) > 8 && (
-                              <span className="text-xs text-text-dim self-center">
+                              <span className={`text-xs self-center ${hasMissedColor ? 'text-white/60' : 'text-text-dim'}`}>
                                 +{(plan.exercises?.length || 0) - 8} mer
                               </span>
                             )}
                           </div>
                         </button>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               </div>
@@ -832,18 +844,23 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                   }}
                 >
                   <div className="flex gap-4 px-4">
-                    {recentSessions.map((session, idx) => (
+                    {recentSessions.map((session, idx) => {
+                      const sessionColor = session.sourceActivityColor || '#1a1721';
+                      const hasSessionColor = session.sourceActivityColor && session.sourceActivityColor !== '#1a1721' && session.sourceActivityColor !== '#000000';
+
+                      return (
                       <div
                         key={session.id}
                         className="flex-shrink-0 w-[calc(100vw-2rem)] md:w-[400px] snap-center"
                       >
                         <button
                           onClick={() => handleStartFromHistory(session)}
-                          className="w-full bg-[#1a1721] border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-blue/20"
+                          style={{ backgroundColor: sessionColor }}
+                          className="w-full border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 group active:scale-[0.98] transition-all shadow-xl hover:border-accent-blue/20"
                         >
                           <div className="flex justify-between items-center w-full">
                             <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hasSessionColor ? 'bg-black/20 text-white' : 'bg-green-500/10 text-green-500'}`}>
                                 <History size={24} />
                               </div>
                               <div className="text-left">
@@ -855,29 +872,30 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
                                 </p>
                               </div>
                             </div>
-                            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-dim group-hover:border-accent-blue group-hover:text-accent-blue transition-colors">
+                            <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${hasSessionColor ? 'border-white/20 text-white group-hover:border-white' : 'border-white/10 text-text-dim group-hover:border-accent-blue group-hover:text-accent-blue'}`}>
                               <Play size={18} fill="currentColor" />
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 px-3 py-3 bg-white/5 rounded-2xl border border-white/5">
+                          <div className={`flex flex-wrap gap-1.5 px-3 py-3 rounded-2xl border ${hasSessionColor ? 'bg-black/20 border-black/30' : 'bg-white/5 border-white/5'}`}>
                             {(session.exercises || []).slice(0, 8).map((pe, peIdx) => {
                               const exName = (allExercises || []).find(e => e.id === pe.exerciseId)?.name;
                               if (!exName) return null;
                               return (
-                                <span key={peIdx} className="text-[9px] bg-black/30 text-text-dim px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
+                                <span key={peIdx} className={`text-[9px] px-2 py-1 rounded-md border whitespace-nowrap ${hasSessionColor ? 'bg-black/30 text-white/80 border-black/40' : 'bg-black/30 text-text-dim border-white/5'}`}>
                                   {exName}
                                 </span>
                               );
                             })}
                             {(session.exercises?.length || 0) > 8 && (
-                              <span className="text-xs text-text-dim self-center">
+                              <span className={`text-xs self-center ${hasSessionColor ? 'text-white/60' : 'text-text-dim'}`}>
                                 +{(session.exercises?.length || 0) - 8} mer
                               </span>
                             )}
                           </div>
                         </button>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               </div>
