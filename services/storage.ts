@@ -337,13 +337,20 @@ export const storage = {
       return;
     }
 
+    // Explicitly map all fields to snake_case for DB
     const completedSession = {
-      ...session,
+      id: session.id,
       user_id: user.id,
-      isCompleted: true,
       date: session.date || new Date().toISOString(),
+      name: session.name,
+      zone_id: session.zoneId,
+      location_name: session.locationName,
+      exercises: session.exercises,
+      is_completed: true,
+      is_manual: session.isManual || false,
       duration: session.duration,
-      source_activity_color: session.sourceActivityColor // Map camelCase to snake_case
+      source_activity_id: session.sourceActivityId,
+      source_activity_color: session.sourceActivityColor
     };
     await supabase.from('workout_history').upsert(completedSession);
   },
