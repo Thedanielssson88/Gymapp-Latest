@@ -129,6 +129,10 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [planPressTimer, setPlanPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [showColorPickerForPlan, setShowColorPickerForPlan] = useState<string | null>(null);
 
+  // State för swipe-funktionalitet
+  const [swipeState, setSwipeState] = useState<{ id: string; x: number; direction: 'left' | 'right' | null } | null>(null);
+  const [swipeStartX, setSwipeStartX] = useState<number | null>(null);
+
   // Optimistiska uppdateringar
   const [deletedPlanIds, setDeletedPlanIds] = useState<Set<string>>(new Set());
   const [updatedPlans, setUpdatedPlans] = useState<Map<string, Partial<PlannedActivityForLogDisplay>>>(new Map());
@@ -218,6 +222,79 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     if (planPressTimer) {
       clearTimeout(planPressTimer);
       setPlanPressTimer(null);
+    }
+  };
+
+  // Swipe handlers
+  const handleSwipeStart = (e: React.TouchEvent | React.MouseEvent, planId: string) => {
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    setSwipeStartX(clientX);
+    setSwipeState({ id: planId, x: 0, direction: null });
+  };
+
+  const handleSwipeMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (swipeStartX === null || !swipeState) return;
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const deltaX = clientX - swipeStartX;
+
+    // Tillåt bara swipe höger (+) eller vänster (-)
+    if (Math.abs(deltaX) > 10) {
+      const direction = deltaX > 0 ? 'right' : 'left';
+      setSwipeState({ ...swipeState, x: deltaX, direction });
+    }
+  };
+
+  const handleSwipeEnd = async (p: PlannedActivityForLogDisplay, dKey: string) => {
+    if (!swipeState || Math.abs(swipeState.x) < 80) {
+      // Återställ om swipe var för kort
+      setSwipeState(null);
+      setSwipeStartX(null);
+      return;
+    }
+
+    const isTemplate = 'isTemplate' in p;
+
+    if (swipeState.direction === 'right') {
+      // Swipe höger → Starta pass
+      // Animera ut helt först
+      setSwipeState({ ...swipeState, x: 500 });
+
+      // Vänta på animation
+      setTimeout(async () => {
+        if (isTemplate) {
+          const activityId = `recurring-start-${Date.now()}`;
+          const concreteActivity: ScheduledActivity = {
+            id: activityId,
+            date: dKey,
+            type: p.type,
+            title: p.title,
+            isCompleted: false,
+            exercises: p.exercises || [],
+            recurrenceId: p.id,
+            color: p.color
+          };
+          await onAddPlan(concreteActivity, false);
+          onStartActivity(concreteActivity);
+        } else {
+          onStartActivity(p as ScheduledActivity);
+        }
+
+        setSwipeState(null);
+        setSwipeStartX(null);
+      }, 200);
+
+    } else if (swipeState.direction === 'left') {
+      // Swipe vänster → Öppna flytt-modal
+      setSwipeState(null);
+      setSwipeStartX(null);
+      setCustomMoveDate(isTemplate ? dKey : p.date);
+      setMoveModalData({
+        id: p.id,
+        title: p.title,
+        currentDate: isTemplate ? dKey : p.date,
+        isTemplate: isTemplate
+      });
     }
   };
 
@@ -478,19 +555,41 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                   const cardBg = p.color || '#1a1721';
                   const isBrightColor = cardBg !== '#1a1721' && cardBg !== '#000000';
                   const isExpanded = expandedPlanId === p.id;
+                  const isSwiping = swipeState?.id === p.id;
+                  const swipeX = isSwiping ? swipeState.x : 0;
 
                   return (
                     <div
                       key={p.id}
-                      onMouseDown={() => handlePlanPressStart(p.id)}
-                      onMouseUp={handlePlanPressEnd}
-                      onMouseLeave={handlePlanPressEnd}
-                      onTouchStart={() => handlePlanPressStart(p.id)}
-                      onTouchEnd={handlePlanPressEnd}
+                      onMouseDown={(e) => {
+                        handleSwipeStart(e, p.id);
+                        handlePlanPressStart(p.id);
+                      }}
+                      onMouseMove={handleSwipeMove}
+                      onMouseUp={() => {
+                        handlePlanPressEnd();
+                        handleSwipeEnd(p, dKey);
+                      }}
+                      onMouseLeave={() => {
+                        handlePlanPressEnd();
+                        setSwipeState(null);
+                        setSwipeStartX(null);
+                      }}
+                      onTouchStart={(e) => {
+                        handleSwipeStart(e, p.id);
+                        handlePlanPressStart(p.id);
+                      }}
+                      onTouchMove={handleSwipeMove}
+                      onTouchEnd={() => {
+                        handlePlanPressEnd();
+                        handleSwipeEnd(p, dKey);
+                      }}
                       className="rounded-[28px] p-4 group animate-in zoom-in-95 border transition-all"
                       style={{
                         backgroundColor: cardBg,
-                        borderColor: isBrightColor ? 'transparent' : 'rgba(255,255,255,0.1)'
+                        borderColor: isBrightColor ? 'transparent' : 'rgba(255,255,255,0.1)',
+                        transform: `translateX(${swipeX}px)`,
+                        transition: isSwiping && Math.abs(swipeX) < 80 ? 'none' : 'transform 0.2s ease-out'
                       }}
                     >
                       {/* Normal view */}

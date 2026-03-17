@@ -89,23 +89,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           let bgClass = 'bg-transparent';
           let borderClass = 'border-transparent';
-          if (dayHistory.length > 0) {
+
+          // Dagens datum har alltid grön kant
+          if (isTodayMarker) {
+            borderClass = 'border-green-500 border-2';
+          } else if (dayHistory.length > 0) {
             bgClass = 'bg-green-500/10';
             borderClass = 'border-green-500/20';
           } else if (dayPlanned.length > 0) {
             bgClass = 'bg-white/5';
             borderClass = 'border-white/10';
           }
-          
+
           return (
             <button
               key={i}
               onClick={() => hasActivity && handleDayClick(day)}
               className={`aspect-square rounded-lg flex flex-col items-center justify-center relative border transition-all ${
                 isCurrentMonthDay ? '' : 'opacity-20'
-              } ${hasActivity ? `${bgClass} ${borderClass} hover:border-accent-pink/50 cursor-pointer` : 'cursor-default'}`}
+              } ${hasActivity ? `${bgClass} ${borderClass} hover:border-accent-pink/50 cursor-pointer` : isTodayMarker ? borderClass : 'cursor-default'}`}
             >
-              <span className={`text-xs font-bold ${isTodayMarker ? 'text-accent-pink' : 'text-white/80'}`}>
+              <span className={`text-xs font-bold ${isTodayMarker ? 'text-green-500' : 'text-white/80'}`}>
                 {format(day, 'd')}
               </span>
 

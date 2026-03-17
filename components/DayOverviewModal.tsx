@@ -141,21 +141,28 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
               </h4>
               {dayPlanned.map((p) => {
                 const isTemplate = 'isTemplate' in p;
+                const cardBg = p.color || 'rgba(46, 134, 213, 0.1)';
+                const hasCustomColor = p.color && p.color !== '#1a1721' && p.color !== '#000000';
+
                 return (
                   <div
                     key={p.id}
-                    className="bg-accent-blue/5 border border-accent-blue/20 rounded-2xl p-4 space-y-3 animate-in zoom-in-95"
+                    className="rounded-2xl p-4 space-y-3 animate-in zoom-in-95 border"
+                    style={{
+                      backgroundColor: cardBg,
+                      borderColor: hasCustomColor ? 'transparent' : 'rgba(46, 134, 213, 0.2)'
+                    }}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-accent-blue/10 rounded-xl flex items-center justify-center text-accent-blue">
+                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
                           {isTemplate ? <Repeat size={18} /> : <Calendar size={18} />}
                         </div>
                         <div>
                           <p className="text-sm font-black text-white uppercase italic leading-none mb-1">
                             {p.title}
                           </p>
-                          <p className="text-[9px] font-bold text-accent-blue/60 uppercase tracking-widest">
+                          <p className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
                             {isTemplate ? 'Återkommande' : 'Planerat'} • {p.exercises?.length || 0} övningar
                           </p>
                         </div>
