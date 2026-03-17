@@ -244,7 +244,7 @@ export default function App() {
     setRoutines(r);
     
     const allPlansForDisplay: PlannedActivityForLogDisplay[] = [
-      ...scheduled, // Include ALL scheduled activities (components will filter as needed)
+      ...scheduled.filter(s => !s.isCancelled), // Filter out cancelled AI-program activities
       ...recurring.map(rp => ({
           id: rp.id,
           date: rp.startDate,

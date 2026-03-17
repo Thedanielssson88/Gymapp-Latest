@@ -231,27 +231,26 @@ export const storage = {
   deleteAIProgram: async (programId: string): Promise<void> => {
     const program = await db.aiPrograms.get(programId);
     if (!program) return;
-  
+
     await (db as any).transaction('rw', db.aiPrograms, db.scheduledActivities, db.userMissions, async () => {
-      // 1. Delete non-completed scheduled activities for this program
+      // 1. Delete ALL scheduled activities for this program (both completed and non-completed)
       const activitiesToDelete = await db.scheduledActivities
         .where('programId').equals(programId)
-        .filter(act => !act.isCompleted)
         .primaryKeys();
-  
+
       if (activitiesToDelete.length > 0) {
         await db.scheduledActivities.bulkDelete(activitiesToDelete);
       }
-      
+
       // 2. Delete associated smart goals
       if (program.goalIds && program.goalIds.length > 0) {
           await db.userMissions.where('id').anyOf(program.goalIds).delete();
       }
-  
+
       // 3. Delete the program itself
       await db.aiPrograms.delete(programId);
     });
-    
+
     window.dispatchEvent(new Event('storage-update'));
   },
 
