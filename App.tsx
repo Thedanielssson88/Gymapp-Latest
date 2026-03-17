@@ -649,6 +649,34 @@ export default function App() {
     }
   };
 
+  const handleUpdateScheduledActivity = async (id: string, updates: Partial<ScheduledActivity>) => {
+    try {
+      await storage.updateScheduledActivity(id, updates);
+      await refreshData();
+    } catch (error) {
+      console.error("Could not update scheduled activity:", error);
+      alert("Kunde inte uppdatera passet: " + (error as Error).message);
+    }
+  };
+
+  const handleUpdateRecurringPlan = async (id: string, updates: Partial<RecurringPlan>) => {
+    try {
+      // Get the full recurring plan first
+      const allRecurringPlans = await storage.getRecurringPlans();
+      const plan = allRecurringPlans.find(rp => rp.id === id);
+      if (!plan) {
+        throw new Error("Recurring plan not found");
+      }
+      // Merge updates with existing plan
+      const updatedPlan = { ...plan, ...updates };
+      await storage.addRecurringPlan(updatedPlan); // upsert
+      await refreshData();
+    } catch (error) {
+      console.error("Could not update recurring plan:", error);
+      alert("Kunde inte uppdatera återkommande pass: " + (error as Error).message);
+    }
+  };
+
   const handleAddMission = async (mission: UserMission) => {
     console.log("handleAddMission called with:", mission);
     try {
@@ -712,7 +740,7 @@ export default function App() {
             {bodySubTab === 'settings' && user && ( <SettingsView userProfile={user} onUpdate={refreshData} /> )}
           </div>
         );
-      case 'log': return <WorkoutLog history={history} plannedActivities={plannedActivities} routines={routines} allExercises={allExercises} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onDeleteHistory={handleDeleteHistory} onMovePlan={handleMovePlan} onMoveRecurringInstance={handleMoveRecurringInstance} onSkipRecurringInstance={handleSkipRecurringInstance} onStartActivity={handleStartSession} onStartManualWorkout={handleStartManualWorkout} onStartLiveWorkout={handleStartEmptyWorkout} onUpdate={refreshData} />;
+      case 'log': return <WorkoutLog history={history} plannedActivities={plannedActivities} routines={routines} allExercises={allExercises} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onDeleteHistory={handleDeleteHistory} onMovePlan={handleMovePlan} onMoveRecurringInstance={handleMoveRecurringInstance} onSkipRecurringInstance={handleSkipRecurringInstance} onUpdateScheduledActivity={handleUpdateScheduledActivity} onUpdateRecurringPlan={handleUpdateRecurringPlan} onStartActivity={handleStartSession} onStartManualWorkout={handleStartManualWorkout} onStartLiveWorkout={handleStartEmptyWorkout} onUpdate={refreshData} />;
       case 'targets': return <TargetsView userMissions={userMissions} history={history} exercises={allExercises} userProfile={user} biometricLogs={biometricLogs} onAddMission={handleAddMission} onDeleteMission={handleDeleteMission} />;
       case 'library': return ( <ExerciseLibrary allExercises={allExercises} history={history} onUpdate={refreshData} userProfile={user} initialExerciseId={targetExerciseId} onClose={() => setTargetExerciseId(null)} /> );
       case 'gyms': return null; // Platser-fliken borttagen - allt hanteras från "Vart tränar du"

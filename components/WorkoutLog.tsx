@@ -84,6 +84,8 @@ interface WorkoutLogProps {
   onMovePlan: (id: string, newDate: string) => void;
   onMoveRecurringInstance: (templateId: string, currentDate: string, newDate: string) => void;
   onSkipRecurringInstance: (templateId: string, date: string) => void;
+  onUpdateScheduledActivity: (id: string, updates: Partial<ScheduledActivity>) => void;
+  onUpdateRecurringPlan: (id: string, updates: Partial<RecurringPlan>) => void;
   onStartActivity: (activity: ScheduledActivity) => void;
   onStartManualWorkout: (date: string) => void;
   onStartLiveWorkout: () => void;
@@ -92,7 +94,9 @@ interface WorkoutLogProps {
 
 export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   history, plannedActivities, routines, allExercises,
-  onAddPlan, onDeletePlan, onDeleteHistory, onMovePlan, onMoveRecurringInstance, onSkipRecurringInstance, onStartActivity, onStartManualWorkout, onStartLiveWorkout, onUpdate
+  onAddPlan, onDeletePlan, onDeleteHistory, onMovePlan, onMoveRecurringInstance, onSkipRecurringInstance,
+  onUpdateScheduledActivity, onUpdateRecurringPlan,
+  onStartActivity, onStartManualWorkout, onStartLiveWorkout, onUpdate
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -117,6 +121,11 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [showCreateCustom, setShowCreateCustom] = useState(false);
   const [customExercises, setCustomExercises] = useState<PlannedExercise[]>([]);
   const [showExerciseLibraryForCustom, setShowExerciseLibraryForCustom] = useState(false);
+
+  // State för expanded planerat pass
+  const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+  const [planPressTimer, setPlanPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [showColorPickerForPlan, setShowColorPickerForPlan] = useState<string | null>(null);
 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedItem, setSelectedItem] = useState<WorkoutSession | PlannedActivityForLogDisplay | null>(null);
@@ -173,6 +182,34 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   };
 
   const toggleDay = (dayId: number) => { setSelectedDays(prev => prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId]); };
+
+  // Long-press handlers för planerade pass
+  const handlePlanPressStart = (planId: string) => {
+    const timer = setTimeout(() => {
+      setExpandedPlanId(planId);
+      setPlanPressTimer(null);
+    }, 600); // 600ms long-press
+    setPlanPressTimer(timer);
+  };
+
+  const handlePlanPressEnd = () => {
+    if (planPressTimer) {
+      clearTimeout(planPressTimer);
+      setPlanPressTimer(null);
+    }
+  };
+
+  const handleUpdatePlanColor = async (planId: string, newColor: string, isTemplate: boolean) => {
+    if (isTemplate) {
+      // Update recurring plan color
+      onUpdateRecurringPlan(planId, { color: newColor });
+    } else {
+      // Update scheduled activity color
+      onUpdateScheduledActivity(planId, { color: newColor });
+    }
+    setShowColorPickerForPlan(null);
+    onUpdate(); // Refresh data
+  };
 
   const handleSavePlan = () => {
     const routine = routines.find(r => r.id === selectedRoutineId);
@@ -376,28 +413,37 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                   const isTemplate = 'isTemplate' in p;
                   const cardBg = p.color || '#1a1721';
                   const isBrightColor = cardBg !== '#1a1721' && cardBg !== '#000000';
+                  const isExpanded = expandedPlanId === p.id;
 
                   return (
                     <div
                       key={p.id}
-                      className="rounded-[28px] p-4 flex justify-between items-center group animate-in zoom-in-95 border"
+                      onMouseDown={() => handlePlanPressStart(p.id)}
+                      onMouseUp={handlePlanPressEnd}
+                      onMouseLeave={handlePlanPressEnd}
+                      onTouchStart={() => handlePlanPressStart(p.id)}
+                      onTouchEnd={handlePlanPressEnd}
+                      className="rounded-[28px] p-4 group animate-in zoom-in-95 border transition-all"
                       style={{
                         backgroundColor: cardBg,
                         borderColor: isBrightColor ? 'transparent' : 'rgba(255,255,255,0.1)'
                       }}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
-                          {isTemplate ? <Repeat size={18} /> : <CalIcon size={18} />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-white uppercase italic leading-none mb-1">{p.title}</p>
-                          <p className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
-                            {isTemplate ? 'Återkommande' : 'Planerat'} • {p.exercises?.length || 0} övningar
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
+                      {/* Normal view */}
+                      {!isExpanded && (
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
+                              {isTemplate ? <Repeat size={18} /> : <CalIcon size={18} />}
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-white uppercase italic leading-none mb-1">{p.title}</p>
+                              <p className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
+                                {isTemplate ? 'Återkommande' : 'Planerat'} • {p.exercises?.length || 0} övningar
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
                         <button
                           onClick={async () => {
                             if (isTemplate) {
@@ -465,7 +511,55 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                             <Trash2 size={18} />
                           </button>
                         )}
-                      </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Expanded view */}
+                      {isExpanded && (
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
+                                {isTemplate ? <Repeat size={18} /> : <CalIcon size={18} />}
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-white uppercase italic leading-none mb-1">{p.title}</p>
+                                <p className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
+                                  {isTemplate ? 'Återkommande' : 'Planerat'} • {p.exercises?.length || 0} övningar
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setExpandedPlanId(null)}
+                              className="p-2 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                            >
+                              <X size={18} />
+                            </button>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setShowColorPickerForPlan(p.id)}
+                              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                            >
+                              <div className="w-4 h-4 rounded-full border-2 border-white" style={{ backgroundColor: p.color || '#1a1721' }} />
+                              Ändra Färg
+                            </button>
+                            <button
+                              onClick={() => {
+                                // TODO: Navigate to edit exercises view
+                                alert('Funktion kommer snart: Ändra övningar');
+                              }}
+                              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                            >
+                              <Edit3 size={14} />
+                              Ändra Pass
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -690,7 +784,31 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       )}
 
       {confirmDelete && (<ConfirmModal title="Radera?" message={confirmDelete.isHistory ? "Är du säker på att du vill radera detta utförda pass? Detta påverkar din statistik." : confirmDelete.isTemplate ? "Detta raderar den återkommande mallen och alla framtida planerade pass för denna rutin." : "Är du säker på att du vill radera detta planerade pass?"} confirmLabel="Radera" isDestructive={true} onConfirm={handleConfirmDelete} onCancel={() => setConfirmDelete(null)} />)}
-      
+
+      {/* Color Picker Modal for Planned Activity */}
+      {showColorPickerForPlan && (
+        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1a1721] rounded-[40px] border border-white/10 p-8 w-full max-w-sm shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black italic uppercase text-white">Välj Färg</h3>
+              <button onClick={() => setShowColorPickerForPlan(null)} className="p-2 bg-white/5 rounded-xl hover:bg-white/10">
+                <X size={20} />
+              </button>
+            </div>
+            <ColorPicker
+              selectedColor={plannedActivities.find(p => p.id === showColorPickerForPlan)?.color || '#1a1721'}
+              onSelectColor={(newColor) => {
+                const plan = plannedActivities.find(p => p.id === showColorPickerForPlan);
+                if (plan) {
+                  const isTemplate = 'isTemplate' in plan;
+                  handleUpdatePlanColor(showColorPickerForPlan, newColor, isTemplate);
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {selectedItem && (isHistoryItem(selectedItem) ? (
         <HistoryItemModal session={selectedItem} allExercises={allExercises} history={history} onClose={() => setSelectedItem(null)} />
       ) : (
