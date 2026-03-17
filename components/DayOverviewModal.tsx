@@ -76,6 +76,7 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
         isCompleted: false,
         exercises: p.exercises || [],
         recurrenceId: p.id,
+        color: p.color, // Ärv färgen från återkommande planen
       };
       // Spara aktiviteten först
       await onAddPlan(concreteActivity, false);

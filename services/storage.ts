@@ -535,7 +535,8 @@ export const storage = {
       daysOfWeek: dbPlan.days_of_week,  // snake_case → camelCase
       startDate: dbPlan.start_date,      // snake_case → camelCase
       endDate: dbPlan.end_date,          // snake_case → camelCase
-      exercises: dbPlan.exercises
+      exercises: dbPlan.exercises,
+      color: dbPlan.color                // Färg från databasen
     }));
   },
   addRecurringPlan: async (plan: RecurringPlan) => {
@@ -551,6 +552,7 @@ export const storage = {
       start_date: plan.startDate,     // camelCase → snake_case
       end_date: plan.endDate,         // camelCase → snake_case
       exercises: plan.exercises,
+      color: plan.color,              // Spara färgen
       user_id: user.id
     };
 

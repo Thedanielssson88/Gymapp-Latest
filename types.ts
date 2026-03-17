@@ -282,10 +282,11 @@ export interface RecurringPlan {
   id: string;
   type: ActivityType;
   title: string;
-  daysOfWeek: number[]; 
-  startDate: string; 
-  endDate?: string; 
+  daysOfWeek: number[];
+  startDate: string;
+  endDate?: string;
   exercises?: PlannedExercise[];
+  color?: string; // Färg för återkommande pass (hex: #FF5733)
 }
 
 export interface RecurringPlanForDisplay extends RecurringPlan {
