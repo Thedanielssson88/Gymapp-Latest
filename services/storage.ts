@@ -322,7 +322,13 @@ export const storage = {
   // --- WORKOUT HISTORY ---
   getHistory: async (): Promise<WorkoutSession[]> => {
     const { data } = await supabase.from('workout_history').select('*');
-    return data || [];
+    if (!data) return [];
+
+    // Map snake_case from DB to camelCase for TypeScript
+    return data.map(session => ({
+      ...session,
+      sourceActivityColor: session.source_activity_color
+    }));
   },
   saveToHistory: async (session: WorkoutSession) => {
     const user = await getCurrentUser();
@@ -331,12 +337,13 @@ export const storage = {
       return;
     }
 
-    const completedSession = { 
-      ...session, 
+    const completedSession = {
+      ...session,
       user_id: user.id,
-      isCompleted: true, 
+      isCompleted: true,
       date: session.date || new Date().toISOString(),
-      duration: session.duration
+      duration: session.duration,
+      source_activity_color: session.sourceActivityColor // Map camelCase to snake_case
     };
     await supabase.from('workout_history').upsert(completedSession);
   },
