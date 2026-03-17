@@ -126,14 +126,7 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
             <button onClick={() => setShowGenerator(false)} className="px-4 py-4 text-text-dim flex items-center gap-2 font-bold text-xs uppercase hover:text-white transition-colors">
                 <ArrowLeft size={16} /> Avbryt
             </button>
-            <AIArchitect onClose={() => {
-              setShowGenerator(false);
-              onUpdate();
-              // Scrolla ner till programlistan efter att program genererats
-              setTimeout(() => {
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-              }, 300);
-            }} />
+            <AIArchitect onClose={() => { setShowGenerator(false); onUpdate(); }} />
         </div>
     );
   }
