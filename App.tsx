@@ -660,7 +660,7 @@ export default function App() {
   const handleUpdateScheduledActivity = async (id: string, updates: Partial<ScheduledActivity>) => {
     try {
       await storage.updateScheduledActivity(id, updates);
-      await refreshData();
+      // NOTE: refreshData() anropas av anroparen efter denna funktion
     } catch (error) {
       console.error("Could not update scheduled activity:", error);
       alert("Kunde inte uppdatera passet: " + (error as Error).message);
@@ -670,7 +670,7 @@ export default function App() {
   const handleUpdateRecurringPlan = async (id: string, updates: Partial<RecurringPlan>) => {
     try {
       await storage.updateRecurringPlan(id, updates);
-      await refreshData();
+      // NOTE: refreshData() anropas av anroparen efter denna funktion
     } catch (error) {
       console.error("Could not update recurring plan:", error);
       alert("Kunde inte uppdatera återkommande pass: " + (error as Error).message);
