@@ -586,7 +586,15 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
               <h3 className="text-xl font-black italic uppercase text-white">Skapa Pass</h3>
               <p className="text-[10px] text-text-dim uppercase tracking-widest">Bygg ditt pass</p>
             </div>
-            <button onClick={() => { setShowCreateCustom(false); setCustomExercises([]); }} className="p-2 bg-white/5 rounded-full"><X size={20}/></button>
+            <button onClick={() => {
+              setShowCreateCustom(false);
+              if (customExercises.length > 0) {
+                setShowPlanModal(true);
+              } else {
+                setPlanTitle('');
+                setPlanColor('#1a1721');
+              }
+            }} className="p-2 bg-white/5 rounded-full"><X size={20}/></button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
