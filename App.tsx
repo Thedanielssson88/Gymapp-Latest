@@ -551,9 +551,17 @@ export default function App() {
   };
 
   const handleAddPlan = async (activity: ScheduledActivity, isRecurring: boolean, days?: number[]) => {
-    console.log('🔵 handleAddPlan called:', { activityId: activity.id, recurrenceId: activity.recurrenceId, date: activity.date, isRecurring });
+    console.log('🔵 handleAddPlan called:', { activityId: activity.id, recurrenceId: activity.recurrenceId, date: activity.date, isRecurring, color: activity.color });
     if (isRecurring && days) {
-      const plan: RecurringPlan = { id: `rec-${Date.now()}`, type: activity.type, title: activity.title, daysOfWeek: days, startDate: activity.date, exercises: activity.exercises };
+      const plan: RecurringPlan = {
+        id: `rec-${Date.now()}`,
+        type: activity.type,
+        title: activity.title,
+        daysOfWeek: days,
+        startDate: activity.date,
+        exercises: activity.exercises,
+        color: activity.color // Inkludera färgen!
+      };
       await storage.addRecurringPlan(plan);
       await storage.generateRecurringActivities();
     } else {
