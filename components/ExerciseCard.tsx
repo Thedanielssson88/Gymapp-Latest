@@ -127,10 +127,13 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   
   // KOLLAPSAT LÄGE
   if (isCollapsed && allSetsCompleted) {
+      const cardBg = item.color || '#1a1721';
+
       return (
-        <div 
+        <div
             onClick={handleToggleCollapse}
-            className={`bg-[#1a1721] overflow-hidden border ${borderClass} ${shadowClass} relative transition-all cursor-pointer group ${supersetClass} ${roundingClass} p-4 flex justify-between items-center animate-in fade-in slide-in-from-bottom-1`}
+            style={{ backgroundColor: cardBg }}
+            className={`overflow-hidden border ${borderClass} ${shadowClass} relative transition-all cursor-pointer group ${supersetClass} ${roundingClass} p-4 flex justify-between items-center animate-in fade-in slide-in-from-bottom-1`}
         >
             <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-green-500 text-black flex items-center justify-center shadow-[0_0_10px_rgba(34,197,94,0.5)]">
@@ -154,8 +157,10 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   }
 
   // STANDARD LÄGE
+  const cardBg = item.color || '#1a1721';
+
   return (
-    <div className={`bg-[#1a1721] overflow-hidden border ${borderClass} ${shadowClass} relative transition-all ${supersetClass} ${roundingClass}`}>
+    <div style={{ backgroundColor: cardBg }} className={`overflow-hidden border ${borderClass} ${shadowClass} relative transition-all ${supersetClass} ${roundingClass}`}>
       
       {/* HEADER */}
       <div className="p-5 pb-2 flex flex-col gap-4">
