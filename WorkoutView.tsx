@@ -504,7 +504,7 @@ export const WorkoutView: React.FC<WorkoutViewProps> = ({
   const hasExercises = localSession?.exercises && localSession.exercises.length > 0;
   
   const ActionButtons = (
-    <div className="flex gap-2 mx-2 mt-4 mb-4">
+    <div className="flex gap-2 px-4 mt-4 mb-4">
       <button onClick={() => setShowGenerator(true)} className="flex-1 py-10 bg-accent-blue/5 border-2 border-dashed border-accent-blue/10 rounded-[40px] flex flex-col items-center justify-center gap-3 text-accent-blue hover:bg-accent-blue/10 transition-all active:scale-95"><Sparkles size={28} /><span className="font-black uppercase tracking-widest text-[9px] italic">Smart PT Generator</span></button>
       <button onClick={() => setShowAddModal(true)} className="flex-1 py-10 border-2 border-dashed border-white/5 rounded-[40px] flex flex-col items-center justify-center gap-3 text-text-dim hover:border-accent-pink/30 active:scale-95"><Plus size={28} /><span className="font-black uppercase tracking-widest text-[9px] italic">Lägg till övning</span></button>
     </div>
