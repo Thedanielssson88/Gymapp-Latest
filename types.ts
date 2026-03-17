@@ -266,7 +266,7 @@ export type ActivityType = 'gym' | 'cardio' | 'rehab' | 'mobility' | 'rest';
 
 export interface ScheduledActivity {
   id: string;
-  date: string; 
+  date: string;
   type: ActivityType;
   title: string;
   isCompleted: boolean;
@@ -275,6 +275,7 @@ export interface ScheduledActivity {
   recurrenceId?: string;
   programId?: string; // NYTT: Länkar till ett AI-program
   weekNumber?: number; // NYTT: Vilken vecka i programmet
+  color?: string; // Färg för passet (hex: #FF5733)
 }
 
 export interface RecurringPlan {
