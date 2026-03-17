@@ -95,13 +95,14 @@ interface WorkoutLogProps {
   onUpdate: () => void;
   userProfile: UserProfile;
   activeZone: Zone;
+  zones: Zone[];
 }
 
 export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   history, plannedActivities, routines, allExercises,
   onAddPlan, onDeletePlan, onDeleteHistory, onMovePlan, onMoveRecurringInstance, onSkipRecurringInstance,
   onUpdateScheduledActivity, onUpdateRecurringPlan,
-  onStartActivity, onStartManualWorkout, onStartLiveWorkout, onUpdate, userProfile, activeZone
+  onStartActivity, onStartManualWorkout, onStartLiveWorkout, onUpdate, userProfile, activeZone, zones
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -121,6 +122,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [planColor, setPlanColor] = useState('#1a1721'); // Färg för passet
+  const [selectedZone, setSelectedZone] = useState<Zone>(activeZone); // Vald zone för passet
 
   // State för att skapa eget pass
   const [showCreateCustom, setShowCreateCustom] = useState(false);
@@ -438,6 +440,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     setPlanColor('#1a1721');
     setEditingPlanId(null);
     setEditingIsTemplate(false);
+    setSelectedZone(activeZone); // Återställ till activeZone
   };
 
   const handleFinalSavePlan = () => {
@@ -864,6 +867,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                                 setPlanColor(p.color || '#1a1721');
                                 setPlanDate(isTemplate ? dKey : p.date);
                                 setIsRecurring(isTemplate);
+                                setSelectedZone(activeZone); // Använd activeZone som default
                                 if (isTemplate) {
                                   setSelectedDays((p as RecurringPlanForDisplay).daysOfWeek);
                                 }
@@ -1064,6 +1068,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
               }
               setEditingPlanId(null);
               setEditingIsTemplate(false);
+              setSelectedZone(activeZone); // Återställ till activeZone
             }} className="p-2 bg-white/5 rounded-full"><X size={20}/></button>
           </div>
 
@@ -1077,6 +1082,37 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                 onChange={e => setPlanTitle(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white font-bold outline-none focus:border-accent-pink"
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-text-dim uppercase mb-2 block">Välj Gym / Plats</label>
+              <div className="grid grid-cols-1 gap-2">
+                {zones.map(zone => (
+                  <button
+                    key={zone.id}
+                    onClick={() => setSelectedZone(zone)}
+                    className={`p-4 rounded-2xl border-2 transition-all text-left ${
+                      selectedZone.id === zone.id
+                        ? 'bg-accent-blue/10 border-accent-blue text-white'
+                        : 'bg-white/5 border-white/10 text-text-dim hover:border-white/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-black uppercase text-sm">{zone.name}</p>
+                        <p className="text-[10px] uppercase tracking-widest mt-1">
+                          {zone.inventory.length} redskap
+                        </p>
+                      </div>
+                      {selectedZone.id === zone.id && (
+                        <div className="w-6 h-6 rounded-full bg-accent-blue flex items-center justify-center">
+                          <CheckCircle2 size={16} className="text-white" />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -1152,7 +1188,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       {showGeneratorForCustom && (
         <div className="fixed inset-0 z-[120] bg-[#0f0d15]">
           <WorkoutGenerator
-            activeZone={activeZone}
+            activeZone={selectedZone}
             allExercises={allExercises}
             userProfile={userProfile}
             history={history}
@@ -1169,7 +1205,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
               onClose={() => setShowAIScoutForCustom(false)}
               allExercises={allExercises}
               history={history}
-              activeZone={activeZone}
+              activeZone={selectedZone}
               onUpdate={onUpdate}
               onAddToWorkout={handleAddFromAIScout}
             />
