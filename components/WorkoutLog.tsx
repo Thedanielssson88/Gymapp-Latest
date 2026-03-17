@@ -121,6 +121,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
   const [showCreateCustom, setShowCreateCustom] = useState(false);
   const [customExercises, setCustomExercises] = useState<PlannedExercise[]>([]);
   const [showExerciseLibraryForCustom, setShowExerciseLibraryForCustom] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null); // ID på pass som redigeras
+  const [editingIsTemplate, setEditingIsTemplate] = useState(false); // Om det är recurring eller scheduled
 
   // State för expanded planerat pass
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
@@ -241,17 +243,39 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       alert('Lägg till minst en övning');
       return;
     }
-    // Spara direkt till loggen utan att gå tillbaka till plan modal
-    const activity: ScheduledActivity = {
-      id: `plan-${Date.now()}`,
-      date: planDate,
-      type: 'gym',
-      title: planTitle,
-      isCompleted: false,
-      exercises: customExercises,
-      color: planColor
-    };
-    onAddPlan(activity, isRecurring, selectedDays);
+
+    // Om vi redigerar ett befintligt pass
+    if (editingPlanId) {
+      if (editingIsTemplate) {
+        // Uppdatera recurring plan
+        onUpdateRecurringPlan(editingPlanId, {
+          title: planTitle,
+          exercises: customExercises,
+          color: planColor,
+          daysOfWeek: selectedDays
+        });
+      } else {
+        // Uppdatera scheduled activity
+        onUpdateScheduledActivity(editingPlanId, {
+          title: planTitle,
+          exercises: customExercises,
+          color: planColor,
+          date: planDate
+        });
+      }
+    } else {
+      // Skapa nytt pass
+      const activity: ScheduledActivity = {
+        id: `plan-${Date.now()}`,
+        date: planDate,
+        type: 'gym',
+        title: planTitle,
+        isCompleted: false,
+        exercises: customExercises,
+        color: planColor
+      };
+      onAddPlan(activity, isRecurring, selectedDays);
+    }
 
     // Rensa alla states
     setShowCreateCustom(false);
@@ -260,6 +284,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     setIsRecurring(false);
     setSelectedDays([]);
     setPlanColor('#1a1721');
+    setEditingPlanId(null);
+    setEditingIsTemplate(false);
   };
 
   const handleFinalSavePlan = () => {
@@ -549,8 +575,20 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                             </button>
                             <button
                               onClick={() => {
-                                // TODO: Navigate to edit exercises view
-                                alert('Funktion kommer snart: Ändra övningar');
+                                // Ladda in passets övningar och öppna redigera-vyn
+                                setEditingPlanId(p.id);
+                                setEditingIsTemplate(isTemplate);
+                                setPlanTitle(p.title);
+                                setCustomExercises(p.exercises || []);
+                                setPlanColor(p.color || '#1a1721');
+                                setPlanDate(isTemplate ? dKey : p.date);
+                                setIsRecurring(isTemplate);
+                                if (isTemplate) {
+                                  setSelectedDays((p as RecurringPlanForDisplay).daysOfWeek);
+                                }
+                                // Stäng expand och öppna edit-vyn
+                                setExpandedPlanId(null);
+                                setShowCreateCustom(true);
                               }}
                               className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
                             >
@@ -700,8 +738,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
         <div className="fixed inset-0 z-[110] bg-[#0f0d15] flex flex-col animate-in slide-in-from-bottom duration-300 overflow-hidden">
           <div className="p-4 pt-[calc(env(safe-area-inset-top)+1rem)] border-b border-white/10 flex justify-between items-center bg-[#1a1721] sticky top-0 z-10">
             <div>
-              <h3 className="text-xl font-black italic uppercase text-white">Skapa Pass</h3>
-              <p className="text-[10px] text-text-dim uppercase tracking-widest">Bygg ditt pass</p>
+              <h3 className="text-xl font-black italic uppercase text-white">{editingPlanId ? 'Redigera Pass' : 'Skapa Pass'}</h3>
+              <p className="text-[10px] text-text-dim uppercase tracking-widest">{editingPlanId ? 'Uppdatera övningar' : 'Bygg ditt pass'}</p>
             </div>
             <button onClick={() => {
               setShowCreateCustom(false);
@@ -712,6 +750,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                 setIsRecurring(false);
                 setSelectedDays([]);
               }
+              setEditingPlanId(null);
+              setEditingIsTemplate(false);
             }} className="p-2 bg-white/5 rounded-full"><X size={20}/></button>
           </div>
 
@@ -766,7 +806,9 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
           </div>
 
           <div className="p-4 bg-[#1a1721] border-t border-white/10 sticky bottom-0">
-            <button onClick={handleSaveCustomPlan} className="w-full py-4 bg-accent-pink text-white rounded-2xl font-black italic uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95"><Save size={20} /> Spara Pass</button>
+            <button onClick={handleSaveCustomPlan} className="w-full py-4 bg-accent-pink text-white rounded-2xl font-black italic uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
+              <Save size={20} /> {editingPlanId ? 'Uppdatera Pass' : 'Spara Pass'}
+            </button>
           </div>
         </div>
       )}
