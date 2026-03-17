@@ -56,6 +56,8 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: 
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [showPromptEditor, setShowPromptEditor] = useState(false);
   const [editablePrompt, setEditablePrompt] = useState('');
+  const [showRatingForId, setShowRatingForId] = useState<string | null>(null);
+  const [pressTimers, setPressTimers] = useState<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
     if (initialExerciseId) {
@@ -390,26 +392,28 @@ INSTRUKTIONER:
             ? new Date(ex.lastUpdated).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' })
             : 'Aldrig uppdaterad';
 
-          const [showRating, setShowRating] = React.useState(false);
-          const [pressTimer, setPressTimer] = React.useState<ReturnType<typeof setTimeout> | null>(null);
+          const showRating = showRatingForId === ex.id;
 
           const handlePressStart = () => {
             const timer = setTimeout(() => {
-              setShowRating(true);
+              setShowRatingForId(ex.id);
             }, 500); // 500ms long press
-            setPressTimer(timer);
+            setPressTimers(prev => ({ ...prev, [ex.id]: timer }));
           };
 
           const handlePressEnd = () => {
-            if (pressTimer) {
-              clearTimeout(pressTimer);
-              setPressTimer(null);
+            if (pressTimers[ex.id]) {
+              clearTimeout(pressTimers[ex.id]);
+              setPressTimers(prev => {
+                const { [ex.id]: _, ...rest } = prev;
+                return rest;
+              });
             }
           };
 
           const handleClick = () => {
             if (showRating) {
-              setShowRating(false);
+              setShowRatingForId(null);
             } else if (isMultiSelectMode) {
               toggleExerciseSelection(ex.id);
             } else if (isSelectorMode && onSelect) {
@@ -481,7 +485,7 @@ INSTRUKTIONER:
                 <button
                   onClick={() => {
                     handleRate(ex, 'up');
-                    setShowRating(false);
+                    setShowRatingForId(null);
                   }}
                   className={`p-2 rounded-xl transition-all ${
                     ex.userRating === 'up' ? 'bg-green-500/20 text-green-500' : 'bg-white/10 text-text-dim'
@@ -492,7 +496,7 @@ INSTRUKTIONER:
                 <button
                   onClick={() => {
                     handleRate(ex, 'down');
-                    setShowRating(false);
+                    setShowRatingForId(null);
                   }}
                   className={`p-2 rounded-xl transition-all ${
                     ex.userRating === 'down' ? 'bg-red-500/20 text-red-500' : 'bg-white/10 text-text-dim'
@@ -503,7 +507,7 @@ INSTRUKTIONER:
                 <button
                   onClick={() => {
                     handleRate(ex, 'banned');
-                    setShowRating(false);
+                    setShowRatingForId(null);
                   }}
                   className={`p-2 rounded-xl transition-all ${
                     ex.userRating === 'banned' ? 'bg-gray-500/20 text-gray-500' : 'bg-white/10 text-text-dim'
