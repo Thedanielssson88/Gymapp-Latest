@@ -79,7 +79,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 );
                 return !hasConcrete;
              }
-             return !p.isCompleted && isSameDay(new Date(p.date), day);
+             const sa = p as ScheduledActivity;
+             return !sa.isCompleted && !sa.isCancelled && isSameDay(new Date(sa.date), day);
           });
 
           const hasActivity = dayHistory.length > 0 || dayPlanned.length > 0;

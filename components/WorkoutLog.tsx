@@ -647,8 +647,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
 
                         return isScheduledForDay && !hasConcreteInstance;
                     } else {
-                        // Visa bara OFÄRDIGA konkreta planerade pass
-                        return p.date === dKey && !p.isCompleted;
+                        // Visa bara OFÄRDIGA och INTE AVBRUTNA konkreta planerade pass
+                        return p.date === dKey && !p.isCompleted && !(p as ScheduledActivity).isCancelled;
                     }
                 });
 

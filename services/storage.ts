@@ -470,7 +470,13 @@ export const storage = {
   // Du tillämpar samma mönster för scheduledActivities, recurringPlans, AIPrograms...
   getScheduledActivities: async (): Promise<ScheduledActivity[]> => {
     const { data } = await supabase.from('scheduled_activities').select('*');
-    return data || [];
+    if (!data) return [];
+
+    // Map snake_case to camelCase
+    return data.map(activity => ({
+      ...activity,
+      isCancelled: activity.is_cancelled
+    }));
   },
   addScheduledActivity: async (activity: ScheduledActivity) => {
     const user = await getCurrentUser();
@@ -497,9 +503,17 @@ export const storage = {
   },
   updateScheduledActivity: async (id: string, updates: Partial<ScheduledActivity>) => {
     console.log("Updating scheduled activity:", id, updates);
+
+    // Map camelCase to snake_case for DB
+    const dbUpdates: any = { ...updates };
+    if (updates.isCancelled !== undefined) {
+      dbUpdates.is_cancelled = updates.isCancelled;
+      delete dbUpdates.isCancelled;
+    }
+
     const { data, error } = await supabase
       .from('scheduled_activities')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', id)
       .select();
 

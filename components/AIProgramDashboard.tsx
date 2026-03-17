@@ -137,8 +137,9 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
         .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const completedActivities = programActivities.filter(a => a.isCompleted || (a.date < todayStr && a.linkedSessionId));
-    const upcomingActivities = programActivities.filter(a => !completedActivities.some(c => c.id === a.id));
+    const cancelledActivities = programActivities.filter(a => a.isCancelled);
+    const completedActivities = programActivities.filter(a => !a.isCancelled && (a.isCompleted || (a.date < todayStr && a.linkedSessionId)));
+    const upcomingActivities = programActivities.filter(a => !a.isCancelled && !completedActivities.some(c => c.id === a.id));
 
     return (
       <div className="pb-24 pt-8 px-4 space-y-6 animate-in fade-in">
@@ -246,13 +247,29 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
         {completedActivities.length > 0 && (
             <div className="space-y-3 opacity-60">
                 <h3 className="text-text-dim font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2 mt-8 border-b border-white/5 pb-3">
-                    <CheckCircle2 size={12}/> Historik ({completedActivities.length})
+                    <CheckCircle2 size={12}/> Avklarat ({completedActivities.length})
                 </h3>
                 {completedActivities.slice().reverse().map(activity => (
                     <div key={activity.id} className="bg-green-500/5 p-5 rounded-[28px] border border-green-500/10 flex justify-between items-center">
                         <div>
                             <span className="text-green-400 font-black italic uppercase text-sm block line-through">{activity.title}</span>
                             <div className="text-[10px] text-green-400/50 font-bold uppercase tracking-widest flex gap-3 mt-1.5"><span className="flex items-center gap-1"><Calendar size={10}/> {activity.date}</span><span>{activity.exercises?.length} övningar</span></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        {cancelledActivities.length > 0 && (
+            <div className="space-y-3 opacity-40">
+                <h3 className="text-text-dim font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2 mt-8 border-b border-white/5 pb-3">
+                    <XCircle size={12}/> Avbrutet ({cancelledActivities.length})
+                </h3>
+                {cancelledActivities.slice().reverse().map(activity => (
+                    <div key={activity.id} className="bg-red-500/5 p-5 rounded-[28px] border border-red-500/10 flex justify-between items-center">
+                        <div>
+                            <span className="text-red-400 font-black italic uppercase text-sm block line-through">{activity.title}</span>
+                            <div className="text-[10px] text-red-400/50 font-bold uppercase tracking-widest flex gap-3 mt-1.5"><span className="flex items-center gap-1"><Calendar size={10}/> {activity.date}</span><span>{activity.exercises?.length} övningar</span></div>
                         </div>
                     </div>
                 ))}

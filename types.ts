@@ -271,6 +271,7 @@ export interface ScheduledActivity {
   type: ActivityType;
   title: string;
   isCompleted: boolean;
+  isCancelled?: boolean; // NYTT: Pass som tagits bort (för AI-program tracking)
   linkedSessionId?: string;
   exercises?: PlannedExercise[];
   recurrenceId?: string;

@@ -65,7 +65,8 @@ export const DayOverviewModal: React.FC<DayOverviewModalProps> = ({
       );
       return !hasConcrete;
     } else {
-      return p.date === dateKey && !p.isCompleted;
+      const sa = p as ScheduledActivity;
+      return sa.date === dateKey && !sa.isCompleted && !sa.isCancelled;
     }
   });
 
