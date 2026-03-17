@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AIProgram, ScheduledActivity, WorkoutSession, Exercise, PlannedExercise, SetType, UserProfile, BiometricLog, UserMission } from '../types';
 import { storage } from '../services/storage';
-import { ChevronRight, Calendar, Activity, XCircle, PlusCircle, TrendingUp, CheckCircle, ArrowLeft, Sparkles, Loader2, Circle, CheckCircle2, Plus, List, Dumbbell, Trash2, BookOpen } from 'lucide-react';
+import { ChevronRight, Calendar, Activity, XCircle, PlusCircle, TrendingUp, CheckCircle, ArrowLeft, Sparkles, Loader2, Circle, CheckCircle2, Plus, List, Dumbbell, Trash2, BookOpen, Palette } from 'lucide-react';
 import { AIArchitect } from './AIArchitect';
 import { WorkoutDetailsModal } from './WorkoutDetailsModal';
 import { AIExerciseRecommender } from './AIExerciseRecommender';
@@ -10,6 +10,7 @@ import { registerBackHandler } from '../utils/backHandler';
 import { NextPhaseModal } from './NextPhaseModal';
 import { ConfirmModal } from './ConfirmModal';
 import { AIArticleGenerator } from './AIArticleGenerator';
+import { ColorPicker } from './ColorPicker';
 
 interface AIProgramDashboardProps {
   onStartSession: (activity: ScheduledActivity) => void;
@@ -29,10 +30,11 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
   const [selectedProgram, setSelectedProgram] = useState<AIProgram | null>(null);
   const [showGenerator, setShowGenerator] = useState(false);
   const [activeTab, setActiveTab] = useState<'programs' | 'exercises' | 'articles'>('programs');
-  
+
   const [viewingActivity, setViewingActivity] = useState<ScheduledActivity | null>(null);
   const [showNextPhaseModal, setShowNextPhaseModal] = useState(false);
   const [programToDelete, setProgramToDelete] = useState<AIProgram | null>(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   useEffect(() => {
     if (showGenerator) return registerBackHandler(() => setShowGenerator(false));
@@ -94,6 +96,30 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
       }
   };
 
+  const handleUpdateProgramColor = async (newColor: string) => {
+    if (!selectedProgram) return;
+
+    try {
+      // Uppdatera programmet
+      const updatedProgram = { ...selectedProgram, color: newColor };
+      await storage.saveAIProgram(updatedProgram);
+
+      // Uppdatera alla scheduled activities som tillhör programmet
+      const programActivities = scheduled.filter(a => a.programId === selectedProgram.id);
+      for (const activity of programActivities) {
+        await storage.updateScheduledActivity(activity.id, { color: newColor });
+      }
+
+      // Uppdatera local state
+      setSelectedProgram(updatedProgram);
+      setShowColorPicker(false);
+      onUpdate();
+      loadData();
+    } catch (error) {
+      console.error('Failed to update program color:', error);
+    }
+  };
+
   if (showGenerator) {
     return (
         <div>
@@ -126,6 +152,24 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
                 onCancel={() => setProgramToDelete(null)}
             />
         )}
+
+        {showColorPicker && (
+          <div className="fixed inset-0 z-[200] bg-[#0f0d15]/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="bg-[#1a1721] w-full max-w-sm rounded-[40px] border border-white/10 shadow-2xl p-8 animate-in zoom-in-95">
+              <h3 className="text-2xl font-black italic uppercase text-white tracking-tighter mb-6">Välj Färg</h3>
+              <ColorPicker
+                selectedColor={selectedProgram?.color || '#1a1721'}
+                onSelectColor={handleUpdateProgramColor}
+              />
+              <button
+                onClick={() => setShowColorPicker(false)}
+                className="w-full mt-6 py-4 bg-white/5 text-white rounded-2xl font-bold uppercase hover:bg-white/10 transition-all"
+              >
+                Stäng
+              </button>
+            </div>
+          </div>
+        )}
         {viewingActivity && (
             <WorkoutDetailsModal 
                 activity={viewingActivity}
@@ -154,9 +198,14 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
             <button onClick={() => setSelectedProgram(null)} className="text-text-dim hover:text-white flex items-center gap-1 bg-white/5 px-3 py-2 rounded-xl text-xs font-bold uppercase transition-colors">
                 <ArrowLeft size={16}/> Tillbaka
             </button>
-            <button onClick={() => handleDeleteRequest(selectedProgram)} className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors">
-                <Trash2 size={20} />
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setShowColorPicker(true)} className="p-3 bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors">
+                  <Palette size={20} />
+              </button>
+              <button onClick={() => handleDeleteRequest(selectedProgram)} className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors">
+                  <Trash2 size={20} />
+              </button>
+            </div>
         </div>
 
         <div className="bg-gradient-to-br from-[#1a1721] to-[#2a2435] p-6 rounded-[32px] border border-accent-blue/20 shadow-lg">

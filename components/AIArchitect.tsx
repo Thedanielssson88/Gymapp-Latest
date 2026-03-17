@@ -6,6 +6,7 @@ import { storage } from '../services/storage';
 import { UserMission, ScheduledActivity, PlannedExercise, SetType, Exercise, AIProgram, AIPlanResponse, ProgressionRate } from '../types';
 import { calculatePPLStats, suggestWeightForReps } from '../utils/progression';
 import { calculate1RM, getLastPerformance } from '../utils/fitness';
+import { ColorPicker } from './ColorPicker';
 
 interface AIArchitectProps {
   onClose: () => void;
@@ -23,6 +24,7 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [weeksToSchedule, setWeeksToSchedule] = useState(4); // Default 4 veckor
   const [progressionRate, setProgressionRate] = useState<ProgressionRate>('normal');
+  const [programColor, setProgramColor] = useState('#1a1721'); // Färg för alla pass i programmet
 
   useEffect(() => {
       storage.getAllExercises().then(setAllExercises);
@@ -83,6 +85,7 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
         weeks: weeksToSchedule,
         phaseNumber: 1, // Startar alltid på Fas 1
         longTermGoalDescription: request, // Spara det ursprungliga målet
+        color: programColor, // Färgen för alla pass i programmet
       };
       
       const newMissions: UserMission[] = [];
@@ -130,7 +133,8 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
             isCompleted: false,
             exercises: exercisesWithWeights,
             programId: programId,
-            weekNumber: weekNum
+            weekNumber: weekNum,
+            color: programColor // Ärv färgen från programmet
         };
         await storage.addScheduledActivity(activity);
       }
@@ -240,7 +244,13 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose }) => {
           </p>
         </div>
 
-        <textarea value={request} onChange={(e) => setRequest(e.target.value)} placeholder="Beskriv ditt mål... (T.ex. 'Jag vill öka 10kg i bänkpress')" className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white text-base min-h-[100px] focus:border-accent-blue outline-none transition-all placeholder:text-white/20 resize-none mb-4"/>
+        {/* Color Picker */}
+        <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 delay-200">
+          <h3 className="text-sm font-black italic uppercase text-white mb-3">Välj Färg på Programmet</h3>
+          <ColorPicker selectedColor={programColor} onSelectColor={setProgramColor} />
+        </div>
+
+        <textarea value={request} onChange={(e) => setRequest(e.target.value)} placeholder="Beskriv ditt mål... (T.ex. 'Jag vill öka 10kg i bänkpress')" className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white text-base min-h-[100px] focus:border-accent-blue outline-none transition-all placeholder:text-white/20 resize-none mb-4 mt-6"/>
 
         <button onClick={handleGenerate} disabled={loading || !request} className="w-full bg-green-500 hover:bg-green-400 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 uppercase tracking-widest text-sm shadow-lg"><Send size={18} /> {loading ? 'BYGGER PROGRAM...' : 'GENERERA PROGRAM'}</button>
       </div>

@@ -357,6 +357,7 @@ export interface AIProgram {
   phaseNumber?: number; // VILKEN fas i ett längre program
   longTermGoalDescription?: string; // Det ursprungliga, långsiktiga målet
   startStats?: any; // Sparar PPL stats vid start
+  color?: string; // Färgkod för programmet (ärvs av alla pass)
 }
 
 // FIX: Add AIPlanResponse and related types
