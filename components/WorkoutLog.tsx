@@ -172,12 +172,6 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       });
   }, [plannedActivities, deletedPlanIds, updatedPlans]);
 
-  // Rensa optimistiska uppdateringar när data uppdateras från backend
-  useEffect(() => {
-    setDeletedPlanIds(new Set());
-    setUpdatedPlans(new Map());
-  }, [plannedActivities]);
-
   const weekdays = [ { id: 1, label: 'Mån' }, { id: 2, label: 'Tis' }, { id: 3, label: 'Ons' }, { id: 4, label: 'Tor' }, { id: 5, label: 'Fre' }, { id: 6, label: 'Lör' }, { id: 0, label: 'Sön' } ];
 
   const weekDays = useMemo(() => {
@@ -312,6 +306,13 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       }
       // Refresh data från backend EFTER att uppdateringen är klar
       await onUpdate();
+
+      // Rensa optimistisk uppdatering när backend-data är uppdaterad
+      setUpdatedPlans(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(planId);
+        return newMap;
+      });
     } catch (error) {
       console.error('Failed to update color:', error);
       // Återställ optimistisk uppdatering om det misslyckades
@@ -472,21 +473,46 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (confirmDelete) {
-      if (!confirmDelete.isHistory) {
+      const idToDelete = confirmDelete.id;
+      const isHistory = confirmDelete.isHistory;
+
+      if (!isHistory) {
         // Optimistisk uppdatering - ta bort från UI direkt
-        setDeletedPlanIds(prev => new Set(prev).add(confirmDelete.id));
+        setDeletedPlanIds(prev => new Set(prev).add(idToDelete));
       }
 
-      // Gör riktig borttagning i bakgrunden
-      if (confirmDelete.isHistory) {
-        onDeleteHistory(confirmDelete.id);
-      } else {
-        onDeletePlan(confirmDelete.id, confirmDelete.isTemplate);
-      }
+      // Gör riktig borttagning och vänta
+      try {
+        if (isHistory) {
+          await onDeleteHistory(idToDelete);
+        } else {
+          await onDeletePlan(idToDelete, confirmDelete.isTemplate);
+        }
+        await onUpdate();
 
-      setConfirmDelete(null);
+        // Rensa optimistisk uppdatering efter backend är klar
+        if (!isHistory) {
+          setDeletedPlanIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(idToDelete);
+            return newSet;
+          });
+        }
+      } catch (error) {
+        console.error('Failed to delete:', error);
+        // Återställ om det misslyckades
+        if (!isHistory) {
+          setDeletedPlanIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(idToDelete);
+            return newSet;
+          });
+        }
+      } finally {
+        setConfirmDelete(null);
+      }
     }
   };
   const handleStartManual = () => { onStartManualWorkout(manualDate); setShowDatePicker(false); };
