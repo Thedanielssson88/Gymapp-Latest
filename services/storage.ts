@@ -563,6 +563,37 @@ export const storage = {
       throw error;
     }
   },
+  updateRecurringPlan: async (id: string, updates: Partial<RecurringPlan>) => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Mappa camelCase till snake_case för databas-uppdatering
+    const dbUpdates: any = {};
+    if (updates.title !== undefined) dbUpdates.title = updates.title;
+    if (updates.type !== undefined) dbUpdates.type = updates.type;
+    if (updates.daysOfWeek !== undefined) dbUpdates.days_of_week = updates.daysOfWeek;
+    if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate;
+    if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate;
+    if (updates.exercises !== undefined) dbUpdates.exercises = updates.exercises;
+    if (updates.color !== undefined) dbUpdates.color = updates.color;
+
+    console.log("Updating recurring plan:", id, dbUpdates);
+
+    const { data, error } = await supabase
+      .from('recurring_plans')
+      .update(dbUpdates)
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select();
+
+    if (error) {
+      console.error('Error updating recurring plan:', error);
+      throw error;
+    }
+
+    console.log("Successfully updated recurring plan:", data);
+    return data;
+  },
   deleteRecurringPlan: async (id: string) => {
     const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');

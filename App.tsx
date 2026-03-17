@@ -669,15 +669,7 @@ export default function App() {
 
   const handleUpdateRecurringPlan = async (id: string, updates: Partial<RecurringPlan>) => {
     try {
-      // Get the full recurring plan first
-      const allRecurringPlans = await storage.getRecurringPlans();
-      const plan = allRecurringPlans.find(rp => rp.id === id);
-      if (!plan) {
-        throw new Error("Recurring plan not found");
-      }
-      // Merge updates with existing plan
-      const updatedPlan = { ...plan, ...updates };
-      await storage.addRecurringPlan(updatedPlan); // upsert
+      await storage.updateRecurringPlan(id, updates);
       await refreshData();
     } catch (error) {
       console.error("Could not update recurring plan:", error);
