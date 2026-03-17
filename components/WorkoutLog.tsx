@@ -718,7 +718,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                           </div>
                           <div className="flex items-center gap-1.5">
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (isTemplate) {
                               // För recurring templates: skapa en konkret aktivitet med unikt ID
                               const activityId = `recurring-start-${Date.now()}`;
@@ -746,7 +747,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                           <Play size={18} fill="currentColor" />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setCustomMoveDate(isTemplate ? dKey : p.date);
                             setMoveModalData({
                               id: p.id,
@@ -762,14 +764,14 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                         {isTemplate ? (
                           <div className="relative group/delete">
                             <button
-                              onClick={() => onSkipRecurringInstance(p.id, dKey)}
+                              onClick={(e) => { e.stopPropagation(); onSkipRecurringInstance(p.id, dKey); }}
                               className="p-2.5 text-text-dim hover:text-red-500 transition-colors"
                               title="Radera denna instans"
                             >
                               <Trash2 size={18} />
                             </button>
                             <button
-                              onClick={() => setConfirmDelete({ id: p.id, isHistory: false, isTemplate: true })}
+                              onClick={(e) => { e.stopPropagation(); setConfirmDelete({ id: p.id, isHistory: false, isTemplate: true }); }}
                               className="p-2.5 text-text-dim hover:text-red-500 transition-colors border-l border-white/10"
                               title="Radera ALLA återkommande"
                             >
@@ -778,7 +780,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                           </div>
                         ) : (
                           <button
-                            onClick={() => setConfirmDelete({ id: p.id, isHistory: false, isTemplate: false })}
+                            onClick={(e) => { e.stopPropagation(); setConfirmDelete({ id: p.id, isHistory: false, isTemplate: false }); }}
                             className="p-2.5 text-text-dim hover:text-red-500 transition-colors"
                           >
                             <Trash2 size={18} />
