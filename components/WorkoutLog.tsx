@@ -168,7 +168,13 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
       .filter(p => !deletedPlanIds.has(p.id)) // Filtrera bort raderade
       .map(p => {
         const updates = updatedPlans.get(p.id);
-        return updates ? { ...p, ...updates } : p; // Applicera uppdateringar
+        // Använd bara optimistiska uppdateringar om backend-data saknar värdet
+        // (t.ex. färg är null/undefined medan vi har en temporär färg)
+        if (updates && updates.color && !p.color) {
+          return { ...p, ...updates };
+        }
+        // Annars använd backend-data (den är source of truth)
+        return p;
       });
   }, [plannedActivities, deletedPlanIds, updatedPlans]);
 
@@ -312,14 +318,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
 
       // Refresh data från backend EFTER att uppdateringen är klar
       await onUpdate();
-      console.log(`✅ onUpdate() complete, clearing optimistic state...`);
-
-      // Rensa optimistisk uppdatering när backend-data är uppdaterad
-      setUpdatedPlans(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(planId);
-        return newMap;
-      });
+      console.log(`✅ onUpdate() complete - backend data will override optimistic updates`);
       console.log(`🎨 handleUpdatePlanColor DONE`);
     } catch (error) {
       console.error('Failed to update color:', error);
