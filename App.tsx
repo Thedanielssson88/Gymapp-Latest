@@ -420,11 +420,14 @@ export default function App() {
     if (isReady && user) { checkMissions(); }
   }, [history, userMissions, user, biometricLogs, isReady, allExercises]); 
 
-  const activeZone = useMemo(() => zones.find(z => z.id === (currentSession?.zoneId || selectedZoneForStart?.id)) || zones[0], [zones, currentSession, selectedZoneForStart]);
+  const activeZone = useMemo(() => {
+    if (!zones || zones.length === 0) return undefined;
+    return zones.find(z => z.id === (currentSession?.zoneId || selectedZoneForStart?.id)) || zones[0];
+  }, [zones, currentSession, selectedZoneForStart]);
 
   const handleFinishWorkout = async (session: WorkoutSession, duration: number) => {
     try {
-      const historySession = { ...session, isCompleted: true, duration, locationName: activeZone.name };
+      const historySession = { ...session, isCompleted: true, duration, locationName: activeZone?.name || 'Okänd plats' };
       await storage.saveToHistory(historySession);
 
       // Optimistic update: Update local state immediately without waiting for refreshData
@@ -762,7 +765,7 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'workout':
-        return <WorkoutView key={currentSession?.id || 'no-session'} session={currentSession} allExercises={allExercises} userProfile={user} allZones={zones} history={history} activeZone={activeZone} onZoneChange={(z) => { if (currentSession) { const newSession = {...currentSession, zoneId: z.id}; setCurrentSession(newSession); storage.setActiveSession(newSession); } }} onComplete={handleFinishWorkout} onCancel={handleCancelWorkout} plannedActivities={plannedActivities} onStartActivity={handleStartSession} onStartEmptyWorkout={handleStartEmptyWorkout} onUpdate={refreshData} isManualMode={currentSession?.isManual} userMissions={userMissions} onGoToExercise={handleGoToExercise} />;
+        return activeZone ? <WorkoutView key={currentSession?.id || 'no-session'} session={currentSession} allExercises={allExercises} userProfile={user} allZones={zones} history={history} activeZone={activeZone} onZoneChange={(z) => { if (currentSession) { const newSession = {...currentSession, zoneId: z.id}; setCurrentSession(newSession); storage.setActiveSession(newSession); } }} onComplete={handleFinishWorkout} onCancel={handleCancelWorkout} plannedActivities={plannedActivities} onStartActivity={handleStartSession} onStartEmptyWorkout={handleStartEmptyWorkout} onUpdate={refreshData} isManualMode={currentSession?.isManual} userMissions={userMissions} onGoToExercise={handleGoToExercise} /> : null;
       case 'body':
         return (
           <div className="space-y-6 animate-in fade-in px-2 pb-32 min-h-screen pt-[calc(env(safe-area-inset-top)+2rem)]">
