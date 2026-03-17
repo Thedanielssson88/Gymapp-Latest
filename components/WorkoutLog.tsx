@@ -490,7 +490,10 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
         setDeletedPlanIds(prev => new Set(prev).add(idToDelete));
       }
 
-      // Gör riktig borttagning och vänta
+      // Stäng modal DIREKT efter optimistisk uppdatering
+      setConfirmDelete(null);
+
+      // Gör riktig borttagning i bakgrunden
       try {
         if (isHistory) {
           await onDeleteHistory(idToDelete);
@@ -517,8 +520,6 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
             return newSet;
           });
         }
-      } finally {
-        setConfirmDelete(null);
       }
     }
   };
