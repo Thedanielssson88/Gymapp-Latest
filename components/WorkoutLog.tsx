@@ -220,10 +220,20 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
 
   const toggleDay = (dayId: number) => { setSelectedDays(prev => prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId]); };
 
-  // Click handler för planerade pass - expanderar vid klick (om ingen swipe)
-  const handlePlanClick = (planId: string) => {
-    // Expandera eller kollapsa
-    setExpandedPlanId(expandedPlanId === planId ? null : planId);
+  // Long-press handler för planerade pass (300ms kort håll)
+  const handlePlanPressStart = (planId: string) => {
+    const timer = setTimeout(() => {
+      setExpandedPlanId(expandedPlanId === planId ? null : planId);
+      setPlanPressTimer(null);
+    }, 300); // 300ms kort long-press
+    setPlanPressTimer(timer);
+  };
+
+  const handlePlanPressEnd = () => {
+    if (planPressTimer) {
+      clearTimeout(planPressTimer);
+      setPlanPressTimer(null);
+    }
   };
 
   // Swipe handlers
@@ -243,20 +253,16 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     if (Math.abs(deltaX) > 10) {
       const direction = deltaX > 0 ? 'right' : 'left';
       setSwipeState({ ...swipeState, x: deltaX, direction });
+      // Avbryt long-press när användaren börjar svepa
+      handlePlanPressEnd();
     }
   };
 
   const handleSwipeEnd = async (p: PlannedActivityForLogDisplay, dKey: string) => {
-    if (!swipeState) {
-      return;
-    }
-
-    // Om swipe var för kort (< 80px) = det var ett klick, inte en swipe
-    if (Math.abs(swipeState.x) < 80) {
+    if (!swipeState || Math.abs(swipeState.x) < 80) {
+      // Återställ om swipe var för kort
       setSwipeState(null);
       setSwipeStartX(null);
-      // Klick → expandera/kollapsa
-      handlePlanClick(p.id);
       return;
     }
 
@@ -679,20 +685,25 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                       <div
                         onMouseDown={(e) => {
                           handleSwipeStart(e, p.id);
+                          handlePlanPressStart(p.id);
                         }}
                         onMouseMove={handleSwipeMove}
                         onMouseUp={() => {
+                          handlePlanPressEnd();
                           handleSwipeEnd(p, dKey);
                         }}
                         onMouseLeave={() => {
+                          handlePlanPressEnd();
                           setSwipeState(null);
                           setSwipeStartX(null);
                         }}
                         onTouchStart={(e) => {
                           handleSwipeStart(e, p.id);
+                          handlePlanPressStart(p.id);
                         }}
                         onTouchMove={handleSwipeMove}
                         onTouchEnd={() => {
+                          handlePlanPressEnd();
                           handleSwipeEnd(p, dKey);
                         }}
                         className="rounded-[28px] p-4 group animate-in zoom-in-95 border transition-all relative z-10"
