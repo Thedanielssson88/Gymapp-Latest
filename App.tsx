@@ -566,7 +566,7 @@ export default function App() {
     try {
       // Hitta om det fanns ett kopplat planerat pass
       const session = history.find(s => s.id === sessionId);
-      const linkedActivity = scheduledActivities.find(a => a.linkedSessionId === sessionId);
+      const linkedActivity = plannedActivities.find(a => a.linkedSessionId === sessionId);
 
       // Om det är kopplat till ett AI-program, markera som cancelled
       if (linkedActivity?.programId) {
