@@ -384,7 +384,7 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
     setPlanColor('#1a1721');
   };
 
-  const handleSaveCustomPlan = () => {
+  const handleSaveCustomPlan = async () => {
     if (!planTitle.trim()) {
       alert('Ange ett namn på passet');
       return;
@@ -413,6 +413,8 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
           date: planDate
         });
       }
+      // Trigger refresh to update UI with new data from database
+      await onUpdate();
     } else {
       // Skapa nytt pass
       const activity: ScheduledActivity = {
