@@ -253,7 +253,8 @@ export default function App() {
           isCompleted: false,
           exercises: rp.exercises,
           isTemplate: true,
-          daysOfWeek: rp.daysOfWeek
+          daysOfWeek: rp.daysOfWeek,
+          color: rp.color // ✅ Inkludera färgen från recurring plan
       }))
     ];
     setPlannedActivities(allPlansForDisplay);
