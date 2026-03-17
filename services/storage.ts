@@ -349,6 +349,8 @@ export const storage = {
       is_completed: true,
       is_manual: session.isManual || false,
       duration: session.duration,
+      rpe: session.rpe,
+      feeling: session.feeling,
       source_activity_id: session.sourceActivityId,
       source_activity_color: session.sourceActivityColor
     };
