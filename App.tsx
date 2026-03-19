@@ -27,6 +27,8 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { triggerHaptic } from './utils/haptics';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Dumbbell, User2, Calendar, X, MapPin, Activity, Home, Trees, ChevronRight, Settings, Trophy, BookOpen, Cloud, Sparkles, Plus, Edit3 } from 'lucide-react';
+import { DraggableAIBubble } from './components/DraggableAIBubble';
+import { AIPlanResponse } from './types';
 
 const APP_VERSION = 'v2.0.0-build-' + Date.now();
 
@@ -61,6 +63,11 @@ export default function App() {
   const [pendingActivity, setPendingActivity] = useState<ScheduledActivity | null>(null);
   const [showZonePicker, setShowZonePicker] = useState(false);
   const [editingZoneInStartMenu, setEditingZoneInStartMenu] = useState<Zone | null>(null);
+
+  // AI Bubble state (global)
+  const [showAIBubble, setShowAIBubble] = useState(false);
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
+  const [aiBubbleOrigin, setAiBubbleOrigin] = useState<'programs' | 'exercises' | 'articles'>('programs');
 
   const globalStyles = `
     :root {
@@ -262,6 +269,31 @@ export default function App() {
     } catch (error) {
       console.error('❌ refreshData fel:', error);
       throw error;
+    }
+  };
+
+  // AI Bubble Handlers (Global)
+  const handleAIStartGenerating = (origin: 'programs' | 'exercises' | 'articles') => {
+    setIsAIGenerating(true);
+    setShowAIBubble(true);
+    setAiBubbleOrigin(origin);
+  };
+
+  const handleAIGenerationComplete = () => {
+    setIsAIGenerating(false);
+  };
+
+  const handleAIBubbleClick = () => {
+    if (!isAIGenerating) {
+      // Byt till rätt flik beroende på varifrån bubblan kommer
+      if (aiBubbleOrigin === 'exercises') {
+        // Om det är från library, gå tillbaka dit (men bubblan kommer inte stänga Scout eftersom den redan är stängd)
+        // Behåll nuvarande tab, användaren kan navigera manuellt
+      } else {
+        // Programs och Articles - gå till AI-fliken
+        setActiveTab('ai');
+      }
+      setShowAIBubble(false);
     }
   };
 
@@ -797,9 +829,29 @@ export default function App() {
         );
       case 'log': return zones.length > 0 && activeZone ? <WorkoutLog history={history} plannedActivities={plannedActivities} routines={routines} allExercises={allExercises} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onDeleteHistory={handleDeleteHistory} onMovePlan={handleMovePlan} onMoveRecurringInstance={handleMoveRecurringInstance} onSkipRecurringInstance={handleSkipRecurringInstance} onUpdateScheduledActivity={handleUpdateScheduledActivity} onUpdateRecurringPlan={handleUpdateRecurringPlan} onStartActivity={handleStartSession} onStartManualWorkout={handleStartManualWorkout} onStartLiveWorkout={handleStartEmptyWorkout} onUpdate={refreshData} userProfile={user} activeZone={activeZone} zones={zones} /> : null;
       case 'targets': return <TargetsView userMissions={userMissions} history={history} exercises={allExercises} userProfile={user} biometricLogs={biometricLogs} onAddMission={handleAddMission} onDeleteMission={handleDeleteMission} />;
-      case 'library': return ( <ExerciseLibrary allExercises={allExercises} history={history} onUpdate={refreshData} userProfile={user} initialExerciseId={targetExerciseId} onClose={() => setTargetExerciseId(null)} /> );
+      case 'library': return (
+        <ExerciseLibrary
+          allExercises={allExercises}
+          history={history}
+          onUpdate={refreshData}
+          userProfile={user}
+          initialExerciseId={targetExerciseId}
+          onClose={() => setTargetExerciseId(null)}
+          onAIStartGenerating={() => handleAIStartGenerating('exercises')}
+          onAIGenerationComplete={handleAIGenerationComplete}
+        />
+      );
       case 'gyms': return null; // Platser-fliken borttagen - allt hanteras från "Vart tränar du"
-      case 'ai': return <AIProgramDashboard onStartSession={handleStartSession} onGoToExercise={handleGoToExercise} onUpdate={refreshData} />;
+      case 'ai': return (
+        <AIProgramDashboard
+          onStartSession={handleStartSession}
+          onGoToExercise={handleGoToExercise}
+          onUpdate={refreshData}
+          onAIStartGenerating={handleAIStartGenerating}
+          onAIGenerationComplete={handleAIGenerationComplete}
+          bubbleOrigin={aiBubbleOrigin}
+        />
+      );
       default: return null;
     }
   };
@@ -807,6 +859,12 @@ export default function App() {
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#0f0d15] selection:bg-accent-pink selection:text-white relative overflow-x-hidden">
       <style>{globalStyles}</style>
+      {showAIBubble && (
+        <DraggableAIBubble
+          isGenerating={isAIGenerating}
+          onComplete={handleAIBubbleClick}
+        />
+      )}
       {showOnboarding && isReady && ( <OnboardingWizard onComplete={() => {
         setShowOnboarding(false);
         // refreshData() kommer hämta den uppdaterade profilen med namn → onboarding visas inte igen!

@@ -21,6 +21,8 @@ interface ExerciseLibraryProps {
   activeZone?: Zone;
   userProfile?: UserProfile;
   initialExerciseId?: string | null;
+  onAIStartGenerating?: () => void;
+  onAIGenerationComplete?: () => void;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -38,7 +40,7 @@ const ExerciseImage = ({ exercise }: { exercise: Exercise }) => {
     );
 };
 
-export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: initialExercises, history, onUpdate, onSelect, onClose, activeZone, userProfile, initialExerciseId }) => {
+export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ allExercises: initialExercises, history, onUpdate, onSelect, onClose, activeZone, userProfile, initialExerciseId, onAIStartGenerating, onAIGenerationComplete }) => {
   const [exercises, setExercises] = useState(initialExercises || []);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'alphabetical' | 'recent'>('recent');
@@ -528,7 +530,7 @@ INSTRUKTIONER:
       {showAIScout && (
         <div className="fixed inset-0 z-[300] bg-[#0f0d15] flex flex-col">
           <div style={{ paddingTop: 'env(safe-area-inset-top)' }} className="flex-1 flex flex-col overflow-hidden">
-            <AIExerciseRecommender 
+            <AIExerciseRecommender
               onClose={() => setShowAIScout(false)}
               allExercises={exercises}
               history={history}
@@ -541,6 +543,11 @@ INSTRUKTIONER:
                   setEditingExercise(exerciseToEdit);
                 }
               }}
+              onStartGenerating={() => {
+                setShowAIScout(false);
+                if (onAIStartGenerating) onAIStartGenerating();
+              }}
+              onGenerationComplete={onAIGenerationComplete}
             />
           </div>
         </div>

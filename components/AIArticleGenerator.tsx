@@ -15,6 +15,8 @@ interface AIArticleGeneratorProps {
   userMissions: UserMission[];
   aiPrograms: AIProgram[];
   allExercises: Exercise[];
+  onStartGenerating?: () => void;
+  onGenerationComplete?: () => void;
 }
 
 interface MagazineArticle {
@@ -103,7 +105,7 @@ const ArticleRenderer: React.FC<{ article: MagazineArticle }> = ({ article }) =>
 };
 
 
-export const AIArticleGenerator: React.FC<AIArticleGeneratorProps> = (props) => {
+export const AIArticleGenerator: React.FC<AIArticleGeneratorProps> = ({ onStartGenerating, onGenerationComplete, ...props }) => {
     const [loading, setLoading] = useState(false);
     const [article, setArticle] = useState<MagazineArticle | null>(null);
     const [history, setHistory] = useState<MagazineArticle[]>([]);
@@ -132,10 +134,16 @@ export const AIArticleGenerator: React.FC<AIArticleGeneratorProps> = (props) => 
     const handleGenerate = async () => {
         setLoading(true);
         setArticle(null);
+
+        // Starta genereringen och signalera till parent
+        if (onStartGenerating) {
+            onStartGenerating();
+        }
+
         try {
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            
+
             const recentHistory = props.history.filter(h => new Date(h.date) >= thirtyDaysAgo);
             const recentBiometrics = props.biometricLogs.filter(b => new Date(b.date) >= thirtyDaysAgo);
 
@@ -147,9 +155,14 @@ export const AIArticleGenerator: React.FC<AIArticleGeneratorProps> = (props) => 
                 props.aiPrograms,
                 props.allExercises
             );
-            
+
             setArticle(result);
             saveToHistory(result);
+
+            // Generering klar
+            if (onGenerationComplete) {
+                onGenerationComplete();
+            }
 
         } catch (error) {
             alert((error as Error).message || "Kunde inte skapa artikeln.");

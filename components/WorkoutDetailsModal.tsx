@@ -15,6 +15,7 @@ interface WorkoutDetailsModalProps {
 export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ activity, allExercises, onClose, onStart, onUpdate }) => {
   const [showReschedule, setShowReschedule] = useState(false);
   const [newDate, setNewDate] = useState(activity.date);
+  const [scrollingExercise, setScrollingExercise] = useState<number | null>(null);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -112,25 +113,46 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ activi
         {/* Content (Scrollable) */}
         <div className="p-8 overflow-y-auto flex-1 space-y-4 scrollbar-hide overscroll-contain">
           <p className="text-[10px] font-black uppercase text-text-dim tracking-[0.2em] mb-4">Övningslista</p>
-          {(activity.exercises || []).map((plannedEx, idx) => (
+          {(activity.exercises || []).map((plannedEx, idx) => {
+            const exerciseName = getExerciseName(plannedEx.exerciseId);
+            const isScrolling = scrollingExercise === idx;
+
+            return (
             <div key={idx} className="bg-white/5 p-5 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors">
-              <div>
-                <p className="text-base font-black italic text-white uppercase mb-1">
-                   {getExerciseName(plannedEx.exerciseId)}
-                </p>
+              <div className="min-w-0 flex-1 pr-4">
+                <div className="overflow-hidden relative">
+                  <p
+                    onClick={() => setScrollingExercise(isScrolling ? null : idx)}
+                    style={isScrolling ? {
+                      animation: 'scroll-text 3s linear infinite',
+                      whiteSpace: 'nowrap',
+                      paddingRight: '20px'
+                    } : {}}
+                    className={`text-base font-black italic text-white uppercase mb-1 cursor-pointer hover:text-accent-blue ${!isScrolling ? 'truncate' : ''}`}
+                  >
+                     {exerciseName}
+                  </p>
+                  <style>{`
+                    @keyframes scroll-text {
+                      0% { transform: translateX(0%); }
+                      100% { transform: translateX(-100%); }
+                    }
+                  `}</style>
+                </div>
                 <div className="flex gap-4 text-[10px] font-bold text-text-dim uppercase tracking-wider">
                   <span className="flex items-center gap-1.5"><Repeat size={12} className="text-accent-blue"/> {plannedEx.sets.length} set</span>
                   <span className="bg-white/10 px-2 py-0.5 rounded text-white">{plannedEx.sets[0]?.reps} reps</span>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <span className="text-accent-blue font-black text-xl block italic">
                   {plannedEx.sets[0]?.weight ? `${plannedEx.sets[0].weight}kg` : '-'}
                 </span>
                 <span className="text-[8px] text-text-dim font-black uppercase tracking-widest">Est. vikt</span>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Footer / Action */}

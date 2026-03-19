@@ -347,14 +347,25 @@ const LocationEditor: React.FC<LocationEditorProps> = ({ zone, onClose, onSave, 
                 <input
                   type="number"
                   value={localZone.barbellWeight ?? 20}
+                  onFocus={(e) => {
+                    e.target.select();
+                    // Töm fältet för att undvika "010" problem
+                    setTimeout(() => e.target.value = '', 0);
+                  }}
                   onChange={e => {
-                    const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                    // Tillåt tom sträng, annars parse till nummer
+                    const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
                     setLocalZone({...localZone, barbellWeight: val});
                   }}
                   onBlur={e => {
-                    // Ta bort leading zeros när användaren lämnar fältet
-                    const val = parseFloat(e.target.value) || 0;
-                    setLocalZone({...localZone, barbellWeight: val});
+                    // Om tomt när användaren lämnar, sätt till default 20
+                    if (e.target.value === '' || isNaN(parseFloat(e.target.value))) {
+                      setLocalZone({...localZone, barbellWeight: 20});
+                    } else {
+                      // Ta bort leading zeros
+                      const val = parseFloat(e.target.value);
+                      setLocalZone({...localZone, barbellWeight: val});
+                    }
                   }}
                   className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-lg font-bold text-white outline-none focus:border-accent-green"
                   min="0"
@@ -369,14 +380,25 @@ const LocationEditor: React.FC<LocationEditorProps> = ({ zone, onClose, onSave, 
                 <input
                   type="number"
                   value={localZone.dumbbellWeight ?? 1}
+                  onFocus={(e) => {
+                    e.target.select();
+                    // Töm fältet för att undvika "010" problem
+                    setTimeout(() => e.target.value = '', 0);
+                  }}
                   onChange={e => {
-                    const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                    // Tillåt tom sträng, annars parse till nummer
+                    const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
                     setLocalZone({...localZone, dumbbellWeight: val});
                   }}
                   onBlur={e => {
-                    // Ta bort leading zeros när användaren lämnar fältet
-                    const val = parseFloat(e.target.value) || 0;
-                    setLocalZone({...localZone, dumbbellWeight: val});
+                    // Om tomt när användaren lämnar, sätt till default 1
+                    if (e.target.value === '' || isNaN(parseFloat(e.target.value))) {
+                      setLocalZone({...localZone, dumbbellWeight: 1});
+                    } else {
+                      // Ta bort leading zeros
+                      const val = parseFloat(e.target.value);
+                      setLocalZone({...localZone, dumbbellWeight: val});
+                    }
                   }}
                   className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-lg font-bold text-white outline-none focus:border-accent-green"
                   min="0"

@@ -16,7 +16,12 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ selectedColor, onSelec
       {EXERCISE_COLORS.map((color) => (
         <button
           key={color.hex}
-          onClick={() => onSelectColor(color.hex)}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSelectColor(color.hex);
+          }}
           className={`
             w-10 h-10 rounded-lg transition-all relative
             ${color.bg}

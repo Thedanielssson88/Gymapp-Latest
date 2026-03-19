@@ -37,6 +37,7 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'history' | 'alternatives'>('info');
   const imageSrc = useExerciseImage(exercise);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -126,8 +127,26 @@ export const ExerciseInfoModal: React.FC<ExerciseInfoModalProps> = ({
   return (
     <div className="fixed inset-0 bg-[#0f0d15] z-[9999] flex flex-col animate-in fade-in duration-200 overscroll-y-contain">
       <header className="flex justify-between items-center p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] border-b border-white/5 bg-[#0f0d15]">
-        <h3 className="text-2xl font-black italic uppercase text-white truncate pr-4">{exercise.name}</h3>
-        <button onClick={onClose} className="p-3 bg-white/5 rounded-2xl active:scale-95 transition-transform"><X size={24} className="text-white"/></button>
+        <div className="overflow-hidden relative flex-1 pr-4">
+          <h3
+            onClick={() => setIsScrolling(!isScrolling)}
+            style={isScrolling ? {
+              animation: 'scroll-text 3s linear infinite',
+              whiteSpace: 'nowrap',
+              paddingRight: '20px'
+            } : {}}
+            className={`text-2xl font-black italic uppercase text-white pr-4 cursor-pointer hover:text-accent-blue ${!isScrolling ? 'truncate' : ''}`}
+          >
+            {exercise.name}
+          </h3>
+          <style>{`
+            @keyframes scroll-text {
+              0% { transform: translateX(0%); }
+              100% { transform: translateX(-100%); }
+            }
+          `}</style>
+        </div>
+        <button onClick={onClose} className="p-3 bg-white/5 rounded-2xl active:scale-95 transition-transform shrink-0"><X size={24} className="text-white"/></button>
       </header>
       
       <div className="flex p-4 gap-2 border-b border-white/5 bg-[#0f0d15]">

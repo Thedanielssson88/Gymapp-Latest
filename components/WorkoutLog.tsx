@@ -949,6 +949,37 @@ export const WorkoutLog: React.FC<WorkoutLogProps> = ({
                           <div className="py-4 space-y-6">{session.exercises.map((ex, idx) => {const exData = allExercises.find(e => e.id === ex.exerciseId); return (<div key={idx} className="space-y-3"><div className="flex justify-between items-baseline gap-4"><span className="text-xs font-black uppercase italic text-accent-pink tracking-tight shrink-0">{exData?.name || 'Övning'}</span>{ex.notes && (<div className="flex items-center gap-1.5 opacity-60 min-w-0 text-right"><MessageSquare size={10} className="text-text-dim shrink-0" /><span className="text-[9px] font-bold text-text-dim italic truncate">{ex.notes}</span></div>)}</div><div className="space-y-1.5">{ex.sets.filter(s => s.completed).map((set, sIdx) => (<LogSetRow key={sIdx} set={set} type={ex.trackingTypeOverride || exData?.trackingType} isPR={checkIsPR(ex.exerciseId, set.weight, set.reps, session.date)} />))}</div></div>);})}{' '}</div>
                           <div className="pt-2 border-t border-white/5 space-y-2">
                             <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Skapa en ny scheduled activity baserad på det genomförda passet
+                                const activityId = `replay-${Date.now()}`;
+                                const replayActivity: ScheduledActivity = {
+                                  id: activityId,
+                                  date: new Date().toISOString().split('T')[0],
+                                  type: 'gym',
+                                  title: session.name,
+                                  isCompleted: false,
+                                  exercises: session.exercises.map(ex => ({
+                                    exerciseId: ex.exerciseId,
+                                    sets: ex.sets.filter(s => s.completed).map(s => ({
+                                      reps: s.reps || 0,
+                                      weight: s.weight || 0,
+                                      completed: false,
+                                      type: s.type || 'normal'
+                                    })),
+                                    notes: ex.notes || ''
+                                  })),
+                                  color: session.sourceActivityColor || '#1a1721'
+                                };
+                                // Starta passet direkt
+                                onStartActivity(replayActivity);
+                              }}
+                              className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-500 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-green-500/20 transition-all flex items-center justify-center gap-2"
+                            >
+                              <Play size={16} fill="currentColor" />
+                              Kör igen
+                            </button>
+                            <button
                               onClick={(e) => { e.stopPropagation(); setShowColorPickerForHistory(session.id); }}
                               className="w-full py-3 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
                             >

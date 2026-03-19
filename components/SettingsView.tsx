@@ -441,11 +441,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
                 <p className="text-[10px] text-text-dim font-bold uppercase">Standardvikt (kg)</p>
               </div>
             </div>
-            <input 
+            <input
               type="number"
-              onFocus={(e) => e.target.select()}
-              value={localProfile.settings?.barbellWeight || 20}
-              onChange={(e) => handleSettingChange('barbellWeight', Number(e.target.value))}
+              onFocus={(e) => {
+                e.target.select();
+                // Sätt value till tom sträng för att undvika "010" problem
+                setTimeout(() => e.target.value = '', 0);
+              }}
+              onBlur={(e) => {
+                // Om användaren lämnar fältet tomt, återställ till default
+                if (!e.target.value) {
+                  handleSettingChange('barbellWeight', 20);
+                }
+              }}
+              value={localProfile.settings?.barbellWeight ?? 20}
+              onChange={(e) => handleSettingChange('barbellWeight', Number(e.target.value) || 0)}
               className="w-20 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-right font-black text-accent-blue outline-none focus:border-accent-blue"
             />
           </div>
@@ -459,11 +469,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ userProfile, onUpdat
                 <p className="text-[10px] text-text-dim font-bold uppercase">Greppvikt per st (kg)</p>
               </div>
             </div>
-            <input 
+            <input
               type="number"
-              onFocus={(e) => e.target.select()}
-              value={localProfile.settings?.dumbbellBaseWeight || 2}
-              onChange={(e) => handleSettingChange('dumbbellBaseWeight', Number(e.target.value))}
+              onFocus={(e) => {
+                e.target.select();
+                // Sätt value till tom sträng för att undvika "010" problem
+                setTimeout(() => e.target.value = '', 0);
+              }}
+              onBlur={(e) => {
+                // Om användaren lämnar fältet tomt, återställ till default
+                if (!e.target.value) {
+                  handleSettingChange('dumbbellBaseWeight', 2);
+                }
+              }}
+              value={localProfile.settings?.dumbbellBaseWeight ?? 2}
+              onChange={(e) => handleSettingChange('dumbbellBaseWeight', Number(e.target.value) || 0)}
               className="w-20 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-right font-black text-accent-pink outline-none focus:border-accent-pink"
             />
           </div>

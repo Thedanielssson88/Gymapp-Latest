@@ -11,6 +11,17 @@ import { calculate1RM } from '../utils/fitness';
 import { storage } from '../services/storage';
 import { Zap, ShieldAlert, AlertTriangle, LayoutList, Map as MapIcon, BarChart2, TrendingUp, Calendar, Dumbbell } from 'lucide-react';
 import { RecoveryMap } from './RecoveryMap';
+import RecoveryIndexHero from './RecoveryIndexHero';
+import {
+  calculateRecoveryIndex,
+  calculateMuscleRecovery as calculateMuscleRecoveryScore,
+  getDaysSinceLastWorkout
+} from '../utils/recoveryIndex';
+import {
+  calculateAcuteLoad,
+  calculateChronicLoad,
+  calculateAcuteChronicRatio
+} from '../utils/trainingLoad';
 
 // --- HJÄLPFUNKTIONER FÖR STATISTIK ---
 const filterDataByRange = (data: any[], dateKey: string, range: string) => {
@@ -55,6 +66,28 @@ export const StatsView: React.FC<StatsViewProps> = ({
   }, [initialMode]);
 
   const recoveryScores = useMemo(() => calculateMuscleRecovery(history, allExercises, userProfile), [history, allExercises, userProfile]);
+
+  // Beräkna Recovery Index data
+  const recoveryIndexData = useMemo(() => {
+    const muscleRecoveryScore = calculateMuscleRecoveryScore(history, 7);
+    const acuteLoad = calculateAcuteLoad(history);
+    const chronicLoad = calculateChronicLoad(history);
+    const acuteChronicRatio = calculateAcuteChronicRatio(acuteLoad, chronicLoad);
+    const daysSinceWorkout = getDaysSinceLastWorkout(history);
+
+    const recoveryIndex = calculateRecoveryIndex(
+      muscleRecoveryScore,
+      acuteChronicRatio,
+      daysSinceWorkout
+    );
+
+    return {
+      recoveryIndex,
+      acuteLoad,
+      chronicLoad,
+      acuteChronicRatio
+    };
+  }, [history]);
 
   const toggleInjury = async (muscle: MuscleGroup) => {
     const currentInjuries = userProfile.injuries || [];
@@ -171,17 +204,27 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
         {(activeTab === 'recovery' || activeTab === 'injuries') && (
           <>
+            {activeTab === 'recovery' && (
+              <div className="p-4 pb-0">
+                <RecoveryIndexHero
+                  recoveryIndex={recoveryIndexData.recoveryIndex}
+                  acuteLoad={recoveryIndexData.acuteLoad}
+                  chronicLoad={recoveryIndexData.chronicLoad}
+                  acuteChronicRatio={recoveryIndexData.acuteChronicRatio}
+                />
+              </div>
+            )}
             <div className="text-center pt-4 px-4">
                 <p className="text-xs text-text-dim">
-                  {activeTab === 'recovery' 
-                    ? 'Klicka på en muskel för att se vilka pass som bidragit till belastningen.' 
+                  {activeTab === 'recovery'
+                    ? 'Klicka på en muskel för att se vilka pass som bidragit till belastningen.'
                     : 'Markera muskler som är skadade. Generatorn undviker dessa.'}
                 </p>
             </div>
-            <RecoveryMap 
-                mode={activeTab} 
-                recoveryScores={recoveryScores} 
-                injuries={userProfile.injuries} 
+            <RecoveryMap
+                mode={activeTab}
+                recoveryScores={recoveryScores}
+                injuries={userProfile.injuries}
                 onToggle={toggleInjury}
                 history={history}
                 allExercises={allExercises}

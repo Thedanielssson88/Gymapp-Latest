@@ -16,6 +16,8 @@ interface AIExerciseRecommenderProps {
   history: WorkoutSession[];
   onUpdate: () => void;
   activeZone?: Zone;
+  onStartGenerating?: () => void;
+  onGenerationComplete?: () => void;
 }
 
 const HISTORY_KEY = 'gym_ai_scout_history_v3';
@@ -27,7 +29,7 @@ interface HistoryItem {
     timestamp: number;
 }
 
-export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ onEditExercise, onStartSession, onAddToWorkout, onClose, allExercises, onUpdate, history: fullHistory }) => {
+export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ onEditExercise, onStartSession, onAddToWorkout, onClose, allExercises, onUpdate, history: fullHistory, onStartGenerating, onGenerationComplete }) => {
   const [request, setRequest] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentResult, setCurrentResult] = useState<ExerciseSearchResponse | null>(null);
@@ -40,6 +42,16 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
 
   // STATE: Håller koll på övningar tillagda i workout
   const [addedToWorkout, setAddedToWorkout] = useState<string[]>([]);
+
+  // STATE: Håller koll på rullande textanimation
+  const [scrollingExercise, setScrollingExercise] = useState<number | null>(null);
+
+  // Hjälpfunktion för att alltid få svenskt namn
+  const getDisplayName = (exercise: Exercise | { name: string, englishName?: string }): string => {
+    // Om name är på engelska men vi har englishName, använd name som svenskt namn
+    // Annars returnera name
+    return exercise.name;
+  };
 
   useEffect(() => {
     loadHistory();
@@ -87,11 +99,22 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
     setLoading(true);
     setCurrentResult(null);
     setCurrentQuery(request);
+
+    // Starta genereringen och signalera till parent
+    if (onStartGenerating) {
+      onStartGenerating();
+    }
+
     try {
       // Skicka ALLA övningar (ingen filtrering) - samma som RoutinePicker
       const result = await recommendExercises(request, allExercises);
       setCurrentResult(result);
       saveToHistory(request, result);
+
+      // Generering klar
+      if (onGenerationComplete) {
+        onGenerationComplete();
+      }
     } catch (e) {
       console.error('AI Scout error:', e);
       alert("Kunde inte hämta förslag. Kontrollera din anslutning.");
@@ -216,42 +239,71 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
             const exists = !!existingId;
             const isAddedToWorkout = existingId ? addedToWorkout.includes(existingId) : false;
 
+            // Hitta den riktiga övningen för att få gifUrl
+            const fullExercise = exists ? allExercises.find(e => e.id === existingId) : null;
+            const gifUrl = fullExercise?.gifUrl || rec.data.gifUrl;
+
             const handleCardClick = () => {
                 if (exists) {
                     const exerciseToShow = allExercises.find(e => e.id === existingId);
                     if (exerciseToShow) setViewingExercise(exerciseToShow);
+                } else {
+                    // För nya övningar, visa info från AI-data direkt
+                    // Skapa ett temporärt Exercise-objekt från rec.data
+                    const tempExercise: Exercise = {
+                        ...rec.data,
+                        id: rec.data.id || sanitizeId(rec.data.name),
+                        muscleGroups: rec.data.muscleGroups || Array.from(new Set([...rec.data.primaryMuscles, ...(rec.data.secondaryMuscles || [])]))
+                    };
+                    setViewingExercise(tempExercise);
                 }
             };
 
+            const displayName = getDisplayName(rec.data);
+            const isScrolling = scrollingExercise === idx;
+
             return (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   onClick={handleCardClick}
-                  className={`p-5 rounded-[28px] border flex flex-col gap-4 animate-in slide-in-from-bottom-2 shadow-lg transition-all ${exists ? 'bg-[#1a1721] border-white/5 cursor-pointer' : 'bg-gradient-to-br from-[#1a1721] to-[#2a2435] border-accent-blue/20'}`}
+                  className={`p-5 rounded-[28px] border flex gap-4 animate-in slide-in-from-bottom-2 shadow-lg transition-all ${exists ? 'bg-[#1a1721] border-white/5 cursor-pointer' : 'bg-gradient-to-br from-[#1a1721] to-[#2a2435] border-accent-blue/20'}`}
                 >
-                    <div className="flex justify-between items-start">
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                <h3 className="text-white font-black italic uppercase text-lg truncate leading-none">{rec.data.name}</h3>
+                    {/* Bild till vänster */}
+                    {gifUrl && (
+                      <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white/5 shrink-0 border border-white/10">
+                        <img
+                          src={gifUrl}
+                          alt={displayName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {/* Content till höger */}
+                    <div className="flex flex-col gap-3 flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-white font-black italic uppercase text-sm leading-tight mb-1.5">
+                                    {displayName}
+                                </h3>
                                 {!exists ? (
-                                    <span className="bg-purple-500/20 text-purple-400 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-purple-500/30">Ny</span>
+                                    <span className="bg-purple-500/20 text-purple-400 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-purple-500/30 inline-block">Ny</span>
                                 ) : (
-                                    <span className="bg-green-500/20 text-green-500 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-green-500/10 flex items-center gap-1">
+                                    <span className="bg-green-500/20 text-green-500 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-green-500/10 flex items-center gap-1 w-fit">
                                         <Save size={8}/> Sparad
                                     </span>
                                 )}
                             </div>
-                            <p className="text-[11px] text-accent-blue italic leading-snug line-clamp-2">"{rec.reason}"</p>
                         </div>
-                    </div>
+                        <p className="text-[11px] text-accent-blue italic leading-snug line-clamp-2">"{rec.reason}"</p>
 
-                    <div className="flex gap-1.5 flex-wrap">
-                        {rec.data.primaryMuscles?.slice(0, 2).map(m => (
-                            <span key={m} className="text-[8px] font-black uppercase bg-white/5 text-text-dim px-2 py-1 rounded-lg border border-white/5">{m}</span>
-                        ))}
-                    </div>
+                        <div className="flex gap-1.5 flex-wrap">
+                            {rec.data.primaryMuscles?.slice(0, 2).map(m => (
+                                <span key={m} className="text-[8px] font-black uppercase bg-white/5 text-text-dim px-2 py-1 rounded-lg border border-white/5">{m}</span>
+                            ))}
+                        </div>
 
-                    <div className="pt-2 border-t border-white/5 mt-1">
+                        <div className="pt-2 border-t border-white/5">
                         {exists ? (
                             onAddToWorkout ? (
                                 // Workout context: Show button to add to current workout or green if added
@@ -281,6 +333,7 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
                                 <Plus size={16} strokeWidth={3} /> {onAddToWorkout ? 'Lägg till i bibliotek + passet' : 'Lägg till i bibliotek'}
                             </button>
                         )}
+                        </div>
                     </div>
                 </div>
             );
@@ -425,7 +478,7 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
                                 <div className="px-5 pb-5 flex gap-2 overflow-x-auto scrollbar-hide">
                                     {item.response.recommendations.slice(0, 3).map((rec, i) => (
                                         <span key={i} className="text-[8px] font-black uppercase bg-white/5 text-text-dim px-2 py-1 rounded-lg border border-white/5 whitespace-nowrap">
-                                            {rec.data.name}
+                                            {getDisplayName(rec.data)}
                                         </span>
                                     ))}
                                     {item.response.recommendations.length > 3 && (
