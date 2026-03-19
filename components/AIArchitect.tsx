@@ -394,7 +394,7 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose, onStartGenera
             <h3 className="text-accent-blue font-bold mb-2 uppercase tracking-widest text-xs flex items-center gap-2"><Sparkles size={12} /> Förslag ({plan.routines.length} pass)</h3>
             <p className="text-sm text-white mb-6 leading-relaxed italic">"{plan.motivation}"</p>
 
-            <div className="space-y-3 mb-6 max-h-[500px] overflow-y-auto">
+            <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto">
               {plan.routines.map((r, i) => {
                 // Beräkna datum för varje pass
                 const startObj = new Date(startDate);
