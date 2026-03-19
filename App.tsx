@@ -579,6 +579,7 @@ export default function App() {
 
   const handleAddPlan = async (activity: ScheduledActivity, isRecurring: boolean, days?: number[]) => {
     console.log('🔵 handleAddPlan called:', { activityId: activity.id, recurrenceId: activity.recurrenceId, date: activity.date, isRecurring, color: activity.color });
+
     if (isRecurring && days) {
       const plan: RecurringPlan = {
         id: `rec-${Date.now()}`,
@@ -587,17 +588,32 @@ export default function App() {
         daysOfWeek: days,
         startDate: activity.date,
         exercises: activity.exercises,
-        color: activity.color // Inkludera färgen!
+        color: activity.color
       };
       await storage.addRecurringPlan(plan);
       await storage.generateRecurringActivities();
+      await refreshData();
     } else {
-      console.log('🟢 Adding scheduled activity to database...');
-      await storage.addScheduledActivity(activity);
-      console.log('✅ Scheduled activity added successfully');
+      // Optimistic UI update: Lägg till passet direkt i UI:t
+      const optimisticActivity = { ...activity, isTemplate: false };
+      setPlannedActivities(prev => [...prev, optimisticActivity]);
+      console.log('⚡ Optimistic UI update - pass visas direkt i loggen');
+
+      // Spara till Supabase i bakgrunden
+      try {
+        console.log('🟢 Adding scheduled activity to database...');
+        await storage.addScheduledActivity(activity);
+        console.log('✅ Scheduled activity added successfully');
+        // Hämta den faktiska datan från servern för att säkerställa konsistens
+        await refreshData();
+        console.log('🔄 RefreshData completed - data synkad med Supabase');
+      } catch (error) {
+        console.error('❌ Failed to save activity:', error);
+        // Ta bort det optimistiska passet om sparandet misslyckades
+        setPlannedActivities(prev => prev.filter(p => p.id !== activity.id));
+        alert('Kunde inte spara passet. Försök igen.');
+      }
     }
-    await refreshData();
-    console.log('🔄 RefreshData completed - recurring instance should now be hidden');
   };
 
   const handleDeletePlan = async (id: string, isTemplate: boolean) => {
