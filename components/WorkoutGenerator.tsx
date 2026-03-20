@@ -51,6 +51,15 @@ const SPLITS: { name: string; label: string; muscles: MuscleGroup[] }[] = [
 
 const LOCALSTORAGE_KEY_PATTERNS = 'smartpt_selected_patterns';
 
+// TrainingType definition - kategorier för snabbval
+type TrainingType = 'weights' | 'bodyweight' | 'rehab';
+
+const TRAINING_TYPE_EQUIPMENT: Record<TrainingType, Equipment[]> = {
+  weights: ['Skivstång', 'Hantlar', 'Kettlebell', 'Kabelmaskin', 'Smith Machine', 'Leg Press', 'Bälte'],
+  bodyweight: ['Kroppsvikt', 'Pull-up Bar', 'Dip Station', 'Parallettes', 'Ringar'],
+  rehab: ['Gummiband', 'Massagerulle', 'Bosu Ball']
+};
+
 export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
   activeZone, allExercises, userProfile, history, onGenerate, onClose
 }) => {
@@ -59,6 +68,9 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [showNoExercisesModal, setShowNoExercisesModal] = useState(false);
   const { showToast, ToastComponent } = useToast();
+
+  // TrainingType - snabbval för att filtrera equipment
+  const [selectedTrainingTypes, setSelectedTrainingTypes] = useState<TrainingType[]>(['weights', 'bodyweight', 'rehab']);
 
   // Movement Patterns - ladda från localStorage per gym
   const [selectedPatterns, setSelectedPatterns] = useState<MovementPattern[]>(() => {
@@ -109,6 +121,24 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
     setSelectedEquipment(prev =>
       prev.includes(e) ? prev.filter(i => i !== e) : [...prev, e]
     );
+  };
+
+  const toggleTrainingType = (type: TrainingType) => {
+    setSelectedTrainingTypes(prev => {
+      const newTypes = prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type];
+
+      // Auto-uppdatera equipment baserat på valda training types
+      const allowedEquipment = newTypes.flatMap(t => TRAINING_TYPE_EQUIPMENT[t]);
+      const gymEquipment = activeZone.inventory || [];
+
+      // Filtrera så att vi bara har equipment som både finns på gymmet OCH matchar valda typer
+      const newEquipment = gymEquipment.filter(eq => allowedEquipment.includes(eq));
+      setSelectedEquipment(newEquipment);
+
+      return newTypes;
+    });
   };
 
   const handleGenerate = () => {
@@ -243,10 +273,10 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
             </div>
             <span className="text-2xl font-black italic text-white leading-none">{exerciseCount}</span>
           </div>
-          
+
           <div className="px-2">
-            <input 
-              type="range" 
+            <input
+              type="range"
               min="1" max="12" step="1"
               value={exerciseCount}
               onChange={(e) => setExerciseCount(Number(e.target.value))}
@@ -260,54 +290,47 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
           </div>
         </section>
 
-        {/* 3. RÖRELSEMÖNSTER (MOVEMENT PATTERNS) */}
+        {/* 3. TRÄNINGSTYP (TRAINING TYPE) - NYT SNABBVAL */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <Activity size={16} className="text-purple-500" />
-            <h3 className="text-xs font-black uppercase text-white tracking-widest">Rörelsemönster ({selectedPatterns.length}/{Object.values(MovementPattern).length})</h3>
+            <Wrench size={16} className="text-cyan-500" />
+            <h3 className="text-xs font-black uppercase text-white tracking-widest">Träningstyp</h3>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.values(MovementPattern).map(p => (
-              <button
-                key={p}
-                onClick={() => togglePattern(p)}
-                className={`p-3 rounded-xl border text-left transition-all text-[10px] font-bold uppercase ${
-                  selectedPatterns.includes(p)
-                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
-                    : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              onClick={() => toggleTrainingType('weights')}
+              className={`py-4 rounded-2xl border font-black uppercase text-[11px] transition-all active:scale-95 ${
+                selectedTrainingTypes.includes('weights')
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                  : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
+              }`}
+            >
+              Vikter
+            </button>
+            <button
+              onClick={() => toggleTrainingType('bodyweight')}
+              className={`py-4 rounded-2xl border font-black uppercase text-[11px] transition-all active:scale-95 ${
+                selectedTrainingTypes.includes('bodyweight')
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                  : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
+              }`}
+            >
+              Kroppsvikt
+            </button>
+            <button
+              onClick={() => toggleTrainingType('rehab')}
+              className={`py-4 rounded-2xl border font-black uppercase text-[11px] transition-all active:scale-95 ${
+                selectedTrainingTypes.includes('rehab')
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                  : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
+              }`}
+            >
+              Rehab
+            </button>
           </div>
         </section>
 
-        {/* 4. UTRUSTNING (EQUIPMENT) */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 px-1">
-            <Wrench size={16} className="text-orange-500" />
-            <h3 className="text-xs font-black uppercase text-white tracking-widest">Utrustning ({selectedEquipment.length}/{activeZone.inventory?.length || 0})</h3>
-          </div>
-          <p className="text-[9px] text-text-dim uppercase font-bold px-1">Gröna = Tillgängliga på {activeZone.name}</p>
-          <div className="grid grid-cols-2 gap-2">
-            {activeZone.inventory?.map(eq => (
-              <button
-                key={eq}
-                onClick={() => toggleEquipment(eq)}
-                className={`p-3 rounded-xl border text-left transition-all text-[10px] font-bold uppercase ${
-                  selectedEquipment.includes(eq)
-                    ? 'bg-green-500/20 text-green-300 border-green-500/50'
-                    : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
-                }`}
-              >
-                {eq}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* 5. MUSKELGRUPPER (LISTA) */}
+        {/* 4. MUSKELGRUPPER (ANPASSAT VAL) - FLYTTAD HIT */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 px-1">
             <Zap size={16} className="text-yellow-500" />
@@ -325,6 +348,53 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
                 }`}
               >
                 {m}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 5. UTRUSTNING (EQUIPMENT) - FLYTTAD HIT */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <Wrench size={16} className="text-orange-500" />
+            <h3 className="text-xs font-black uppercase text-white tracking-widest">Utrustning ({selectedEquipment.length}/{activeZone.inventory?.length || 0})</h3>
+          </div>
+          <p className="text-[9px] text-text-dim uppercase font-bold px-1">Auto-filtreras baserat på Träningstyp</p>
+          <div className="grid grid-cols-2 gap-2">
+            {activeZone.inventory?.map(eq => (
+              <button
+                key={eq}
+                onClick={() => toggleEquipment(eq)}
+                className={`p-3 rounded-xl border text-left transition-all text-[10px] font-bold uppercase ${
+                  selectedEquipment.includes(eq)
+                    ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                    : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
+                }`}
+              >
+                {eq}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 6. RÖRELSEMÖNSTER (MOVEMENT PATTERNS) - FLYTTAD HIT */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <Activity size={16} className="text-purple-500" />
+            <h3 className="text-xs font-black uppercase text-white tracking-widest">Rörelsemönster ({selectedPatterns.length}/{Object.values(MovementPattern).length})</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.values(MovementPattern).map(p => (
+              <button
+                key={p}
+                onClick={() => togglePattern(p)}
+                className={`p-3 rounded-xl border text-left transition-all text-[10px] font-bold uppercase ${
+                  selectedPatterns.includes(p)
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                    : 'bg-white/5 text-text-dim border-transparent hover:bg-white/10'
+                }`}
+              >
+                {p}
               </button>
             ))}
           </div>
