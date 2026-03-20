@@ -530,9 +530,9 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose, onStartGenera
 
       {/* Routine Detail Modal */}
       {viewingRoutine && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingRoutine(null)}>
-          <div className="bg-[#1a1721] rounded-3xl max-w-lg w-full max-h-[80vh] overflow-y-auto border border-white/10" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-[#1a1721] p-6 border-b border-white/10 flex justify-between items-start">
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-start justify-center p-4 pt-16 overflow-y-auto" onClick={() => setViewingRoutine(null)}>
+          <div className="bg-[#1a1721] rounded-3xl max-w-lg w-full border border-white/10" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-[#1a1721] p-6 border-b border-white/10 flex justify-between items-start z-10">
               <div>
                 <h2 className="text-white font-black italic uppercase text-lg">{viewingRoutine.routine.name}</h2>
                 <div className="text-[10px] text-text-dim font-bold uppercase tracking-widest flex gap-3 mt-2">
@@ -545,7 +545,7 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose, onStartGenera
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 max-h-[50vh] overflow-y-auto">
               {viewingRoutine.routine.exercises.map((ex: any, idx: number) => {
                 const exercise = allExercises.find((e: Exercise) => e.id === ex.id);
                 return (
