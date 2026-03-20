@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MuscleGroup, Zone, Exercise, UserProfile, WorkoutSession, PlannedExercise, MovementPattern, Equipment } from '../types';
 import { ALL_MUSCLE_GROUPS } from '../utils/recovery';
 import { generateWorkoutSession } from '../utils/fitness';
+import { rankExercisesBySmart } from '../utils/smartPTAnalysis';
 import { X, Zap, Dumbbell, Layers, ArrowRight, Sparkles, Activity, Wrench } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from './Toast';
@@ -130,7 +131,7 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
 
     // Kort fördröjning för att visa laddningseffekt
     setTimeout(() => {
-      // Filtrera övningar baserat på valda patterns och equipment
+      // 1. Filtrera övningar baserat på valda patterns och equipment
       const filteredExercises = allExercises.filter(ex => {
         // Kolla att övningen använder valda patterns
         if (!selectedPatterns.includes(ex.pattern)) {
@@ -146,16 +147,38 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
         return true;
       });
 
+      // 2. SMART RANKING - Ranka övningar baserat på alla faktorer
+      const bodyweight = userProfile.bodyweight || 80;
+      const rankedExercises = rankExercisesBySmart(
+        filteredExercises,
+        history,
+        bodyweight
+      );
+
+      // 3. Filtrera bort banned och avoid övningar
+      const smartFiltered = rankedExercises
+        .filter(r => r.recommendation !== 'banned' && r.recommendation !== 'avoid')
+        .map(r => filteredExercises.find(ex => ex.id === r.exerciseId)!)
+        .filter(Boolean);
+
+      // 4. Sortera så highly_recommended och recommended kommer först
+      const sortedExercises = smartFiltered.sort((a, b) => {
+        const scoreA = rankedExercises.find(r => r.exerciseId === a.id)?.totalScore || 0;
+        const scoreB = rankedExercises.find(r => r.exerciseId === b.id)?.totalScore || 0;
+        return scoreB - scoreA;
+      });
+
       // Skapa ett temporärt Zone-objekt med filtrerad inventory
       const filteredZone: Zone = {
         ...activeZone,
         inventory: selectedEquipment
       };
 
+      // 5. Generera pass med SMARTA övningar
       const generated = generateWorkoutSession(
         selectedMuscles,
         filteredZone,
-        filteredExercises,
+        sortedExercises, // ← Sorterad och filtrerad lista
         userProfile,
         history,
         exerciseCount

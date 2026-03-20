@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Plus, ArrowRight, Trash2, History, Dumbbell, Save, Info, Sparkles, Play, AlertTriangle, X, Check } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Loader2, Plus, ArrowRight, Trash2, History, Dumbbell, Save, Info, Sparkles, Play, AlertTriangle, X, Check, TrendingUp, Shield } from 'lucide-react';
 import { recommendExercises, ExerciseRecommendation, ExerciseSearchResponse } from '../services/geminiService';
 import { storage } from '../services/storage';
 import { Exercise, ScheduledActivity, SetType, Zone, WorkoutSession } from '../types';
 import { registerBackHandler } from '../utils/backHandler';
 import { ExerciseInfoModal } from './ExerciseInfoModal';
+import { generateSmartPTInsights, rankExercisesBySmart } from '../utils/smartPTAnalysis';
 
 interface AIExerciseRecommenderProps {
   onEditExercise?: (exerciseId: string) => void;
@@ -45,6 +46,9 @@ export const AIExerciseRecommender: React.FC<AIExerciseRecommenderProps> = ({ on
 
   // STATE: Håller koll på rullande textanimation
   const [scrollingExercise, setScrollingExercise] = useState<number | null>(null);
+
+  // STATE: Kroppsvikt för smart-analys
+  const [bodyweight, setBodyweight] = useState(80); // Default
 
   // Hjälpfunktion för att alltid få svenskt namn
   const getDisplayName = (exercise: Exercise | { name: string, englishName?: string }): string => {
