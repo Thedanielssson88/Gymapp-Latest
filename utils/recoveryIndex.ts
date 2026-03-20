@@ -28,7 +28,7 @@ export function calculateRecoveryIndex(
   // 2. Load-score: Baserat på Acute:Chronic ratio
   let loadScore = 100;
   if (acuteChronicRatio === 0) {
-    loadScore = 85; // Ingen data, anta OK
+    loadScore = 100; // Ingen data = ingen belastning = full återhämtning
   } else if (acuteChronicRatio < 0.8) {
     loadScore = 85; // Undertränad, bra återhämtning
   } else if (acuteChronicRatio <= 1.3) {
