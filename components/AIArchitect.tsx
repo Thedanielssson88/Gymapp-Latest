@@ -41,6 +41,18 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose, onStartGenera
   const [isSaved, setIsSaved] = useState(false);
   const [viewingRoutine, setViewingRoutine] = useState<{ routine: any; date: string } | null>(null);
 
+  // Förhindra bakgrunden från att scrolla när modal är öppen
+  useEffect(() => {
+    if (viewingRoutine) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [viewingRoutine]);
+
   // Settings - initiera från initialPlanData om det finns
   const [startDate, setStartDate] = useState(initialPlanData?.config.startDate || new Date().toISOString().split('T')[0]);
   const [daysPerWeek, setDaysPerWeek] = useState(initialPlanData?.config.daysPerWeek || 3);
@@ -276,6 +288,10 @@ export const AIArchitect: React.FC<AIArchitectProps> = ({ onClose, onStartGenera
       for (const mission of newMissions) { await storage.addUserMission(mission); }
 
       setIsSaved(true);
+
+      // Ladda om historiken så den uppdateras direkt
+      loadHistory();
+
       alert(`Program sparat! ${plan.routines.length} pass har lagts till i din kalender över ${weeksToSchedule} veckor med start ${startDate}.`);
     } catch (error) {
       console.error("Failed to apply AI plan:", error);

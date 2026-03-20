@@ -185,6 +185,7 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
     if (data) {
       setGeneratedPlanData(data);
     }
+    loadProgramHistory(); // Ladda om historik direkt efter generering
     onAIGenerationComplete();
   };
 
@@ -205,6 +206,7 @@ export const AIProgramDashboard: React.FC<AIProgramDashboardProps> = ({ onStartS
               onClose={() => {
                 setShowGenerator(false);
                 setGeneratedPlanData(null);
+                loadProgramHistory(); // Ladda om historik när popup stängs
                 onUpdate();
               }}
               onStartGenerating={handleStartGenerating}
